@@ -1,0 +1,122 @@
+"""HTTP API: health, topology, scenarios and runs."""
+
+from __future__ import annotations
+
+import pytest
+from fastapi.testclient import TestClient
+
+from netsec.api.app_factory import create_app
+
+
+@pytest.fixture(scope="module")
+def client() -> TestClient:
+    return TestClient(create_app(frontend_dist=None))
+
+
+def test_health_returns_200_and_says_it_is_a_local_simulation(client) -> None:
+    response = client.get("/api/health")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["status"] == "ok" and body["service"] == "netsec-ids-engine"
+    assert body["mode"] == "simulation" and body["real_traffic"] is False
+    assert body["topology"] == {"loaded": True, "valid": True, "nodes": 17, "links": 18}
+    assert body["scenarios_available"] == ["S1"]
+    assert body["stage"] == 1 and body["uptime_s"] >= 0
+
+
+def test_topology_returns_the_authoritative_topology(client, raw_topology) -> None:
+    response = client.get("/api/topology")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["summary"] == {
+        "nodes": 17, "devices": 16, "segments": 1, "links": 18, "vlans": 4, "subnets": 7, "zones": 7,
+    }
+    assert body["validation"]["passed"] is True and body["validation"]["failed_count"] == 0
+    assert [n["id"] for n in body["nodes"]] == [n["id"] for n in raw_topology["nodes"]]
+    assert [lk["id"] for lk in body["links"]] == [lk["id"] for lk in raw_topology["links"]]
+    assert body["span"] == raw_topology["span"]
+
+
+def test_topology_exposes_what_the_scene_needs(client) -> None:
+    body = client.get("/api/topology").json()
+    ids = {n["id"] for n in body["nodes"]}
+    assert {"INET", "IDS-1", "IPS-1", "FW1", "CORE-SW1"} <= ids
+    assert {n["zone"] for n in body["nodes"]} == {z["id"] for z in body["zones"]}
+    assert all("form_factor" in n and "role" in n for n in body["nodes"])
+
+
+def test_scenarios_lists_only_what_exists_in_this_build(client) -> None:
+    response = client.get("/api/scenarios")
+    assert response.status_code == 200
+    assert [s["id"] for s in response.json()] == ["S1"]
+
+
+def test_run_s1_returns_a_valid_deterministic_trace(client) -> None:
+    first = client.post("/api/sim/run", json={"scenario_id": "S1"})
+    second = client.post("/api/sim/run", json={"scenario_id": "S1"})
+    assert first.status_code == 200
+    body = first.json()
+    assert body["events"][0]["type"] == "run.meta" and body["events"][-1]["type"] == "run.end"
+    assert body["summary"]["data_packets"] == 30 and body["summary"]["blocked"] == 0
+    assert body["trace_hash"] == second.json()["trace_hash"]
+    assert body["events"] == second.json()["events"]
+
+
+def test_run_accepts_an_explicit_seed(client) -> None:
+    a = client.post("/api/sim/run", json={"scenario_id": "S1", "seed": 5}).json()
+    b = client.post("/api/sim/run", json={"scenario_id": "S1", "seed": 6}).json()
+    assert a["seed"] == 5 and b["seed"] == 6 and a["trace_hash"] != b["trace_hash"]
+
+
+@pytest.mark.parametrize("scenario_id", ["S2", "S99", "../etc/passwd", "s1", "S1.json"])
+def test_unknown_or_unsafe_scenario_ids_return_404(client, scenario_id) -> None:
+    response = client.post("/api/sim/run", json={"scenario_id": scenario_id})
+    assert response.status_code == 404
+    assert "unknown scenario" in response.json()["detail"]
+
+
+def test_ips_enforce_is_refused_until_it_exists(client) -> None:
+    response = client.post("/api/sim/run", json={"scenario_id": "S1", "ips_mode": "enforce"})
+    assert response.status_code == 501
+    assert "not implemented" in response.json()["detail"]
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [{}, {"scenario_id": ""}, {"scenario_id": "S1", "seed": -1}, {"scenario_id": "S1", "ips_mode": "block-everything"}, {"scenario_id": "S1", "extra": 1}],
+)
+def test_invalid_run_requests_return_422(client, payload) -> None:
+    assert client.post("/api/sim/run", json=payload).status_code == 422
+
+
+def test_unknown_api_path_is_404_json(client) -> None:
+    response = client.get("/api/does-not-exist")
+    assert response.status_code == 404
+
+
+def test_wrong_method_is_405(client) -> None:
+    assert client.post("/api/health").status_code == 405
+
+
+def test_app_refuses_to_start_on_an_invalid_topology(tmp_path, raw_topology) -> None:
+    import json
+    from netsec.network.topology import TopologyError
+
+    broken = dict(raw_topology, links=raw_topology["links"][:-1])
+    path = tmp_path / "topology.json"
+    path.write_text(json.dumps(broken), encoding="utf-8")
+    with pytest.raises(TopologyError, match="validation failed"):
+        create_app(topology_path=path, frontend_dist=None)
+
+
+def test_built_frontend_is_served_with_spa_fallback(tmp_path) -> None:
+    (tmp_path / "assets").mkdir()
+    (tmp_path / "assets" / "app.js").write_text("console.log(1)", encoding="utf-8")
+    (tmp_path / "index.html").write_text("<html>app</html>", encoding="utf-8")
+    client = TestClient(create_app(frontend_dist=tmp_path))
+    assert client.get("/").text == "<html>app</html>"
+    assert client.get("/simulation").text == "<html>app</html>"  # client-side route
+    assert client.get("/assets/app.js").text == "console.log(1)"
+    assert client.get("/api/health").json()["status"] == "ok"
+    assert client.get("/api/nope").status_code == 404
+    assert client.get("/%2e%2e/%2e%2e/secret").text == "<html>app</html>"  # no traversal outside dist

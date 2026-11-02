@@ -1,0 +1,13 @@
+{
+  "id": "S1",
+  "name": "Normal communication",
+  "description": "Legitimate traffic only: a staff HTTPS session, a laptop ping, an admin SSH session and an application-to-database query. No alerts and no drops are expected.",
+  "duration": 24.0,
+  "default_seed": 1,
+  "flows": [
+    { "type": "tcp_session", "id": "F1-https", "src": "PC-1", "dst": "APP-SRV", "dport": 443, "start": 0.5, "request_bytes": 520 },
+    { "type": "icmp_echo", "id": "F2-ping", "src": "LAPTOP-1", "dst": "APP-SRV", "start": 3.0, "count": 3, "interval": 1.0, "payload_bytes": 32 },
+    { "type": "tcp_session", "id": "F3-ssh", "src": "ADMIN-PC", "dst": "APP-SRV", "dport": 22, "start": 6.0, "request_bytes": 96 },
+    { "type": "tcp_session", "id": "F4-mysql", "src": "APP-SRV", "dst": "DB-SRV", "dport": 3306, "start": 10.0, "request_bytes": 140 }
+  ]
+}
