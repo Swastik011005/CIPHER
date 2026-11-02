@@ -44,13 +44,13 @@ describe('device information', () => {
     expect(neighboursOf(node('APP-SRV'), topology).map((n) => n.peer.id)).toEqual(['SRV-SW3'])
   })
 
-  it('states the security roles honestly: the IDS is passive, nothing is enforced yet', () => {
+  it('states the security roles honestly: the IDS is passive, only the IPS can block', () => {
     const ids = securityRole(node('IDS-1'))
     expect(ids.title).toMatch(/passive/i)
     expect(ids.text).toMatch(/never forwards, drops or blocks/i)
-    expect(ids.text).toMatch(/not implemented yet/i)
+    expect(ids.text).toMatch(/D1 port scan/)
     expect(securityRole(node('IPS-1')).text).toMatch(/only sensor that can block/i)
-    expect(securityRole(node('FW1')).text).toMatch(/without applying a policy/i)
+    expect(securityRole(node('FW1')).text).toMatch(/regardless of the IPS mode/i)
     expect(securityRole(node('PC-1'))).toBeNull()
   })
 })

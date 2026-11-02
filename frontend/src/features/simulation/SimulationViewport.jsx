@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { CAMERA_PRESETS } from '../../scene/layout.js'
 import { useStore } from '../../state/store.js'
 import { Banner, Button, Segmented, Spinner } from '../../ui/index.js'
+import { PlaybackBar } from './PlaybackBar.jsx'
 import { SceneSlot } from './SceneSlot.jsx'
 
 const LABEL_OPTIONS = [
@@ -125,6 +126,9 @@ export function SimulationViewport({ layoutIssues }) {
       </div>
       <div className="viewport__overlay viewport__overlay--tr glass">
         <SceneOptions />
+      </div>
+      <div className="viewport__playback">
+        <PlaybackBar />
       </div>
       <div className="viewport__hint">
         DRAG TO ROTATE · RIGHT-DRAG TO PAN · SCROLL TO ZOOM · CLICK A DEVICE · KEYS 1-6 PRESETS · ESC DESELECT

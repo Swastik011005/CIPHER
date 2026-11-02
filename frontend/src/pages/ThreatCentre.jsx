@@ -1,22 +1,42 @@
 import { Eye, ShieldCheck, ShieldOff } from 'lucide-react'
 
 import { useStore } from '../state/store.js'
-import { Banner, Card, Chip, EmptyState } from '../ui/index.js'
+import { Banner, Card, Chip, EmptyState, KpiTile } from '../ui/index.js'
 import './pages.css'
 
-/** Page 4: where detections and prevention actions will appear. Nothing is detected yet. */
+const SEVERITY_TONE = { low: 'info', medium: 'warn', high: 'danger' }
+
+/** Page 4: alerts and prevention actions of the run that is loaded in the simulation. */
 export function ThreatCentre() {
   const topology = useStore((s) => s.topology.data)
+  const run = useStore((s) => s.run)
+  const state = useStore((s) => s.playback.state)
+  const time = useStore((s) => s.playback.time)
   const span = topology?.span
   const ids = topology?.nodes.find((n) => n.id === span?.sensor)
   const ips = topology?.nodes.find((n) => n.type === 'ips')
 
+  const alerts = state?.alerts ?? []
+  const blocks = Object.values(state?.blocks ?? {})
+
   return (
     <div className="page">
-      <Banner tone="info" title="No detections yet">
-        Intrusion detection and prevention are not implemented in this stage, so no alerts or incidents are produced. The
-        roles of the two sensors are fixed by the topology and shown below.
-      </Banner>
+      {!state ? (
+        <Banner tone="info" title="No run loaded">
+          Alerts and prevention actions appear here as a scenario plays. Open the 3D simulation, choose a scenario and press Run.
+        </Banner>
+      ) : (
+        <Banner tone="info" title={`Run ${run.meta?.scenario_id} · IPS ${run.meta?.ips_mode} · T+${time.toFixed(1)} s`}>
+          Everything below is derived from the same trace as the 3D scene, up to the current playback time.
+        </Banner>
+      )}
+
+      <div className="grid grid--4">
+        <Card><KpiTile label="Incidents" value={state?.counts.incidents ?? 0} hint="threats, both sensors merged" /></Card>
+        <Card><KpiTile label="Alerts" value={state?.counts.alerts ?? 0} hint="raw records from IDS-1 and IPS-1" /></Card>
+        <Card><KpiTile label="Active blocks" value={blocks.length} hint="sources IPS-1 is blocking now" /></Card>
+        <Card><KpiTile label="Packets blocked" value={state?.counts.blocked ?? 0} hint="firewall, ACL and IPS drops" /></Card>
+      </div>
 
       <div className="grid grid--2">
         <Card eyebrow="Detection" title="IDS-1: passive sensor" actions={<Chip tone="sensor">Alerts only</Chip>}>
@@ -60,11 +80,56 @@ export function ThreatCentre() {
         </Card>
       </div>
 
-      <Card eyebrow="Incidents" title="Threat incidents">
-        <EmptyState icon={<ShieldOff size={28} aria-hidden="true" />} title="No incidents recorded">
-          Incidents correlate the alerts of both sensors into one threat. They will be listed here with severity, source,
-          destination, protocol and the reason for detection.
-        </EmptyState>
+      <Card eyebrow="Alerts" title="Detections so far">
+        {alerts.length === 0 ? (
+          <EmptyState icon={<ShieldOff size={28} aria-hidden="true" />} title="No alerts yet">
+            {state ? 'Nothing has been detected up to this point in the run.' : 'Run a scenario to see detections.'}
+          </EmptyState>
+        ) : (
+          <div className="table-scroll">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Time</th>
+                  <th>Sensor</th>
+                  <th>Severity</th>
+                  <th>Rule</th>
+                  <th>Source</th>
+                  <th>Target</th>
+                  <th>Evidence</th>
+                  <th>Incident</th>
+                </tr>
+              </thead>
+              <tbody>
+                {alerts.map((a) => (
+                  <tr key={a.alert_id}>
+                    <td className="mono">T+{a.t.toFixed(2)}</td>
+                    <td>
+                      <Chip tone={a.sensor === 'IDS-1' ? 'sensor' : 'accent'}>{a.sensor}</Chip>
+                    </td>
+                    <td>
+                      <Chip tone={SEVERITY_TONE[a.severity]}>{a.severity.toUpperCase()}</Chip>
+                    </td>
+                    <td className="mono">{a.rule}</td>
+                    <td className="mono">{a.src}</td>
+                    <td className="mono">{a.dst}</td>
+                    <td className="muted cell-wrap">{a.reason}</td>
+                    <td className="mono">{a.incident_id}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        {blocks.length > 0 && (
+          <div className="chip-row chip-row--top">
+            {blocks.map((b) => (
+              <Chip key={b.src} tone="danger" mono>
+                IPS-1 blocking {b.src} · {Math.max(0, b.until - time).toFixed(1)} s left
+              </Chip>
+            ))}
+          </div>
+        )}
       </Card>
     </div>
   )

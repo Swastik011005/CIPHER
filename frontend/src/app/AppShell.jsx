@@ -5,6 +5,7 @@ import { Outlet } from 'react-router-dom'
 import { Header } from './Header.jsx'
 import { Sidebar } from './Sidebar.jsx'
 import './app.css'
+import { usePlaybackDriver } from '../playback/usePlaybackDriver.js'
 import { getSceneHost } from '../scene/sceneHost.js'
 import { useStore } from '../state/store.js'
 import { useBackendSync } from '../state/useBackendSync.js'
@@ -19,6 +20,7 @@ const SceneCanvas = lazy(() => import('../scene/SceneCanvas.jsx'))
  */
 export function AppShell() {
   useBackendSync()
+  usePlaybackDriver()
   const sceneEverVisible = useStore((s) => s.sceneEverVisible)
 
   return (

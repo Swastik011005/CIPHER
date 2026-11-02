@@ -55,6 +55,26 @@
   background: rgba(23, 48, 95, 0.92);
 }
 
+.dev-label[data-state='blocked'] {
+  border-color: var(--danger);
+  background: rgba(70, 20, 36, 0.92);
+}
+
+.dev-label[data-state='blocked'] .dev-label__dot {
+  background: var(--danger);
+  opacity: 1;
+}
+
+.dev-label__tag {
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--danger-tint);
+  color: var(--danger);
+  font-size: 10px;
+  line-height: 16px;
+  letter-spacing: 0.08em;
+}
+
 .dev-label[data-state='selected'] {
   border-color: var(--accent);
   background: rgba(23, 48, 95, 0.96);

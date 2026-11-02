@@ -3,7 +3,7 @@ import { useFrame, useThree } from '@react-three/fiber'
 import { memo, useRef } from 'react'
 import { MathUtils } from 'three'
 
-import { labelAddress } from '../deviceInfo.js'
+import { labelAddress, primaryAddress } from '../deviceInfo.js'
 import { box, ring } from '../geometries.js'
 import { NODE_LAYOUT, SLAB_TOP } from '../layout.js'
 import { ringMaterials } from '../materials/materials.js'
@@ -34,6 +34,8 @@ export const DeviceNode = memo(function DeviceNode({ node }) {
   const hovered = useStore((s) => s.selection.hoveredId === node.id)
   const showLabel = useStore((s) => labelShown(s.settings.labels, selected, hovered))
   const detail = useStore((s) => (selected || hovered ? 'full' : s.labelDetail))
+  const address = primaryAddress(node)?.split('/')[0] ?? null
+  const blocked = useStore((s) => address !== null && Boolean(s.playback.state?.blocks[address]))
   const gl = useThree((s) => s.gl)
 
   const liftRef = useRef(null)
@@ -44,7 +46,7 @@ export const DeviceNode = memo(function DeviceNode({ node }) {
     if (Math.abs(group.position.y - target) > 1e-4) group.position.y = MathUtils.damp(group.position.y, target, 14, delta)
   })
 
-  const state = selected ? 'selected' : hovered ? 'hover' : 'idle'
+  const state = blocked ? 'blocked' : selected ? 'selected' : hovered ? 'hover' : 'idle'
   const [x, z] = layout.position
   const baseY = SLAB_TOP + (layout.y ?? 0)
   const labelOffset = layout.labelOffset ?? [0, 0, 0]
@@ -106,6 +108,7 @@ export const DeviceNode = memo(function DeviceNode({ node }) {
             <div className="dev-label__name">
               <span className="dev-label__dot" />
               {node.label}
+              {blocked && <span className="dev-label__tag">BLOCKED</span>}
             </div>
             <div className="dev-label__addr">{labelAddress(node)}</div>
           </div>

@@ -11,21 +11,21 @@ const LAYERS = [
     name: 'Firewall',
     where: 'FW1 and the CORE-SW1 ACL',
     text: 'Permits or denies traffic by address and port. It cannot see behaviour such as a port scan on an allowed service.',
-    stage: 'Policy enforcement: Stage 2',
+    stage: 'Implemented: FW1 and the STAFF-IN ACL',
   },
   {
     icon: Eye,
     name: 'IDS',
     where: 'IDS-1, passive',
     text: 'Watches copies of traffic sent to it over a SPAN port and raises alerts. It cannot block anything, because it is not in the path.',
-    stage: 'Detection: Stage 2',
+    stage: 'Implemented: D1 port-scan detection',
   },
   {
     icon: ShieldCheck,
     name: 'IPS',
     where: 'IPS-1, inline',
     text: 'Sits in the path to the servers, so it can drop, reject or block traffic once a rule says so.',
-    stage: 'Prevention: Stage 2',
+    stage: 'Implemented: Monitor and Enforce (block source)',
   },
 ]
 
@@ -89,7 +89,7 @@ export function OverviewDashboard() {
                 </div>
               </div>
               <p className="muted">{text}</p>
-              <Chip tone="warn">{stage}</Chip>
+              <Chip tone="ok">{stage}</Chip>
             </div>
           ))}
         </div>

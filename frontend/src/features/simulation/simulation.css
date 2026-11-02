@@ -277,3 +277,199 @@
     overflow: visible;
   }
 }
+
+/* Playback bar */
+.viewport__playback {
+  position: absolute;
+  left: var(--space-3);
+  right: var(--space-3);
+  bottom: 28px;
+  z-index: 25;
+}
+.viewport__hint {
+  bottom: 6px !important;
+}
+.viewport__bottom-banner {
+  bottom: 150px !important;
+}
+
+.playback {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+}
+.playback__row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.playback__clock {
+  min-width: 96px;
+  text-align: right;
+  font-size: 12px;
+  color: var(--text-2);
+}
+.icon-btn {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-control);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  cursor: pointer;
+}
+.icon-btn:hover:not(:disabled) {
+  background: var(--surface-3);
+  border-color: var(--border-strong);
+}
+.icon-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.icon-btn--primary {
+  background: var(--accent);
+  border-color: transparent;
+  color: #04122b;
+}
+.icon-btn--primary:hover:not(:disabled) {
+  background: #6bb4ff;
+}
+
+.scrubber {
+  position: relative;
+  flex: 1;
+  min-width: 80px;
+  height: 32px;
+}
+.scrubber input[type='range'] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  margin: 0;
+  background: transparent;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+.scrubber input[type='range']:disabled {
+  cursor: not-allowed;
+}
+.scrubber__marks {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  top: 2px;
+  height: 8px;
+  pointer-events: none;
+}
+.scrubber__mark {
+  position: absolute;
+  top: 0;
+  width: 3px;
+  height: 8px;
+  margin-left: -1px;
+  border-radius: 2px;
+  pointer-events: auto;
+}
+.scrubber__mark--alert-high { background: var(--danger); }
+.scrubber__mark--alert-medium { background: var(--warn); }
+.scrubber__mark--block { background: var(--sensor); height: 12px; }
+.scrubber__mark--unblock { background: var(--ok); }
+
+.playback__counters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+}
+.pb-counter {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.pb-counter__value {
+  font-size: 15px;
+  font-weight: 600;
+}
+.pb-counter__label {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.pb-counter[data-tone='ok'] .pb-counter__value { color: var(--ok); }
+.pb-counter[data-tone='warn'] .pb-counter__value { color: var(--warn); }
+.pb-counter[data-tone='danger'] .pb-counter__value { color: var(--danger); }
+.pb-counter[data-tone='sensor'] .pb-counter__value { color: var(--sensor); }
+
+/* Scenario panel */
+.scenario-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+.scenario-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: var(--space-3);
+  text-align: left;
+  border-radius: var(--radius-control);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  cursor: pointer;
+}
+.scenario-card[aria-checked='true'] {
+  border-color: var(--accent);
+  background: var(--surface-3);
+}
+.scenario-card__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.scenario-card__text {
+  font-size: 12px;
+  line-height: 18px;
+}
+.mode-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.mode-note {
+  margin-top: var(--space-2);
+  font-size: 12px;
+  line-height: 18px;
+}
+.readout {
+  margin-top: var(--space-3);
+}
+.readout__block {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+.ticker {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  line-height: 17px;
+}
+.ticker li {
+  display: flex;
+  gap: var(--space-2);
+}
+.ticker__t {
+  color: var(--text-3);
+  min-width: 34px;
+}
+.ticker li[data-type='alert.raised'] { color: var(--warn); }
+.ticker li[data-type='block.added'], .ticker li[data-type='packet.dropped'] { color: var(--danger); }

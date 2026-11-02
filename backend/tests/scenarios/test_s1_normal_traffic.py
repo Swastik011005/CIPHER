@@ -52,15 +52,18 @@ def test_trace_finishes_inside_the_declared_duration(result) -> None:
     assert max(e["t"] for e in body) <= result.duration
 
 
-def test_only_stage_1_event_types_are_emitted(result, event_contract) -> None:
-    assert {e["type"] for e in result.events} <= set(event_contract["emitted_in_stage_1"])
+def test_only_declared_event_types_are_emitted(result, event_contract) -> None:
+    assert {e["type"] for e in result.events} <= set(event_contract["emitted_in_stage_2"])
 
 
-def test_no_security_decisions_exist_in_stage_1(result) -> None:
+def test_normal_traffic_raises_no_alerts_and_takes_no_action(result) -> None:
     kinds = Counter(e["type"] for e in result.events)
-    for later in ("alert.raised", "ips.action", "block.added", "inspect.result", "policy.decision"):
-        assert kinds[later] == 0
-    assert kinds["packet.dropped"] == 0
+    for never in ("alert.raised", "ips.action", "block.added", "block.expired", "packet.dropped"):
+        assert kinds[never] == 0
+    permits = [e for e in result.events if e["type"] == "policy.decision"]
+    assert permits and all(e["action"] == "permit" for e in permits)
+    inspected = [e for e in result.events if e["type"] == "inspect.result"]
+    assert inspected and all(e["classification"] == "normal" for e in inspected)
 
 
 def test_every_packet_has_exactly_one_terminal_event(result) -> None:
@@ -125,7 +128,7 @@ def test_mirror_copies_travel_only_over_the_span_link_and_stop_at_the_sensor(res
 
 def test_ids_is_passive_nothing_ever_happens_to_a_packet_at_ids1_except_arrival(result) -> None:
     at_ids = [e for e in result.events if e.get("node") == "IDS-1" or e.get("from") == "IDS-1"]
-    assert {e["type"] for e in at_ids} == {"packet.delivered"}
+    assert {e["type"] for e in at_ids} == {"packet.delivered", "inspect.result"}
     # And no original packet ever visits IDS-1.
     originals = {e["pid"] for e in _by_type(result.events, "packet.created") if e["mirror_of"] is None}
     assert not [e for e in _by_type(result.events, "packet.hop") if e["pid"] in originals and "IDS-1" in (e["from"], e["to"])]

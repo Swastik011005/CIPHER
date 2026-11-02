@@ -1,0 +1,9 @@
+{
+  "D1": {
+    "enabled": true,
+    "window_s": 10.0,
+    "suspicious": 6,
+    "violation": 12,
+    "suppression_s": 30.0
+  }
+}

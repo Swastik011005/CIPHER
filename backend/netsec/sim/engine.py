@@ -19,11 +19,24 @@ from netsec.network.topology import TopologyGraph
 from netsec.sim.events import IpsMode, RunStats, TraceEvent
 from netsec.sim.scheduler import Priority, Scheduler, to_seconds, to_us
 from netsec.sim.timing import link_transit_us, node_delay_us
+from netsec.security.config import (
+    DetectorsConfig,
+    IpsPolicyConfig,
+    load_detectors,
+    load_ips_policy,
+)
+from netsec.security.correlation import Correlator
+from netsec.security.detection.base import ObservedPacket
+from netsec.security.detection.engine import AlertRecord, DetectionEngine
+from netsec.security.policy.engine import FlowKey, PolicyEvaluator
+from netsec.security.policy.models import PolicyFile, load_policies
+from netsec.security.prevention.block_table import Block
+from netsec.security.prevention.ips import IpsEngine
 from netsec.sim.trace import TraceRecorder, canonical_json, trace_digest
-from netsec.traffic.flows import IcmpEchoFlow, TcpSessionFlow
+from netsec.traffic.flows import IcmpEchoFlow, PortScanFlow, TcpSessionFlow
 from netsec.traffic.host_stack import HostStack
 from netsec.traffic.packet import Packet, PacketSpec
-from netsec.traffic.scenarios import IcmpEchoSpec, ScenarioSpec, TcpSessionSpec
+from netsec.traffic.scenarios import IcmpEchoSpec, PortScanSpec, ScenarioSpec, TcpSessionSpec
 
 
 class EngineError(Exception):
@@ -48,10 +61,28 @@ class RunResult:
 class Engine:
     """Runs one scenario on one topology. Create a new Engine per run."""
 
-    def __init__(self, graph: TopologyGraph, seed: int, ips_mode: IpsMode = "monitor") -> None:
+    def __init__(
+        self,
+        graph: TopologyGraph,
+        seed: int,
+        ips_mode: IpsMode = "monitor",
+        *,
+        detectors: Optional[DetectorsConfig] = None,
+        ips_policy: Optional[IpsPolicyConfig] = None,
+        policies: Optional[list[PolicyFile]] = None,
+    ) -> None:
         self.graph = graph
         self.seed = seed
         self.ips_mode = ips_mode
+        self.detectors_config = detectors or load_detectors()
+        self.ips_policy_config = ips_policy or load_ips_policy()
+        self.policy_files = policies if policies is not None else load_policies()
+        # Security components. IDS-1 only observes; only IPS-1 can enforce on a detection.
+        self.correlator = Correlator()
+        self.policies = PolicyEvaluator(self.policy_files)
+        self.ids = DetectionEngine("IDS-1", self.detectors_config, self.correlator)
+        self.ips = IpsEngine(ips_mode, self.detectors_config, self.ips_policy_config, self.correlator)
+        self._duration_us = 0
         self.tables: dict[str, RouteTable] = build_route_tables(graph)
         self.rng = random.Random(seed)
         self.scheduler = Scheduler()
@@ -73,6 +104,9 @@ class Engine:
                 "scenario": scenario.model_dump(mode="json"),
                 "seed": self.seed,
                 "ips_mode": self.ips_mode,
+                "detectors": self.detectors_config.model_dump(mode="json"),
+                "ips_policy": self.ips_policy_config.model_dump(mode="json"),
+                "policies": [f.model_dump(mode="json") for f in self.policy_files],
             }
         )
         config_hash = hashlib.sha256(config_json.encode("utf-8")).hexdigest()[:16]
@@ -88,6 +122,7 @@ class Engine:
             duration=scenario.duration,
             config_hash=config_hash,
         )
+        self._duration_us = to_us(scenario.duration)
         for flow_spec in scenario.flows:
             self._start_flow(flow_spec)
         self.scheduler.run()
@@ -120,7 +155,7 @@ class Engine:
             raise EngineError(f"{node_id!r} is not a host that can send or receive traffic")
         return stack.ip
 
-    def _start_flow(self, spec: TcpSessionSpec | IcmpEchoSpec) -> None:
+    def _start_flow(self, spec: TcpSessionSpec | IcmpEchoSpec | PortScanSpec) -> None:
         src_ip = self._host_ip(spec.src)
         dst_ip = self._host_ip(spec.dst)
         if isinstance(spec, TcpSessionSpec):
@@ -129,13 +164,23 @@ class Engine:
                  if s.proto == "tcp" and s.port == spec.dport),
                 None,
             )
-            flow: TcpSessionFlow | IcmpEchoFlow = TcpSessionFlow(
+            flow: TcpSessionFlow | IcmpEchoFlow | PortScanFlow = TcpSessionFlow(
                 flow_id=spec.id,
                 src_ip=src_ip,
                 dst_ip=dst_ip,
                 dport=spec.dport,
                 service=service,
                 request_bytes=spec.request_bytes,
+                sport=49152 + self.rng.randrange(16384),
+                isn=self.rng.getrandbits(31),
+            )
+        elif isinstance(spec, PortScanSpec):
+            flow = PortScanFlow(
+                flow_id=spec.id,
+                src_ip=src_ip,
+                dst_ip=dst_ip,
+                ports=spec.ports,
+                rate=spec.rate,
                 sport=49152 + self.rng.randrange(16384),
                 isn=self.rng.getrandbits(31),
             )
@@ -233,6 +278,14 @@ class Engine:
         node = self.graph.node(hop.dst)
         self._maybe_mirror(pkt, hop, t_us)
 
+        if pkt.mirror_of is None:
+            if self._apply_policy(pkt, hop, node, t_us):
+                return
+            if node.type == "ips" and self._apply_ips(pkt, node, t_us):
+                return
+        elif node.type == "ids":
+            self._ids_observe(pkt, node, t_us)
+
         if index + 1 < len(plan.hops):
             self.scheduler.schedule(
                 t_us + node_delay_us(node.type),
@@ -252,6 +305,113 @@ class Engine:
         if stack is not None and pkt.mirror_of is None:
             for reply in stack.handle(pkt):
                 self._schedule_send(t_us + to_us(reply.delay_s), reply)
+
+    # -- security ------------------------------------------------------------------------
+
+    @staticmethod
+    def _observed(pkt: Packet) -> ObservedPacket:
+        """What a sensor can see: headers only, no flow label and no packet id."""
+        return ObservedPacket(pkt.proto, pkt.src, pkt.dst, pkt.sport, pkt.dport, pkt.flags, pkt.length)
+
+    def _drop(self, t_us: int, pkt: Packet, node_id: str, reason: str) -> None:
+        self.trace.emit("packet.dropped", t_us, pid=pkt.pid, node=node_id, reason=reason)
+
+    def _apply_policy(self, pkt: Packet, hop: Hop, node, t_us: int) -> bool:
+        """Firewall / ACL. Returns True if the packet was dropped here. Independent of the IPS mode."""
+        policy = self.policies.policy_for(node.id, hop.link_id, hop.vlan)
+        if policy is None:
+            return False
+        flow = FlowKey(pkt.proto, pkt.src, pkt.dst, pkt.sport, pkt.dport, pkt.icmp.id if pkt.icmp else None)
+        decision = self.policies.evaluate(policy, flow)
+        self.trace.emit(
+            "policy.decision",
+            t_us,
+            pid=pkt.pid,
+            node=node.id,
+            policy=decision.policy,
+            rule_id=f"{decision.policy}:{decision.rule_id}",
+            action=decision.action,
+            via_conntrack=decision.via_conntrack,
+        )
+        if decision.action == "permit":
+            return False
+        self._drop(t_us, pkt, node.id, "fw_deny" if node.type == "firewall" else "acl_deny")
+        return True
+
+    def _emit_alert(self, t_us: int, alert: AlertRecord) -> None:
+        f = alert.finding
+        self.trace.emit(
+            "alert.raised",
+            t_us,
+            alert_id=alert.alert_id,
+            incident_id=alert.incident_id,
+            sensor=alert.sensor,
+            rule=f.rule,
+            severity=f.severity,
+            src=f.src,
+            dst=f.dst,
+            proto=f.proto,
+            dport=f.dport,
+            reason=f.reason,
+            evidence={"count": f.count, "window": f.window, "threshold": f.threshold},
+        )
+
+    def _ids_observe(self, copy: Packet, node, t_us: int) -> None:
+        """IDS-1 inspects a SPAN copy. It records and alerts; it never acts on any packet."""
+        observation = self.ids.observe(self._observed(copy), to_seconds(t_us))
+        self.trace.emit(
+            "inspect.result",
+            t_us,
+            pid=copy.pid,
+            node=node.id,
+            classification=observation.classification,
+            rules=observation.rules,
+        )
+        for alert in observation.alerts:
+            self._emit_alert(t_us, alert)
+
+    def _apply_ips(self, pkt: Packet, node, t_us: int) -> bool:
+        """IPS-1 inline. Returns True if the packet was dropped here."""
+        outcome = self.ips.process(self._observed(pkt), to_seconds(t_us))
+        if not outcome.from_block_table:
+            self.trace.emit(
+                "inspect.result",
+                t_us,
+                pid=pkt.pid,
+                node=node.id,
+                classification=outcome.observation.classification,
+                rules=outcome.observation.rules,
+            )
+            for alert in outcome.observation.alerts:
+                self._emit_alert(t_us, alert)
+        if outcome.action is not None:
+            self.trace.emit(
+                "ips.action",
+                t_us,
+                pid=pkt.pid,
+                action=outcome.action,
+                mode=self.ips_mode,
+                applied=outcome.applied,
+                rule=outcome.rule,
+            )
+        if outcome.new_block is not None:
+            self._announce_block(outcome.new_block, t_us)
+        if outcome.drop_reason is not None:
+            self._drop(t_us, pkt, node.id, outcome.drop_reason)
+            return True
+        return False
+
+    def _announce_block(self, block: Block, t_us: int) -> None:
+        self.trace.emit(
+            "block.added", t_us, src=block.src, until=block.until, rule=block.rule, incident_id=block.incident_id
+        )
+        until_us = to_us(block.until)
+        if until_us <= self._duration_us:  # a block outlasting the run simply never expires in the trace
+            self.scheduler.schedule(until_us, Priority.EXPIRY, lambda now, b=block: self._expire_block(b, now))
+
+    def _expire_block(self, block: Block, t_us: int) -> None:
+        self.ips.expire(block.src, block.until)
+        self.trace.emit("block.expired", t_us, src=block.src)
 
     def _maybe_mirror(self, pkt: Packet, hop: Hop, t_us: int) -> None:
         """Ingress SPAN: copy every packet entering the SPAN node (except excluded VLANs).

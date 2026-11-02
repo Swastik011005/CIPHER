@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Literal, Optional
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Request
 from pydantic import BaseModel, ConfigDict, Field
 
 from netsec.sim.engine import run_scenario
@@ -40,11 +40,6 @@ def scenarios(request: Request) -> list[dict[str, Any]]:
 @router.post("/sim/run")
 def run(body: RunRequest, request: Request) -> dict[str, Any]:
     """Run a scenario and return its complete, deterministic trace."""
-    if body.ips_mode == "enforce":
-        raise HTTPException(
-            status_code=501,
-            detail="IPS enforcement is not implemented in Stage 1; only 'monitor' is accepted.",
-        )
     state = request.app.state
     scenario = load_scenario(body.scenario_id, state.scenarios_dir)
     result = run_scenario(state.graph, scenario, body.seed, body.ips_mode)

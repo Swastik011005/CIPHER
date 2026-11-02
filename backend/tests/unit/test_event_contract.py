@@ -36,9 +36,11 @@ def test_enums_match_the_contract(event_contract) -> None:
 
 def test_stage_1_emitted_events_are_a_subset_of_the_contract(event_contract) -> None:
     assert set(event_contract["emitted_in_stage_1"]) <= set(event_contract["events"])
-    # Stage 2+ security events must not be emitted yet.
+    # Stage 1 emitted no security events; Stage 2 emits all but syslog.
     for later in ("alert.raised", "ips.action", "block.added", "inspect.result", "policy.decision"):
         assert later not in event_contract["emitted_in_stage_1"]
+        assert later in event_contract["emitted_in_stage_2"]
+    assert "syslog.sent" not in event_contract["emitted_in_stage_2"]
 
 
 def test_alerts_carry_a_sensor_so_ids_and_ips_records_stay_separate(event_contract) -> None:
