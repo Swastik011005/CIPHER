@@ -46,4 +46,7 @@ throttled tabs; the 3D scene starts as soon as the tab receives frames.
 | `packet-tracer/` | Cisco Packet Tracer lab plan (not yet built) |
 | `scripts/` | Dev start script |
 
-See `docs/ARCHITECTURE.md`, `docs/NETWORK_TOPOLOGY.md`, `docs/API_CONTRACTS.md`.
+See `docs/ARCHITECTURE.md`, `docs/NETWORK_TOPOLOGY.md`, `docs/API_CONTRACTS.md`, `docs/SECURITY_ENGINE.md`.
+
+Try it: open the Simulation page, pick **S2 Port scan**, choose IPS **Monitor** or **Enforce**, press **Run**, then play, pause
+and scrub the timeline.

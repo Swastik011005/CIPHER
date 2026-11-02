@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 
 import { api } from '../api/client.js'
+import { session } from '../playback/session.js'
 import { initialConnection, onHealthFailure, onHealthSuccess } from './connection.js'
 
 /**
@@ -37,6 +38,76 @@ export const useStore = create((set, get) => ({
         topology: { status: 'error', data: s.topology.data, error: error?.message ?? String(error) },
       }))
     }
+  },
+
+  // -- scenario run and playback ------------------------------------------------------
+  /** The loaded run's identity and the engine's own summary; the trace itself lives in `session`. */
+  run: { status: 'idle', meta: null, error: null },
+  /** Mirror of the trace player for the UI. `state` is the reducer state at `time`. */
+  playback: { loaded: false, playing: false, speed: 1, time: 0, duration: 0, finished: false, state: null },
+
+  /** Ask the engine to simulate a scenario and load its trace into the player (paused at T+0). */
+  runScenario: async (scenarioId, ipsMode) => {
+    set({ run: { status: 'loading', meta: null, error: null } })
+    try {
+      const body = await api.runScenario({ scenario_id: scenarioId, ips_mode: ipsMode })
+      const { events, ...meta } = body
+      const player = session.load(body)
+      set({ run: { status: 'ready', meta, error: null } })
+      get().syncPlayback()
+      player.play()
+      get().syncPlayback()
+    } catch (error) {
+      session.clear()
+      set({
+        run: { status: 'error', meta: null, error: error?.message ?? String(error) },
+        playback: { loaded: false, playing: false, speed: 1, time: 0, duration: 0, finished: false, state: null },
+      })
+    }
+  },
+
+  /** Copy the player's state into the store. Called by the driver and after every control. */
+  syncPlayback: () => {
+    const player = session.player
+    if (!player) return
+    set((s) => ({
+      playback: {
+        loaded: true,
+        playing: player.playing,
+        speed: player.speed,
+        time: player.time,
+        duration: player.duration,
+        finished: player.finished,
+        state: player.state === s.playback.state ? s.playback.state : player.state,
+      },
+    }))
+  },
+
+  togglePlay: () => {
+    const player = session.player
+    if (!player) return
+    if (player.playing) player.pause()
+    else player.play()
+    get().syncPlayback()
+  },
+  setSpeed: (speed) => {
+    session.player?.setSpeed(speed)
+    get().syncPlayback()
+  },
+  seekTo: (t) => {
+    session.player?.seek(t)
+    get().syncPlayback()
+  },
+  stepEvent: () => {
+    session.player?.step()
+    get().syncPlayback()
+  },
+  restartPlayback: () => {
+    const player = session.player
+    if (!player) return
+    player.reset()
+    player.play()
+    get().syncPlayback()
   },
 
   // -- selection ----------------------------------------------------------------------

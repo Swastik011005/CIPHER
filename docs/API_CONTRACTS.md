@@ -7,10 +7,9 @@ Base: `http://127.0.0.1:8000/api` (the Vite dev server proxies `/api`). Interact
 | `GET /health` | `status`, `service`, `version`, `stage`, `uptime_s`, `mode: "simulation"`, `real_traffic: false`, topology summary, `scenarios_available` |
 | `GET /topology` | The frozen topology plus `summary` and the validator `validation` report |
 | `GET /scenarios` | Scenarios present in this build |
-| `POST /sim/run` | Body `{scenario_id, seed?, ips_mode?}`; returns `{run_id, scenario_id, seed, ips_mode, duration, config_hash, trace_hash, summary, events}` |
+| `POST /sim/run` | Body `{scenario_id, seed?, ips_mode?}` where `ips_mode` is `monitor` (default) or `enforce`; returns `{run_id, scenario_id, seed, ips_mode, duration, config_hash, trace_hash, summary, events}` |
 
-Errors are JSON `{detail}`: 404 unknown scenario (ids must match `S<number>`), 422 invalid request, 501 for a mode not yet
-implemented.
+Errors are JSON `{detail}`: 404 unknown scenario (ids must match `S<number>`), 422 invalid request.
 
 ## Trace events
 Frozen in `contracts/events.json` and `backend/netsec/sim/events.py`; mirrored in `frontend/src/protocol/events.js`.

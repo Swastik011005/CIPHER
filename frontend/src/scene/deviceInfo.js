@@ -101,19 +101,19 @@ export function securityRole(node) {
       return {
         tone: 'sensor',
         title: 'Passive sensor',
-        text: 'Receives SPAN copies of traffic entering CORE-SW1 and will raise alerts. It never forwards, drops or blocks traffic. Detection is not implemented yet.',
+        text: 'Receives SPAN copies of traffic entering CORE-SW1 and will raise alerts. It never forwards, drops or blocks traffic. Detection implemented so far: D1 port scan.',
       }
     case 'ips':
       return {
         tone: 'accent',
         title: 'Inline prevention point',
-        text: 'Sits in the path of server traffic, so it is the only sensor that can block. For now it forwards transparently; detection and prevention are not implemented yet.',
+        text: 'Sits in the path of server traffic, so it is the only sensor that can block. In Enforce mode it blocks a scanning source for a limited time; in Monitor mode it only records what it would do.',
       }
     case 'firewall':
       return {
         tone: 'accent',
         title: 'Static policy enforcement',
-        text: 'Will permit or deny by address and port. For now it routes traffic without applying a policy.',
+        text: 'Permits or denies by address and port and tracks return traffic. It enforces regardless of the IPS mode.',
       }
     default:
       return null
