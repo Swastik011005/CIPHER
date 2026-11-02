@@ -1,0 +1,54 @@
+{
+  "contract": "c0-contracts",
+  "version": "1.0.0",
+  "description": "Frozen trace event schema (Rev 3, A11). Every event also carries the base fields seq, t and type. Backend: backend/netsec/sim/events.py. Frontend: frontend/src/protocol/events.js. Both are tested against this file.",
+  "base_fields": ["seq", "t", "type"],
+  "ordering": "Events are totally ordered by (t, seq). seq is a gap-free counter starting at 0. Events sharing the same t are ordered by the scheduler tie-break: priority class (CONTROL, EXPIRY, ARRIVE, DEPART, SEND), then insertion order.",
+  "events": {
+    "run.meta": ["run_id", "scenario_id", "seed", "ips_mode", "duration", "config_hash"],
+    "packet.created": ["pid", "flow", "proto", "src", "sport", "dst", "dport", "flags", "ttl", "len", "icmp", "app", "mirror_of"],
+    "packet.hop": ["pid", "link", "from", "to", "t_arrive", "vlan", "ttl"],
+    "packet.mirrored": ["pid", "copy_pid", "at", "to"],
+    "policy.decision": ["pid", "node", "policy", "rule_id", "action", "via_conntrack"],
+    "inspect.result": ["pid", "node", "classification", "rules"],
+    "alert.raised": ["alert_id", "incident_id", "sensor", "rule", "severity", "src", "dst", "proto", "dport", "reason", "evidence"],
+    "ips.action": ["pid", "action", "mode", "applied", "rule"],
+    "block.added": ["src", "until", "rule", "incident_id"],
+    "block.expired": ["src"],
+    "packet.delivered": ["pid", "node"],
+    "packet.dropped": ["pid", "node", "reason"],
+    "syslog.sent": ["pid", "from", "to", "alert_id"],
+    "run.end": ["stats"]
+  },
+  "emitted_in_stage_1": [
+    "run.meta",
+    "packet.created",
+    "packet.hop",
+    "packet.mirrored",
+    "packet.delivered",
+    "packet.dropped",
+    "run.end"
+  ],
+  "enums": {
+    "proto": ["tcp", "udp", "icmp"],
+    "ips_mode": ["monitor", "enforce"],
+    "sensor": ["IDS-1", "IPS-1"],
+    "classification": ["normal", "suspicious", "malicious"],
+    "severity": ["low", "medium", "high"],
+    "policy_action": ["permit", "deny"],
+    "ips_action": ["allow", "drop", "reject", "block_source", "rate_limit"],
+    "drop_reason": ["fw_deny", "acl_deny", "ips_drop", "ips_reject", "blocked_source", "rate_limited", "ttl_expired", "no_route"]
+  },
+  "stats_fields": [
+    "data_packets",
+    "delivered_clean",
+    "delivered_flagged",
+    "blocked",
+    "other_drop",
+    "mirrored",
+    "management",
+    "alerts",
+    "incidents"
+  ],
+  "alert_correlation": "IDS-1 and IPS-1 produce SEPARATE alert records (distinct alert_id, sensor field). Alerts that describe the same activity share one incident_id, keyed by (rule, src, dst). The incident is the unit counted as a threat."
+}

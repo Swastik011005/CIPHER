@@ -1,0 +1,244 @@
+{
+  "version": "1.0.0",
+  "meta": {
+    "name": "Enterprise campus (simulated)",
+    "description": "Frozen Rev 3 topology: 16 devices + 1 abstract Internet segment, 18 links, 4 VLANs, 7 IP subnets. All traffic is synthetic.",
+    "contract": "c0-contracts"
+  },
+  "vlans": [
+    { "id": 10, "name": "Staff", "description": "Staff workstations" },
+    { "id": 20, "name": "Admin", "description": "Administrator workstation" },
+    { "id": 30, "name": "Servers", "description": "Application and database servers behind the inline IPS" },
+    { "id": 99, "name": "Security", "description": "Security tooling and management: IDS-1, SEC-LOG, device management" }
+  ],
+  "subnets": [
+    { "id": "SUBNET-STAFF", "cidr": "10.0.10.0/24", "kind": "vlan", "vlan": 10, "name": "Staff LAN" },
+    { "id": "SUBNET-ADMIN", "cidr": "10.0.20.0/24", "kind": "vlan", "vlan": 20, "name": "Admin LAN" },
+    { "id": "SUBNET-SERVERS", "cidr": "10.0.30.0/24", "kind": "vlan", "vlan": 30, "name": "Server LAN" },
+    { "id": "SUBNET-SECURITY", "cidr": "10.0.99.0/24", "kind": "vlan", "vlan": 99, "name": "Security LAN" },
+    { "id": "SUBNET-OUTSIDE", "cidr": "203.0.113.0/24", "kind": "routed", "vlan": null, "name": "Outside (RFC 5737 documentation range)" },
+    { "id": "SUBNET-PERIMETER", "cidr": "10.255.0.0/30", "kind": "routed", "vlan": null, "name": "R1-EDGE to FW1 transit" },
+    { "id": "SUBNET-CORE-TRANSIT", "cidr": "10.255.1.0/30", "kind": "routed", "vlan": null, "name": "FW1 to CORE-SW1 transit" }
+  ],
+  "zones": [
+    { "id": "OUTSIDE", "name": "Outside", "description": "Untrusted external network", "vlan": null },
+    { "id": "PERIMETER", "name": "Perimeter", "description": "Edge router and stateful firewall", "vlan": null },
+    { "id": "CORE", "name": "Core", "description": "Layer 3 core switch", "vlan": null },
+    { "id": "STAFF", "name": "Staff LAN", "description": "Staff access network", "vlan": 10 },
+    { "id": "ADMIN", "name": "Admin", "description": "Administrator workstation", "vlan": 20 },
+    { "id": "SECOPS", "name": "Security Ops", "description": "IDS sensor and log collector", "vlan": 99 },
+    { "id": "SERVERS", "name": "Server Room", "description": "Servers behind the inline IPS", "vlan": 30 }
+  ],
+  "nodes": [
+    {
+      "id": "INET", "label": "Internet", "type": "segment", "form_factor": "internet-cloud", "zone": "OUTSIDE",
+      "role": "Abstract Internet segment",
+      "description": "Layer 2 stand-in for the ISP and Internet. Carries no IP address and performs no inspection.",
+      "interfaces": [
+        { "name": "p1", "kind": "physical" },
+        { "name": "p2", "kind": "physical" },
+        { "name": "p3", "kind": "physical" }
+      ]
+    },
+    {
+      "id": "EXT-USR", "label": "EXT-USR", "type": "host", "form_factor": "laptop", "zone": "OUTSIDE",
+      "role": "External legitimate user",
+      "description": "A legitimate user on the outside network.",
+      "interfaces": [
+        { "name": "eth0", "kind": "physical", "ip": "203.0.113.25", "prefix": 24, "gateway": "203.0.113.1" }
+      ]
+    },
+    {
+      "id": "EXT-ATK", "label": "EXT-ATK", "type": "host", "form_factor": "laptop", "zone": "OUTSIDE",
+      "role": "Simulated external attacker",
+      "description": "Simulated attacker used in controlled scenarios. Generates synthetic traffic only.",
+      "interfaces": [
+        { "name": "eth0", "kind": "physical", "ip": "203.0.113.66", "prefix": 24, "gateway": "203.0.113.1" }
+      ]
+    },
+    {
+      "id": "R1-EDGE", "label": "R1-EDGE", "type": "router", "form_factor": "router", "zone": "PERIMETER",
+      "role": "Edge router",
+      "description": "Routes between the outside network and the firewall using static routes.",
+      "interfaces": [
+        { "name": "Gi0/0", "kind": "physical", "ip": "203.0.113.1", "prefix": 24 },
+        { "name": "Gi0/1", "kind": "physical", "ip": "10.255.0.1", "prefix": 30 }
+      ],
+      "routes": [
+        { "prefix": "10.0.0.0/8", "next_hop": "10.255.0.2", "metric": 1 }
+      ]
+    },
+    {
+      "id": "FW1", "label": "FW1", "type": "firewall", "form_factor": "firewall", "zone": "PERIMETER",
+      "role": "Stateful perimeter firewall",
+      "description": "Routing firewall between the edge router and the core. Policy enforcement is added in a later stage.",
+      "interfaces": [
+        { "name": "outside", "kind": "physical", "ip": "10.255.0.2", "prefix": 30 },
+        { "name": "inside", "kind": "physical", "ip": "10.255.1.1", "prefix": 30 }
+      ],
+      "routes": [
+        { "prefix": "0.0.0.0/0", "next_hop": "10.255.0.1", "metric": 1 },
+        { "prefix": "10.0.0.0/16", "next_hop": "10.255.1.2", "metric": 1 }
+      ]
+    },
+    {
+      "id": "CORE-SW1", "label": "CORE-SW1", "type": "l3switch", "form_factor": "switch-l3", "zone": "CORE",
+      "role": "Layer 3 core switch",
+      "description": "Inter-VLAN routing, 802.1Q trunk to the access switch, ingress SPAN to IDS-1.",
+      "interfaces": [
+        { "name": "Gi0/1", "kind": "physical", "ip": "10.255.1.2", "prefix": 30 },
+        { "name": "Gi0/2", "kind": "physical" },
+        { "name": "Gi0/3", "kind": "physical" },
+        { "name": "Gi0/4", "kind": "physical" },
+        { "name": "Gi0/5", "kind": "physical" },
+        { "name": "Gi0/6", "kind": "physical" },
+        { "name": "Gi0/7", "kind": "physical" },
+        { "name": "Vlan10", "kind": "svi", "ip": "10.0.10.1", "prefix": 24, "vlan": 10 },
+        { "name": "Vlan20", "kind": "svi", "ip": "10.0.20.1", "prefix": 24, "vlan": 20 },
+        { "name": "Vlan30", "kind": "svi", "ip": "10.0.30.1", "prefix": 24, "vlan": 30 },
+        { "name": "Vlan99", "kind": "svi", "ip": "10.0.99.1", "prefix": 24, "vlan": 99 }
+      ],
+      "routes": [
+        { "prefix": "0.0.0.0/0", "next_hop": "10.255.1.1", "metric": 1 }
+      ]
+    },
+    {
+      "id": "ACC-SW2", "label": "ACC-SW2", "type": "l2switch", "form_factor": "switch-l2", "zone": "STAFF",
+      "role": "Staff access switch",
+      "description": "Layer 2 access switch with an 802.1Q trunk (VLAN 10 and 20) to the core. Has no IP address in this simulation.",
+      "interfaces": [
+        { "name": "Gi0/1", "kind": "physical" },
+        { "name": "Fa0/1", "kind": "physical" },
+        { "name": "Fa0/2", "kind": "physical" },
+        { "name": "Fa0/3", "kind": "physical" },
+        { "name": "Fa0/4", "kind": "physical" }
+      ]
+    },
+    {
+      "id": "PC-1", "label": "PC-1", "type": "host", "form_factor": "desktop", "zone": "STAFF",
+      "role": "Staff workstation",
+      "description": "Staff desktop in VLAN 10.",
+      "interfaces": [
+        { "name": "eth0", "kind": "physical", "ip": "10.0.10.11", "prefix": 24, "gateway": "10.0.10.1" }
+      ]
+    },
+    {
+      "id": "PC-2", "label": "PC-2", "type": "host", "form_factor": "desktop", "zone": "STAFF",
+      "role": "Staff workstation (simulated compromised host)",
+      "description": "Staff desktop in VLAN 10. Acts as the simulated compromised host in later attack scenarios.",
+      "interfaces": [
+        { "name": "eth0", "kind": "physical", "ip": "10.0.10.12", "prefix": 24, "gateway": "10.0.10.1" }
+      ]
+    },
+    {
+      "id": "LAPTOP-1", "label": "LAPTOP-1", "type": "host", "form_factor": "laptop", "zone": "STAFF",
+      "role": "Staff laptop",
+      "description": "Staff laptop in VLAN 10.",
+      "interfaces": [
+        { "name": "eth0", "kind": "physical", "ip": "10.0.10.13", "prefix": 24, "gateway": "10.0.10.1" }
+      ]
+    },
+    {
+      "id": "ADMIN-PC", "label": "ADMIN-PC", "type": "host", "form_factor": "desktop", "zone": "ADMIN",
+      "role": "Administrator workstation",
+      "description": "Administrator desktop in VLAN 20.",
+      "interfaces": [
+        { "name": "eth0", "kind": "physical", "ip": "10.0.20.10", "prefix": 24, "gateway": "10.0.20.1" }
+      ]
+    },
+    {
+      "id": "IDS-1", "label": "IDS-1", "type": "ids", "form_factor": "ids-sensor", "zone": "SECOPS",
+      "role": "Passive intrusion detection sensor",
+      "description": "Receives SPAN copies of traffic entering CORE-SW1. Passive: it raises alerts only and never forwards, drops, rejects or blocks traffic.",
+      "interfaces": [
+        { "name": "span", "kind": "physical" },
+        { "name": "mgmt", "kind": "physical", "ip": "10.0.99.10", "prefix": 24, "gateway": "10.0.99.1" }
+      ]
+    },
+    {
+      "id": "SEC-LOG", "label": "SEC-LOG", "type": "syslog", "form_factor": "soc-console", "zone": "SECOPS",
+      "role": "Syslog and alert collector",
+      "description": "Collects syslog (UDP 514) from the firewall and sensors.",
+      "interfaces": [
+        { "name": "eth0", "kind": "physical", "ip": "10.0.99.20", "prefix": 24, "gateway": "10.0.99.1" }
+      ],
+      "services": [
+        { "proto": "udp", "port": 514, "name": "Syslog", "encrypted": false, "response_bytes": 0 }
+      ]
+    },
+    {
+      "id": "IPS-1", "label": "IPS-1", "type": "ips", "form_factor": "ips-appliance", "zone": "SERVERS",
+      "role": "Inline transparent intrusion prevention system",
+      "description": "Layer 2 bump-in-the-wire in front of the server segment. Its data ports have no IP address. Prevention is added in a later stage; until then it forwards transparently.",
+      "interfaces": [
+        { "name": "in", "kind": "physical" },
+        { "name": "out", "kind": "physical" },
+        { "name": "mgmt", "kind": "physical", "ip": "10.0.99.11", "prefix": 24, "gateway": "10.0.99.1" }
+      ],
+      "bridge": { "vlan": 30, "ports": ["in", "out"] }
+    },
+    {
+      "id": "SRV-SW3", "label": "SRV-SW3", "type": "l2switch", "form_factor": "switch-l2", "zone": "SERVERS",
+      "role": "Server top-of-rack switch",
+      "description": "Layer 2 switch for the server VLAN. Has no IP address in this simulation.",
+      "interfaces": [
+        { "name": "Gi0/1", "kind": "physical" },
+        { "name": "Fa0/1", "kind": "physical" },
+        { "name": "Fa0/2", "kind": "physical" }
+      ]
+    },
+    {
+      "id": "APP-SRV", "label": "APP-SRV", "type": "host", "form_factor": "rack-server", "zone": "SERVERS",
+      "role": "Application server",
+      "description": "Application server in VLAN 30.",
+      "interfaces": [
+        { "name": "eth0", "kind": "physical", "ip": "10.0.30.10", "prefix": 24, "gateway": "10.0.30.1" }
+      ],
+      "services": [
+        { "proto": "tcp", "port": 22, "name": "SSH", "encrypted": true, "response_bytes": 96 },
+        { "proto": "tcp", "port": 80, "name": "HTTP", "encrypted": false, "response_bytes": 800 },
+        { "proto": "tcp", "port": 443, "name": "HTTPS", "encrypted": true, "response_bytes": 1400 },
+        { "proto": "tcp", "port": 8080, "name": "HTTP-ALT", "encrypted": false, "response_bytes": 600 }
+      ]
+    },
+    {
+      "id": "DB-SRV", "label": "DB-SRV", "type": "host", "form_factor": "rack-server", "zone": "SERVERS",
+      "role": "Database server",
+      "description": "Database server in VLAN 30.",
+      "interfaces": [
+        { "name": "eth0", "kind": "physical", "ip": "10.0.30.20", "prefix": 24, "gateway": "10.0.30.1" }
+      ],
+      "services": [
+        { "proto": "tcp", "port": 22, "name": "SSH", "encrypted": true, "response_bytes": 96 },
+        { "proto": "tcp", "port": 3306, "name": "MySQL", "encrypted": false, "response_bytes": 300 }
+      ]
+    }
+  ],
+  "links": [
+    { "id": "L01", "a": { "node": "EXT-USR", "iface": "eth0" }, "b": { "node": "INET", "iface": "p1" }, "kind": "ethernet" },
+    { "id": "L02", "a": { "node": "EXT-ATK", "iface": "eth0" }, "b": { "node": "INET", "iface": "p2" }, "kind": "ethernet" },
+    { "id": "L03", "a": { "node": "INET", "iface": "p3" }, "b": { "node": "R1-EDGE", "iface": "Gi0/0" }, "kind": "ethernet" },
+    { "id": "L04", "a": { "node": "R1-EDGE", "iface": "Gi0/1" }, "b": { "node": "FW1", "iface": "outside" }, "kind": "ethernet" },
+    { "id": "L05", "a": { "node": "FW1", "iface": "inside" }, "b": { "node": "CORE-SW1", "iface": "Gi0/1" }, "kind": "ethernet" },
+    { "id": "L06", "a": { "node": "CORE-SW1", "iface": "Gi0/2" }, "b": { "node": "ACC-SW2", "iface": "Gi0/1" }, "kind": "trunk", "trunk_vlans": [10, 20] },
+    { "id": "L07", "a": { "node": "ACC-SW2", "iface": "Fa0/1" }, "b": { "node": "PC-1", "iface": "eth0" }, "kind": "access", "vlan": 10 },
+    { "id": "L08", "a": { "node": "ACC-SW2", "iface": "Fa0/2" }, "b": { "node": "PC-2", "iface": "eth0" }, "kind": "access", "vlan": 10 },
+    { "id": "L09", "a": { "node": "ACC-SW2", "iface": "Fa0/3" }, "b": { "node": "LAPTOP-1", "iface": "eth0" }, "kind": "access", "vlan": 10 },
+    { "id": "L10", "a": { "node": "ACC-SW2", "iface": "Fa0/4" }, "b": { "node": "ADMIN-PC", "iface": "eth0" }, "kind": "access", "vlan": 20 },
+    { "id": "L11", "a": { "node": "CORE-SW1", "iface": "Gi0/3" }, "b": { "node": "IDS-1", "iface": "span" }, "kind": "span" },
+    { "id": "L12", "a": { "node": "CORE-SW1", "iface": "Gi0/4" }, "b": { "node": "IDS-1", "iface": "mgmt" }, "kind": "mgmt", "vlan": 99 },
+    { "id": "L13", "a": { "node": "CORE-SW1", "iface": "Gi0/5" }, "b": { "node": "SEC-LOG", "iface": "eth0" }, "kind": "access", "vlan": 99 },
+    { "id": "L14", "a": { "node": "CORE-SW1", "iface": "Gi0/6" }, "b": { "node": "IPS-1", "iface": "in" }, "kind": "access", "vlan": 30 },
+    { "id": "L15", "a": { "node": "IPS-1", "iface": "out" }, "b": { "node": "SRV-SW3", "iface": "Gi0/1" }, "kind": "access", "vlan": 30 },
+    { "id": "L16", "a": { "node": "CORE-SW1", "iface": "Gi0/7" }, "b": { "node": "IPS-1", "iface": "mgmt" }, "kind": "mgmt", "vlan": 99 },
+    { "id": "L17", "a": { "node": "SRV-SW3", "iface": "Fa0/1" }, "b": { "node": "APP-SRV", "iface": "eth0" }, "kind": "access", "vlan": 30 },
+    { "id": "L18", "a": { "node": "SRV-SW3", "iface": "Fa0/2" }, "b": { "node": "DB-SRV", "iface": "eth0" }, "kind": "access", "vlan": 30 }
+  ],
+  "span": {
+    "node": "CORE-SW1",
+    "direction": "ingress",
+    "destination_link": "L11",
+    "sensor": "IDS-1",
+    "exclude_vlans": [99]
+  }
+}

@@ -1,0 +1,19 @@
+# Dependencies and build output
+node_modules/
+.venv/
+__pycache__/
+*.pyc
+dist/
+.pytest_cache/
+.vite/
+
+# Local runtime data and secrets
+backend/data/
+.env
+*.log
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
