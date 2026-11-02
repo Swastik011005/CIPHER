@@ -1,0 +1,49 @@
+import { useFrame } from '@react-three/fiber'
+import { useRef } from 'react'
+
+/**
+ * Counts what the main pass draws by walking the scene. The renderer's own counters are not
+ * usable here: the post-processing composer resets them for every full-screen pass, so they
+ * only ever describe the last one.
+ * @param {import('three').Object3D} scene
+ */
+export function countScene(scene) {
+  let meshes = 0
+  let triangles = 0
+  scene.traverse((object) => {
+    if (!object.isMesh || !object.visible) return
+    const geometry = object.geometry
+    const vertices = geometry.index ? geometry.index.count : geometry.attributes.position.count
+    meshes += 1
+    triangles += (vertices / 3) * (object.isInstancedMesh ? object.count : 1)
+  })
+  return { meshes, triangles: Math.round(triangles) }
+}
+
+/**
+ * Samples frame rate and scene size once per second and publishes them on
+ * `window.__netsecScene`, so performance can be read from the console or automated checks
+ * without an on-screen overlay. The simulation page shows them when opened with ?debug=1.
+ * `meshes` is the number of draw calls in the main pass; the shadow pass roughly doubles it.
+ */
+export function SceneStats() {
+  const state = useRef({ frames: 0, since: performance.now() })
+
+  useFrame(({ gl, scene }) => {
+    const s = state.current
+    s.frames += 1
+    const now = performance.now()
+    if (now - s.since < 1000) return
+    window.__netsecScene = {
+      fps: Math.round((s.frames * 1000) / (now - s.since)),
+      ...countScene(scene),
+      geometries: gl.info.memory.geometries,
+      textures: gl.info.memory.textures,
+      pixelRatio: gl.getPixelRatio(),
+      sampledAt: Date.now(),
+    }
+    s.frames = 0
+    s.since = now
+  })
+  return null
+}

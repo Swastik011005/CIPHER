@@ -1,0 +1,135 @@
+/* Shared styles for the data pages */
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  max-width: 1480px;
+  margin: 0 auto;
+}
+
+.grid {
+  display: grid;
+  gap: var(--space-4);
+}
+.grid--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.grid--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.grid--4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.grid__span { grid-column: 1 / -1; }
+
+@media (max-width: 1100px) {
+  .grid--3, .grid--4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 760px) {
+  .grid--2, .grid--3, .grid--4 { grid-template-columns: 1fr; }
+}
+
+.hero {
+  padding: var(--space-6);
+  background:
+    radial-gradient(900px 260px at 100% 0%, rgba(77, 163, 255, 0.14), transparent 70%),
+    var(--surface-1);
+}
+.hero__title {
+  margin: var(--space-2) 0 var(--space-3);
+  font-size: 36px;
+  line-height: 44px;
+  font-weight: 700;
+  max-width: 22ch;
+}
+.hero__text {
+  max-width: 68ch;
+}
+.hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-5);
+}
+.hero__actions .btn {
+  text-decoration: none;
+}
+
+.inline-status {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.layer {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-card);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+}
+.layer__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  color: var(--accent);
+}
+.layer__head h3 {
+  color: var(--text-1);
+}
+.layer__where {
+  font-size: 12px;
+}
+
+.role {
+  display: flex;
+  gap: var(--space-3);
+  color: var(--accent);
+}
+.role > div {
+  color: var(--text-1);
+  min-width: 0;
+}
+.role__facts {
+  margin-top: var(--space-3);
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+.row-link {
+  cursor: pointer;
+}
+.link-button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font-weight: 600;
+  cursor: pointer;
+}
+.link-button:hover {
+  text-decoration: underline;
+}
+.cell-wrap {
+  white-space: normal !important;
+  min-width: 280px;
+}
+
+.planned {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.planned li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.planned li span:nth-child(2) {
+  flex: 1;
+}
+
+.chip-row--top {
+  margin: var(--space-3) 0 0;
+}

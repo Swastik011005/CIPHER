@@ -1,0 +1,62 @@
+/* Midnight Diorama design tokens. Single source for the UI; scene/materials/palette.js mirrors the 3D values. */
+:root {
+  /* Surfaces */
+  --bg-base: #060d1f;
+  --bg-sidebar: #081226;
+  --surface-1: #0c1a36;
+  --surface-2: #11234a;
+  --surface-3: #17305f;
+  --border: rgba(140, 170, 255, 0.16);
+  --border-strong: rgba(140, 170, 255, 0.32);
+
+  /* Text */
+  --text-1: #eaf1ff;
+  --text-2: #a9b8d9;
+  --text-3: #6f83ad;
+
+  /* Accents */
+  --accent: #4da3ff;
+  --cyan: #38d6e6;
+
+  /* Semantic */
+  --ok: #34d399;
+  --warn: #fbbf24;
+  --danger: #ff5a6a;
+  --sensor: #a78bfa;
+  --info: #60a5fa;
+
+  --ok-tint: rgba(52, 211, 153, 0.14);
+  --warn-tint: rgba(251, 191, 36, 0.14);
+  --danger-tint: rgba(255, 90, 106, 0.14);
+  --sensor-tint: rgba(167, 139, 250, 0.16);
+  --info-tint: rgba(96, 165, 250, 0.16);
+  --accent-tint: rgba(77, 163, 255, 0.16);
+  --neutral-tint: rgba(169, 184, 217, 0.12);
+
+  /* Typography */
+  --font-ui: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'Cascadia Mono', Consolas, monospace;
+
+  /* Shape and spacing (4 pt grid) */
+  --radius-canvas: 16px;
+  --radius-card: 12px;
+  --radius-control: 8px;
+  --radius-pill: 999px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+
+  --shadow-float: 0 12px 32px rgba(0, 0, 0, 0.4);
+  --inner-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --t-fast: 160ms;
+  --t-panel: 200ms;
+
+  --sidebar-w: 232px;
+  --sidebar-w-collapsed: 64px;
+  --header-h: 64px;
+}
