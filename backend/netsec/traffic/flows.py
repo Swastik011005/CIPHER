@@ -185,3 +185,68 @@ class IcmpEchoFlow:
     def on_packet(self, pkt: Packet) -> list[PacketSpec]:
         self.replies += 1
         return []
+
+
+class PortScanFlow:
+    """A SYN scan. Open ports answer SYN-ACK and the scanner resets them (half-open scan);
+    closed ports answer RST-ACK. The scanner knows nothing the replies do not tell it."""
+
+    def __init__(
+        self,
+        flow_id: str,
+        src_ip: str,
+        dst_ip: str,
+        ports: list[int],
+        rate: float,
+        sport: int,
+        isn: int,
+    ) -> None:
+        self.flow_id = flow_id
+        self.src_ip = src_ip
+        self.dst_ip = dst_ip
+        self.ports = ports
+        self.rate = rate
+        self.sport = sport
+        self._isn = isn
+        self.open_ports: list[int] = []
+
+    def initial(self) -> list[tuple[float, PacketSpec]]:
+        return [
+            (
+                i / self.rate,
+                PacketSpec(
+                    flow=self.flow_id,
+                    proto="tcp",
+                    src=self.src_ip,
+                    dst=self.dst_ip,
+                    sport=self.sport,
+                    dport=port,
+                    flags=tcp_flags("SYN"),
+                    length=IP_TCP_SYN_BYTES,
+                    seq=self._isn + i,
+                ),
+            )
+            for i, port in enumerate(self.ports)
+        ]
+
+    def matches(self, pkt: Packet) -> bool:
+        return pkt.proto == "tcp" and pkt.src == self.dst_ip and pkt.dport == self.sport and pkt.sport in self.ports
+
+    def on_packet(self, pkt: Packet) -> list[PacketSpec]:
+        if set(pkt.flags) != {"SYN", "ACK"}:
+            return []  # RST-ACK: the port is closed
+        self.open_ports.append(pkt.sport)
+        return [
+            PacketSpec(
+                flow=self.flow_id,
+                proto="tcp",
+                src=self.src_ip,
+                dst=self.dst_ip,
+                sport=self.sport,
+                dport=pkt.sport,
+                flags=tcp_flags("RST"),
+                length=IP_TCP_HEADER_BYTES,
+                seq=pkt.ack,
+                delay_s=HOST_PROCESSING_S,
+            )
+        ]

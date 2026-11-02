@@ -1,0 +1,28 @@
+{
+  "restricted_ips": ["203.0.113.99"],
+  "policies": [
+    {
+      "name": "OUTSIDE-IN",
+      "node": "FW1",
+      "ingress_link": "L04",
+      "stateful": true,
+      "rules": [
+        { "id": "10", "action": "deny", "proto": "ip", "src": "restricted", "dst": "any", "description": "Restricted source addresses" },
+        { "id": "20", "action": "permit", "proto": "tcp", "src": "any", "dst": "10.0.30.10", "dport": 443, "description": "Published HTTPS" },
+        { "id": "30", "action": "permit", "proto": "tcp", "src": "any", "dst": "10.0.30.10", "dport": 80, "description": "Published HTTP" }
+      ]
+    },
+    {
+      "name": "INSIDE-OUT",
+      "node": "FW1",
+      "ingress_link": "L05",
+      "stateful": true,
+      "rules": [
+        { "id": "10", "action": "permit", "proto": "tcp", "src": "10.0.0.0/16", "dst": "any", "dport": 80 },
+        { "id": "20", "action": "permit", "proto": "tcp", "src": "10.0.0.0/16", "dst": "any", "dport": 443 },
+        { "id": "30", "action": "permit", "proto": "udp", "src": "10.0.0.0/16", "dst": "any", "dport": 53 },
+        { "id": "40", "action": "permit", "proto": "icmp", "src": "10.0.0.0/16", "dst": "any" }
+      ]
+    }
+  ]
+}

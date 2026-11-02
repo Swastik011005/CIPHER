@@ -1,0 +1,7 @@
+{
+  "allowlist": ["10.0.99.0/24", "10.255.0.0/30", "10.255.1.0/30"],
+  "rules": [
+    { "detector": "D1", "severity": "high", "action": "block_source", "duration_s": 20.0 },
+    { "detector": "D1", "severity": "medium", "action": "allow", "duration_s": null }
+  ]
+}

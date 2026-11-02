@@ -47,7 +47,19 @@ class IcmpEchoSpec(_Strict):
     payload_bytes: int = Field(default=32, ge=0)
 
 
-FlowSpec = Annotated[Union[TcpSessionSpec, IcmpEchoSpec], Field(discriminator="type")]
+class PortScanSpec(_Strict):
+    """A SYN scan: one bare SYN to each listed port, ``rate`` probes per second."""
+
+    type: Literal["port_scan"]
+    id: str
+    src: str
+    dst: str
+    ports: list[int] = Field(min_length=1, max_length=200)
+    start: float = Field(ge=0)
+    rate: float = Field(gt=0, le=50)
+
+
+FlowSpec = Annotated[Union[TcpSessionSpec, IcmpEchoSpec, PortScanSpec], Field(discriminator="type")]
 
 
 class ScenarioSpec(_Strict):

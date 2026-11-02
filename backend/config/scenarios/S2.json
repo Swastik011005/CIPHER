@@ -1,0 +1,14 @@
+{
+  "id": "S2",
+  "name": "Port scan with IDS detection",
+  "description": "PC-2 SYN-scans 30 ports of APP-SRV at 4 probes per second while PC-1 browses normally. IDS-1 and IPS-1 each detect the scan (D1); with the IPS in Enforce mode PC-2 is then blocked for 20 s. PC-2 retries HTTPS during and after the block.",
+  "duration": 46.0,
+  "default_seed": 1,
+  "flows": [
+    { "type": "tcp_session", "id": "F1-https", "src": "PC-1", "dst": "APP-SRV", "dport": 443, "start": 0.5, "request_bytes": 520 },
+    { "type": "port_scan", "id": "F2-scan", "src": "PC-2", "dst": "APP-SRV", "start": 1.0, "rate": 4.0,
+      "ports": [22, 80, 443, 8080, 21, 23, 25, 53, 110, 111, 135, 139, 143, 445, 993, 995, 1433, 1521, 3306, 3389, 5432, 5900, 8000, 8081, 8443, 9000, 9090, 9200, 27017, 6379] },
+    { "type": "tcp_session", "id": "F3-retry-during-block", "src": "PC-2", "dst": "APP-SRV", "dport": 443, "start": 15.0, "request_bytes": 520 },
+    { "type": "tcp_session", "id": "F4-retry-after-block", "src": "PC-2", "dst": "APP-SRV", "dport": 443, "start": 27.0, "request_bytes": 520 }
+  ]
+}

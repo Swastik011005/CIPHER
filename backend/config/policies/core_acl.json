@@ -1,0 +1,17 @@
+{
+  "restricted_ips": [],
+  "policies": [
+    {
+      "name": "STAFF-IN",
+      "node": "CORE-SW1",
+      "ingress_link": "L06",
+      "vlan": 10,
+      "stateful": false,
+      "rules": [
+        { "id": "10", "action": "deny", "proto": "tcp", "src": "10.0.10.0/24", "dst": "10.0.30.20", "dport": 3306, "description": "Staff may not reach the database directly" },
+        { "id": "20", "action": "deny", "proto": "ip", "src": "10.0.10.0/24", "dst": "10.0.99.0/24", "description": "Staff may not reach the security network" },
+        { "id": "100", "action": "permit", "proto": "ip", "src": "any", "dst": "any", "description": "Everything else is permitted internally" }
+      ]
+    }
+  ]
+}
