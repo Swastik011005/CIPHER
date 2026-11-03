@@ -14,9 +14,11 @@ export class ApiError extends Error {
    * @param {string} message
    * @param {{kind: ApiErrorKind, status?: number, cause?: unknown}} details
    */
-  constructor(message, { kind, status, cause }) {
+  constructor(message, { kind, status, cause, problems }) {
     super(message, { cause })
     this.name = 'ApiError'
+    /** One message per problem when the server refused an edit with a list of reasons (HTTP 422), else empty. */
+    this.problems = problems ?? []
     /** @type {ApiErrorKind} */
     this.kind = kind
     /** @type {number | undefined} */
@@ -94,9 +96,11 @@ export function createApiClient({ baseUrl = import.meta.env?.VITE_API_BASE ?? '/
         })
       }
       if (!response.ok) {
+        const detail = payload && typeof payload === 'object' ? payload.detail : undefined
         throw new ApiError(describeErrorBody(payload, `HTTP ${response.status}`), {
           kind: 'http',
           status: response.status,
+          problems: Array.isArray(detail) && detail.every((d) => typeof d === 'string') ? detail : [],
         })
       }
       return payload
@@ -125,6 +129,28 @@ export function createApiClient({ baseUrl = import.meta.env?.VITE_API_BASE ?? '/
      */
     runScenario(body, options) {
       return request('/sim/run', { method: 'POST', body, timeoutMs: 20000, ...options })
+    },
+    /** The rules in force, with limits and shipped values. @param {{signal?: AbortSignal}} [options] */
+    rules(options) {
+      return request('/rules', options)
+    },
+    /**
+     * Change detector settings, e.g. `{D1: {enabled: false}}`. All of it is applied or none of it.
+     * @param {Record<string, Record<string, unknown>>} changes
+     */
+    putDetectors(changes, options) {
+      return request('/rules/detectors', { method: 'PUT', body: { changes }, ...options })
+    },
+    /** @param {string[]} addresses The complete restricted list. */
+    putRestrictedIps(addresses, options) {
+      return request('/rules/restricted-ips', { method: 'PUT', body: { addresses }, ...options })
+    },
+    resetRules(options) {
+      return request('/rules/reset', { method: 'POST', ...options })
+    },
+    /** Run scenarios with the rules in force and check what they should do. @param {{scenario_ids?: string[]}} body */
+    validate(body, options) {
+      return request('/sim/validate', { method: 'POST', body, timeoutMs: 60000, ...options })
     },
   }
 }

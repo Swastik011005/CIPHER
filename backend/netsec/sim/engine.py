@@ -32,6 +32,7 @@ from netsec.security.policy.engine import FlowKey, PolicyEvaluator
 from netsec.security.policy.models import PolicyFile, load_policies
 from netsec.security.prevention.block_table import Block
 from netsec.security.prevention.ips import IpsEngine
+from netsec.security.ruleset import RuleSet
 from netsec.sim.trace import TraceRecorder, canonical_json, trace_digest
 from netsec.sim.controls import ControlSpec, DetectorControl, IpsModeControl
 from netsec.traffic.flows import FlagProbeFlow, IcmpEchoFlow, PortScanFlow, SynFloodFlow, TcpSessionFlow
@@ -556,10 +557,17 @@ def run_scenario(
     ips_mode: IpsMode = "monitor",
     controls: Sequence[ControlSpec] = (),
     custom_flows: Sequence[FlowSpec] = (),
+    rules: Optional[RuleSet] = None,
 ) -> RunResult:
     """Convenience wrapper: run ``scenario`` with ``seed`` (default: the scenario's own).
 
-    A scenario that pins its IPS mode (S5 Monitor, S6 Enforce) overrides ``ips_mode``.
+    A scenario that pins its IPS mode (S5 Monitor, S6 Enforce) overrides ``ips_mode``. ``rules`` is the rule set to
+    run with (default: the shipped one); it is part of ``config_hash``, so a different rule set gives a different hash.
     """
     mode = scenario.pinned_ips_mode or ips_mode
-    return Engine(graph, scenario.default_seed if seed is None else seed, mode).run(scenario, controls, custom_flows)
+    seed = scenario.default_seed if seed is None else seed
+    if rules is None:
+        engine = Engine(graph, seed, mode)
+    else:
+        engine = Engine(graph, seed, mode, detectors=rules.detectors, ips_policy=rules.ips_policy, policies=list(rules.policies))
+    return engine.run(scenario, controls, custom_flows)
