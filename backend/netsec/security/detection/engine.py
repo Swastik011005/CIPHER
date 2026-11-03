@@ -13,6 +13,8 @@ from netsec.security.config import DetectorsConfig
 from netsec.security.correlation import Correlator
 from netsec.security.detection.base import SEVERITY_RANK, Detector, Finding, ObservedPacket
 from netsec.security.detection.d1_port_scan import PortScanDetector
+from netsec.security.detection.d2_brute_force import BruteForceDetector
+from netsec.security.detection.d3_flood import FloodDetector
 from netsec.security.detection.d4_restricted_service import RestrictedServiceDetector
 from netsec.security.detection.d5_forbidden_zone_pair import ForbiddenZonePairDetector
 from netsec.security.detection.d6_invalid_tcp_flags import InvalidFlagsDetector
@@ -48,6 +50,8 @@ class DetectionEngine:
         # Order matters only for ties: the first of equally severe findings is the one the IPS acts on.
         self.detectors: list[Detector] = [
             PortScanDetector(config.D1),
+            BruteForceDetector(config.D2),
+            FloodDetector(config.D3),
             RestrictedServiceDetector(config.D4),
             ForbiddenZonePairDetector(config.D5),
             InvalidFlagsDetector(config.D6),

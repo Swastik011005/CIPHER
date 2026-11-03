@@ -112,8 +112,43 @@ class D6Config(_Strict):
     )
 
 
+class D2Config(_Strict):
+    """Brute force: connection attempts to remote-login ports from one source to one target."""
+
+    enabled: bool = True
+    ports: list[int] = Field(default_factory=lambda: [22, 23, 3389], min_length=1)
+    window_s: float = Field(default=30.0, gt=0)
+    suspicious: int = Field(default=6, ge=2)
+    violation: int = Field(default=12, ge=3)
+    suppression_s: float = Field(default=30.0, ge=0)
+
+    @model_validator(mode="after")
+    def _ordered(self) -> "D2Config":
+        if self.suspicious >= self.violation:
+            raise ValueError("D2: 'suspicious' must be lower than 'violation'")
+        return self
+
+
+class D3Config(_Strict):
+    """Flood: packets per second from one source to one target, averaged over the window."""
+
+    enabled: bool = True
+    window_s: float = Field(default=5.0, gt=0)
+    suspicious_pps: float = Field(default=25.0, gt=0)
+    violation_pps: float = Field(default=50.0, gt=0)
+    suppression_s: float = Field(default=30.0, ge=0)
+
+    @model_validator(mode="after")
+    def _ordered(self) -> "D3Config":
+        if self.suspicious_pps >= self.violation_pps:
+            raise ValueError("D3: 'suspicious_pps' must be lower than 'violation_pps'")
+        return self
+
+
 class DetectorsConfig(_Strict):
     D1: D1Config
+    D2: D2Config = Field(default_factory=D2Config)
+    D3: D3Config = Field(default_factory=D3Config)
     D4: D4Config = Field(default_factory=D4Config)
     D5: D5Config = Field(default_factory=D5Config)
     D6: D6Config = Field(default_factory=D6Config)
@@ -122,15 +157,20 @@ class DetectorsConfig(_Strict):
 class IpsRule(_Strict):
     """What the IPS does when a detector reaches a severity (only in Enforce mode)."""
 
-    detector: Literal["D1", "D4", "D5", "D6"]
+    detector: Literal["D1", "D2", "D3", "D4", "D5", "D6"]
     severity: Literal["low", "medium", "high"]
     action: Literal["allow", "drop", "reject", "block_source", "rate_limit"]
     duration_s: Optional[float] = Field(default=None, gt=0)
+    #: Token bucket for ``rate_limit``: packets per second let through, and how many may arrive in a burst.
+    rate_pps: Optional[float] = Field(default=None, gt=0)
+    burst: Optional[int] = Field(default=None, ge=1)
 
     @model_validator(mode="after")
-    def _duration_for_blocks(self) -> "IpsRule":
+    def _parameters_for_action(self) -> "IpsRule":
         if self.action == "block_source" and self.duration_s is None:
             raise ValueError("block_source needs duration_s")
+        if self.action == "rate_limit" and (self.rate_pps is None or self.burst is None):
+            raise ValueError("rate_limit needs rate_pps and burst")
         return self
 
 

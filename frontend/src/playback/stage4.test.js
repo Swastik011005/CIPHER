@@ -211,7 +211,7 @@ describe('IPS mode switching from the playhead', () => {
     expect(useStore.getState().playback.playing).toBe(false)
 
     await useStore.getState().switchIpsModeFromNow('enforce')
-    expect(calls.at(-1)).toEqual({ scenario_id: 'S2', ips_mode: 'monitor', controls: [{ type: 'ips_mode', t: 3.2, mode: 'enforce' }] })
+    expect(calls.at(-1)).toEqual({ scenario_id: 'S2', ips_mode: 'monitor', controls: [{ type: 'ips_mode', t: 3.2, mode: 'enforce' }], custom_flows: [] })
     expect(useStore.getState().playback.time).toBe(3.2)
     expect(useStore.getState().playback.playing).toBe(false) // it was paused, so it stays paused
     expect(useStore.getState().run.request.controls).toHaveLength(1)

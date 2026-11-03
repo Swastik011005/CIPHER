@@ -26,6 +26,10 @@ def test_the_shipped_policy_maps_detectors_to_actions() -> None:
     assert got == {
         ("D1", "high"): "block_source",
         ("D1", "medium"): "allow",
+        ("D2", "medium"): "allow",
+        ("D2", "high"): "block_source",
+        ("D3", "medium"): "rate_limit",
+        ("D3", "high"): "block_source",
         ("D4", "high"): "reject",
         ("D5", "high"): "drop",
         ("D6", "high"): "drop",

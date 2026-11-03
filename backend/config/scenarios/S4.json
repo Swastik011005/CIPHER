@@ -1,0 +1,76 @@
+{
+  "id": "S4",
+  "name": "Excessive traffic",
+  "description": "EXT-ATK floods APP-SRV:443 (a published port) with SYNs, ramping from 15 to 40 to 70 packets per second, while EXT-USR browses normally. IDS-1 and IPS-1 both detect it (D3). In Enforce mode IPS-1 first rate-limits the attacker to 10 packets per second, then blocks it for 20 s when the rate passes 50 per second. EXT-USR is never affected.",
+  "duration": 44.0,
+  "default_seed": 1,
+  "flows": [
+    {
+      "type": "tcp_session",
+      "id": "F1-user-before",
+      "src": "EXT-USR",
+      "dst": "APP-SRV",
+      "dport": 443,
+      "start": 1.0,
+      "request_bytes": 520
+    },
+    {
+      "type": "syn_flood",
+      "id": "F2-flood",
+      "src": "EXT-ATK",
+      "dst": "APP-SRV",
+      "dport": 443,
+      "start": 3.0,
+      "phases": [
+        {
+          "rate": 15,
+          "duration": 3
+        },
+        {
+          "rate": 40,
+          "duration": 4
+        },
+        {
+          "rate": 70,
+          "duration": 4
+        }
+      ]
+    },
+    {
+      "type": "tcp_session",
+      "id": "F3-user-during",
+      "src": "EXT-USR",
+      "dst": "APP-SRV",
+      "dport": 443,
+      "start": 9.0,
+      "request_bytes": 520
+    },
+    {
+      "type": "tcp_session",
+      "id": "F4-attacker-during-block",
+      "src": "EXT-ATK",
+      "dst": "APP-SRV",
+      "dport": 443,
+      "start": 20.0,
+      "request_bytes": 520
+    },
+    {
+      "type": "tcp_session",
+      "id": "F5-user-during-block",
+      "src": "EXT-USR",
+      "dst": "APP-SRV",
+      "dport": 443,
+      "start": 21.0,
+      "request_bytes": 520
+    },
+    {
+      "type": "tcp_session",
+      "id": "F6-attacker-after-block",
+      "src": "EXT-ATK",
+      "dst": "APP-SRV",
+      "dport": 443,
+      "start": 34.0,
+      "request_bytes": 520
+    }
+  ]
+}

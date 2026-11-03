@@ -238,6 +238,65 @@ class FlagProbeFlow:
         return []
 
 
+class SynFloodFlow:
+    """A SYN flood. Every probe uses a new source port; the attacker ignores whatever the server answers."""
+
+    MAX_PACKETS = 3000
+
+    def __init__(
+        self,
+        flow_id: str,
+        src_ip: str,
+        dst_ip: str,
+        dport: int,
+        phases: list[tuple[float, float]],
+        sport_base: int,
+        isn: int,
+    ) -> None:
+        self.flow_id = flow_id
+        self.src_ip = src_ip
+        self.dst_ip = dst_ip
+        self.dport = dport
+        self.phases = phases
+        self.sport_base = sport_base
+        self._isn = isn
+        total = sum(round(rate * duration) for rate, duration in phases)
+        if total > self.MAX_PACKETS:
+            raise ValueError(f"a flood of {total} packets is too large for the simulation (limit {self.MAX_PACKETS})")
+
+    def initial(self) -> list[tuple[float, PacketSpec]]:
+        out: list[tuple[float, PacketSpec]] = []
+        offset = 0.0
+        index = 0
+        for rate, duration in self.phases:
+            for k in range(round(rate * duration)):
+                out.append(
+                    (
+                        round(offset + k / rate, 6),
+                        PacketSpec(
+                            flow=self.flow_id,
+                            proto="tcp",
+                            src=self.src_ip,
+                            dst=self.dst_ip,
+                            sport=self.sport_base + index,
+                            dport=self.dport,
+                            flags=tcp_flags("SYN"),
+                            length=IP_TCP_SYN_BYTES,
+                            seq=self._isn + index,
+                        ),
+                    )
+                )
+                index += 1
+            offset += duration
+        return out
+
+    def matches(self, pkt: Packet) -> bool:
+        return pkt.proto == "tcp" and pkt.src == self.dst_ip and pkt.sport == self.dport and pkt.dport >= self.sport_base
+
+    def on_packet(self, pkt: Packet) -> list[PacketSpec]:
+        return []  # the SYN-ACKs are ignored, so the server's half-open connections just sit there
+
+
 class PortScanFlow:
     """A SYN scan. Open ports answer SYN-ACK and the scanner resets them (half-open scan);
     closed ports answer RST-ACK. The scanner knows nothing the replies do not tell it."""

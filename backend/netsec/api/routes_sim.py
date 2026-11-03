@@ -9,6 +9,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from netsec.sim.controls import ControlSpec
 from netsec.sim.engine import EngineError, run_scenario
+from netsec.traffic.scenarios import FlowSpec
 from netsec.traffic.scenarios import list_scenarios, load_scenario
 
 router = APIRouter(tags=["simulation"])
@@ -21,6 +22,8 @@ class RunRequest(BaseModel):
     seed: Optional[int] = Field(default=None, ge=0, le=2**31 - 1)
     ips_mode: Literal["monitor", "enforce"] = "monitor"  # ignored by scenarios that pin their IPS mode (S5, S6)
     controls: list[ControlSpec] = Field(default_factory=list, max_length=20)
+    #: Extra traffic from the Send traffic form, added to the scenario's own flows.
+    custom_flows: list[FlowSpec] = Field(default_factory=list, max_length=5)
 
 
 @router.get("/scenarios")
@@ -46,7 +49,7 @@ def run(body: RunRequest, request: Request) -> dict[str, Any]:
     state = request.app.state
     scenario = load_scenario(body.scenario_id, state.scenarios_dir)
     try:
-        result = run_scenario(state.graph, scenario, body.seed, body.ips_mode, body.controls)
+        result = run_scenario(state.graph, scenario, body.seed, body.ips_mode, body.controls, body.custom_flows)
     except EngineError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     return {

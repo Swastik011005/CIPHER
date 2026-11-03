@@ -10,6 +10,9 @@ export const TRACE_NAMES = ['s1-monitor', 's2-monitor', 's2-enforce', 's3-monito
 /** Single-attempt traces that trigger the firewall and ACL effects (see the export script). */
 export const EFFECT_TRACE_NAMES = ['fw-deny', 'acl-deny']
 
+/** S1 with the Send traffic case injected: PC-1 to DB:3306 at T+5 s (flow X1). */
+export const CUSTOM_TRACE_NAME = 'custom-staff-db'
+
 /** A complete engine run (`{events, summary, ...}`) used as a test fixture. */
 export function loadTrace(name) {
   return JSON.parse(readFileSync(resolve(here, 'fixtures', `${name}.json`), 'utf-8'))

@@ -1,0 +1,153 @@
+{
+  "id": "S7",
+  "name": "SSH brute force",
+  "description": "PC-2 opens a new SSH session to APP-SRV every second, as a password-guessing tool would, while an administrator logs in normally. IDS-1 and IPS-1 each detect the pattern (D2): MEDIUM at the 6th attempt, HIGH at the 12th. In Enforce mode IPS-1 then blocks PC-2 for 30 s.",
+  "duration": 46.0,
+  "default_seed": 1,
+  "flows": [
+    {
+      "type": "tcp_session",
+      "id": "F1-https",
+      "src": "PC-1",
+      "dst": "APP-SRV",
+      "dport": 443,
+      "start": 0.5,
+      "request_bytes": 520
+    },
+    {
+      "type": "tcp_session",
+      "id": "F2-ssh-guess-01",
+      "src": "PC-2",
+      "dst": "APP-SRV",
+      "dport": 22,
+      "start": 1.0,
+      "request_bytes": 96
+    },
+    {
+      "type": "tcp_session",
+      "id": "F3-ssh-guess-02",
+      "src": "PC-2",
+      "dst": "APP-SRV",
+      "dport": 22,
+      "start": 2.0,
+      "request_bytes": 96
+    },
+    {
+      "type": "tcp_session",
+      "id": "F4-ssh-guess-03",
+      "src": "PC-2",
+      "dst": "APP-SRV",
+      "dport": 22,
+      "start": 3.0,
+      "request_bytes": 96
+    },
+    {
+      "type": "tcp_session",
+      "id": "F5-ssh-guess-04",
+      "src": "PC-2",
+      "dst": "APP-SRV",
+      "dport": 22,
+      "start": 4.0,
+      "request_bytes": 96
+    },
+    {
+      "type": "tcp_session",
+      "id": "F6-ssh-guess-05",
+      "src": "PC-2",
+      "dst": "APP-SRV",
+      "dport": 22,
+      "start": 5.0,
+      "request_bytes": 96
+    },
+    {
+      "type": "tcp_session",
+      "id": "F7-ssh-guess-06",
+      "src": "PC-2",
+      "dst": "APP-SRV",
+      "dport": 22,
+      "start": 6.0,
+      "request_bytes": 96
+    },
+    {
+      "type": "tcp_session",
+      "id": "F8-ssh-guess-07",
+      "src": "PC-2",
+      "dst": "APP-SRV",
+      "dport": 22,
+      "start": 7.0,
+      "request_bytes": 96
+    },
+    {
+      "type": "tcp_session",
+      "id": "F9-ssh-guess-08",
+      "src": "PC-2",
+      "dst": "APP-SRV",
+      "dport": 22,
+      "start": 8.0,
+      "request_bytes": 96
+    },
+    {
+      "type": "tcp_session",
+      "id": "F10-ssh-guess-09",
+      "src": "PC-2",
+      "dst": "APP-SRV",
+      "dport": 22,
+      "start": 9.0,
+      "request_bytes": 96
+    },
+    {
+      "type": "tcp_session",
+      "id": "F11-ssh-guess-10",
+      "src": "PC-2",
+      "dst": "APP-SRV",
+      "dport": 22,
+      "start": 10.0,
+      "request_bytes": 96
+    },
+    {
+      "type": "tcp_session",
+      "id": "F12-ssh-guess-11",
+      "src": "PC-2",
+      "dst": "APP-SRV",
+      "dport": 22,
+      "start": 11.0,
+      "request_bytes": 96
+    },
+    {
+      "type": "tcp_session",
+      "id": "F13-ssh-guess-12",
+      "src": "PC-2",
+      "dst": "APP-SRV",
+      "dport": 22,
+      "start": 12.0,
+      "request_bytes": 96
+    },
+    {
+      "type": "tcp_session",
+      "id": "F14-ssh-guess-13",
+      "src": "PC-2",
+      "dst": "APP-SRV",
+      "dport": 22,
+      "start": 13.0,
+      "request_bytes": 96
+    },
+    {
+      "type": "tcp_session",
+      "id": "F15-ssh-guess-14",
+      "src": "PC-2",
+      "dst": "APP-SRV",
+      "dport": 22,
+      "start": 14.0,
+      "request_bytes": 96
+    },
+    {
+      "type": "tcp_session",
+      "id": "F16-ssh-admin",
+      "src": "ADMIN-PC",
+      "dst": "APP-SRV",
+      "dport": 22,
+      "start": 18.0,
+      "request_bytes": 96
+    }
+  ]
+}

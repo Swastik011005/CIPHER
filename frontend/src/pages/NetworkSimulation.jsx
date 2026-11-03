@@ -4,6 +4,7 @@ import { ScenarioPanel } from '../features/simulation/ScenarioPanel.jsx'
 import { DeviceList } from '../features/simulation/DeviceList.jsx'
 import { DevicePanel } from '../features/simulation/DevicePanel.jsx'
 import { PacketList, PacketPanel } from '../features/simulation/PacketPanel.jsx'
+import { SendTrafficPanel } from '../features/simulation/SendTrafficPanel.jsx'
 import { SimulationViewport } from '../features/simulation/SimulationViewport.jsx'
 import { TopologySummary } from '../features/simulation/TopologySummary.jsx'
 import '../features/simulation/simulation.css'
@@ -32,6 +33,7 @@ export function NetworkSimulation() {
           </>
         )}
         <ScenarioPanel />
+        <SendTrafficPanel />
       </aside>
     </div>
   )
