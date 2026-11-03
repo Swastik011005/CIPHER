@@ -6,6 +6,25 @@ import './pages.css'
 
 const SEVERITY_TONE = { low: 'info', medium: 'warn', high: 'danger' }
 
+/** Detector names, as the specification defines them. */
+const RULE_NAMES = {
+  D1: 'Port scan',
+  D4: 'Restricted service',
+  D5: 'Forbidden zone pair',
+  D6: 'Invalid TCP flags',
+}
+
+/** Why packets were stopped, and by whom. Static policy (FW1, ACL) is not IDS or IPS. */
+const DROP_LABELS = {
+  fw_deny: ['FW1 deny', 'Firewall policy'],
+  acl_deny: ['ACL deny', 'CORE-SW1 ACL'],
+  ips_drop: ['IPS drop', 'IPS-1'],
+  ips_reject: ['IPS reject', 'IPS-1, with a TCP reset'],
+  blocked_source: ['Blocked source', 'IPS-1 block table'],
+  ttl_expired: ['TTL expired', 'Network'],
+  no_route: ['No route', 'Network'],
+}
+
 /** Page 4: alerts and prevention actions of the run that is loaded in the simulation. */
 export function ThreatCentre() {
   const topology = useStore((s) => s.topology.data)
@@ -37,6 +56,21 @@ export function ThreatCentre() {
         <Card><KpiTile label="Active blocks" value={blocks.length} hint="sources IPS-1 is blocking now" /></Card>
         <Card><KpiTile label="Packets blocked" value={state?.counts.blocked ?? 0} hint="firewall, ACL and IPS drops" /></Card>
       </div>
+
+      <Card eyebrow="Enforcement" title="Why packets were stopped">
+        {Object.keys(state?.drops ?? {}).length === 0 ? (
+          <p className="muted">{state ? 'No packet has been stopped yet at this point in the run.' : 'Run a scenario to see enforcement decisions.'}</p>
+        ) : (
+          <div className="chip-row">
+            {Object.entries(state.drops).map(([reason, count]) => (
+              <Chip key={reason} tone={reason === 'ttl_expired' || reason === 'no_route' ? 'neutral' : 'danger'} title={DROP_LABELS[reason]?.[1]}>
+                {DROP_LABELS[reason]?.[0] ?? reason} · {count}
+              </Chip>
+            ))}
+          </div>
+        )}
+        <p className="muted">IDS-1 never appears here: it only raises alerts. Packets are stopped by FW1, the CORE-SW1 ACL and IPS-1.</p>
+      </Card>
 
       <div className="grid grid--2">
         <Card eyebrow="Detection" title="IDS-1: passive sensor" actions={<Chip tone="sensor">Alerts only</Chip>}>
@@ -110,7 +144,9 @@ export function ThreatCentre() {
                     <td>
                       <Chip tone={SEVERITY_TONE[a.severity]}>{a.severity.toUpperCase()}</Chip>
                     </td>
-                    <td className="mono">{a.rule}</td>
+                    <td>
+                      <span className="mono">{a.rule}</span> <span className="muted">{RULE_NAMES[a.rule] ?? ''}</span>
+                    </td>
                     <td className="mono">{a.src}</td>
                     <td className="mono">{a.dst}</td>
                     <td className="muted cell-wrap">{a.reason}</td>

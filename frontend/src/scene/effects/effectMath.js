@@ -26,6 +26,7 @@ export const RING_STYLE = Object.freeze({
   'ips-allow': { r0: 0.4, r1: 1.0, strength: 0.5 },
   'ips-flag': { r0: 0.4, r1: 1.7, strength: 0.9, label: 3.35 },
   'ips-block': { r0: 0.5, r1: 2.8, strength: 1.0, label: 3.7 },
+  'ips-reject': { r0: 0.4, r1: 3.0, strength: 1.0, label: 3.7 },
   unblock: { r0: 0.5, r1: 2.3, strength: 0.9, label: 3.35 },
   'fw-ripple': { r0: 0.3, r1: 2.4, strength: 1.0, vertical: true, label: 3.4 },
   'acl-flash': { r0: 0.5, r1: 1.7, strength: 1.0, label: 3.0 },

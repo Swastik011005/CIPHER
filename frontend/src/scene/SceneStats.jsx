@@ -1,5 +1,6 @@
-import { useFrame } from '@react-three/fiber'
-import { useRef } from 'react'
+import { useFrame, useThree } from '@react-three/fiber'
+import { useEffect, useRef } from 'react'
+import { Vector3 } from 'three'
 
 /**
  * Counts what the main pass draws by walking the scene. The renderer's own counters are not
@@ -28,6 +29,27 @@ export function countScene(scene) {
  */
 export function SceneStats() {
   const state = useRef({ frames: 0, since: performance.now() })
+  const camera = useThree((s) => s.camera)
+  const canvas = useThree((s) => s.gl.domElement)
+
+  // Debug aid, only with ?debug=1: where a world position is on the page, so an automated check can
+  // aim a real mouse click at a packet. Positions of packets come from PacketLayer.
+  useEffect(() => {
+    if (!new URLSearchParams(window.location.search).has('debug')) return undefined
+    const v = new Vector3()
+    window.__netsecProbe = {
+      /** Page coordinates (CSS px) of a world point, or null when it is behind the camera. */
+      toPage(x, y, z) {
+        v.set(x, y, z).project(camera)
+        if (v.z > 1) return null
+        const r = canvas.getBoundingClientRect()
+        return { x: r.left + ((v.x + 1) / 2) * r.width, y: r.top + ((1 - v.y) / 2) * r.height }
+      },
+    }
+    return () => {
+      delete window.__netsecProbe
+    }
+  }, [camera, canvas])
 
   useFrame(({ gl, scene }) => {
     const s = state.current

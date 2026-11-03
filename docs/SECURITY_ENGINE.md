@@ -1,4 +1,4 @@
-# Security engine (Stage 2)
+# Security engine (Stage 2, extended in Stage 4)
 
 All of this changes **simulation state only**. Nothing is captured, scanned or blocked on a real network.
 
@@ -30,6 +30,13 @@ False positives: service discovery, monitoring tools (allowlist is the mitigatio
 Limits: a scan slower than the window, or spread over many sources, never reaches the threshold (tested).
 Each sensor keeps its own state and its own alert records. Alerts about the same activity share one `incident_id`.
 
+## D4, D5, D6 (Stage 4)
+D4 restricted service (any TCP packet to MySQL on DB-SRV from a source other than APP-SRV), D5 forbidden zone pair
+(Staff or Outside to the Security network) and D6 invalid TCP flags (NULL, XMAS, SYN+FIN, SYN+RST, FIN+RST) are per-packet
+checks: HIGH severity, no history, first packet fires. IPS-1 acts on them in Enforce mode: D4 reject, D5 and D6 drop.
+Reject drops the packet and injects a synthetic TCP RST (flow `<flow>:rst`) spoofed as the server, back to the client.
+IDS-1 sees the same traffic through its SPAN copies (taken before the ACL) and only alerts. Details: `STAGE4_PROGRESS.md`.
+
 ## Policy files
 `config/policies/fw1.json` (OUTSIDE-IN, INSIDE-OUT, restricted addresses) and `core_acl.json` (STAFF-IN). Ordered rules,
 first match wins, implicit deny at the end. Stateful policies remember permitted flows and permit their return traffic
@@ -44,5 +51,4 @@ Rule ids in events look like `STAFF-IN:10`, `OUTSIDE-IN:implicit-deny`.
 clock at 10 Hz. Packets are drawn from the player each frame (instanced meshes), never through React state.
 
 ## Not implemented yet (do not assume)
-Detectors D2 to D7, reject (RST injection) and rate limiting, syslog packets, the Rules editor, scenarios S3 to S7,
-packet effects (shatter, ripples), PCAP export. Running S2 with IPS Monitor or Enforce is the Stage 5/6 comparison.
+Detectors D2, D3 and D7, rate limiting, syslog packets, the Rules editor, scenarios S4 and S7, PCAP export.

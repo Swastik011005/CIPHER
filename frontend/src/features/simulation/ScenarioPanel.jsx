@@ -2,6 +2,7 @@ import { Play } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 
 import { api } from '../../api/client.js'
+import { ipsModeAt } from '../../playback/markers.js'
 import { useStore } from '../../state/store.js'
 import { Banner, Button, Card, Chip, Segmented, Spinner } from '../../ui/index.js'
 
@@ -44,6 +45,9 @@ function LiveReadout() {
 export function ScenarioPanel() {
   const run = useStore((s) => s.run)
   const runScenario = useStore((s) => s.runScenario)
+  const switchIpsModeFromNow = useStore((s) => s.switchIpsModeFromNow)
+  const playbackTime = useStore((s) => s.playback.time)
+  const loaded = useStore((s) => s.playback.loaded)
   const connection = useStore((s) => s.connection.status)
   const online = connection === 'online'
   const [scenarios, setScenarios] = useState({ status: 'loading', items: [], error: null })
@@ -70,6 +74,12 @@ export function ScenarioPanel() {
   }, [load, online])
 
   const chosen = scenarios.items.find((s) => s.id === selected)
+  const pinned = chosen?.pinned_ips_mode ?? null
+  const effectiveMode = pinned ?? mode
+  // The mode in force at the playhead of the loaded run: its starting mode, then the latest switch at or before now.
+  const request = run.request
+  const runPinned = scenarios.items.find((s) => s.id === request?.scenarioId)?.pinned_ips_mode ?? null
+  const modeNow = ipsModeAt(request, runPinned, playbackTime)
 
   return (
     <Card eyebrow="Scenarios" title="Run a scenario">
@@ -108,21 +118,27 @@ export function ScenarioPanel() {
           <div className="mode-row">
             <div>
               <div className="eyebrow">IPS mode</div>
-              <Segmented label="IPS mode" value={mode} onChange={setMode} options={MODES} />
+              {pinned ? (
+                <Chip tone={pinned === 'enforce' ? 'accent' : 'warn'} title="This scenario always runs with the IPS in this mode">
+                  Pinned to {pinned === 'enforce' ? 'Enforce' : 'Monitor'}
+                </Chip>
+              ) : (
+                <Segmented label="IPS mode" value={mode} onChange={setMode} options={MODES} />
+              )}
             </div>
             <Button
               variant="primary"
               icon={run.status === 'loading' ? <Spinner label="Running" /> : <Play size={16} />}
               disabled={!chosen || run.status === 'loading' || !online}
-              onClick={() => runScenario(chosen.id, mode)}
+              onClick={() => runScenario(chosen.id, effectiveMode)}
             >
               Run
             </Button>
           </div>
           <p className="muted mode-note">
-            {mode === 'monitor'
-              ? 'Monitor: IDS-1 and IPS-1 both detect and alert. IPS-1 only records what it would block; nothing is dropped.'
-              : 'Enforce: IPS-1 blocks the scanning source for a limited time. IDS-1 still only alerts: it is passive.'}
+            {effectiveMode === 'monitor'
+              ? 'Monitor: IDS-1 and IPS-1 both detect and alert. IPS-1 only records what it would do (block, drop or reject); nothing is dropped by it.'
+              : 'Enforce: IPS-1 acts on what it detects: it blocks a scanning source, drops invalid packets and rejects forbidden connections with a TCP reset. IDS-1 still only alerts: it is passive.'}
           </p>
         </>
       )}
@@ -131,6 +147,20 @@ export function ScenarioPanel() {
         <Banner tone="danger" title="The run failed">
           {run.error}
         </Banner>
+      )}
+      {run.meta && loaded && !runPinned && (
+        <div className="mode-row mode-row--live">
+          <div>
+            <div className="eyebrow">From the playhead on</div>
+            <Segmented
+              label="IPS mode from the playhead"
+              value={modeNow}
+              onChange={(m) => m !== modeNow && switchIpsModeFromNow(m)}
+              options={MODES}
+            />
+          </div>
+          <p className="muted mode-note">Re-simulates from here. Everything before the playhead stays exactly as it was.</p>
+        </div>
       )}
       {run.meta && (
         <div className="chip-row chip-row--top">

@@ -80,6 +80,7 @@ export function packetInspector(state, pid, time) {
     copyOf: packet.mirrorOf,
     copies,
     flow: packet.flow,
+    injectedBy: packet.injectedBy,
     proto: packet.proto,
     src: packet.src,
     sport: packet.sport,

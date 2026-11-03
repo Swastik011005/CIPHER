@@ -66,6 +66,15 @@ export function PacketPanel({ pid }) {
             </div>
           </dl>
 
+          {info.injectedBy && (
+            <div className="callout callout--accent">
+              <strong>Injected by {info.injectedBy}</strong>
+              <span>
+                This reset was not sent by {info.src}. IPS-1 made it up, spoofed as that server, to end a connection it rejected.
+                It is synthetic: nothing is sent on a real network.
+              </span>
+            </div>
+          )}
           {info.isCopy ? (
             <div className="callout callout--sensor">
               <strong>Copy of packet #{info.copyOf}</strong>
