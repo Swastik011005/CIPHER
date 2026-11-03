@@ -1,8 +1,9 @@
 """Export deterministic engine traces as fixtures for the frontend tests.
 
-Run from the repository root with the backend virtual environment:
+Run from the repository root with the backend virtual environment's Python
+(backend/.venv/Scripts/python on Windows, backend/.venv/bin/python elsewhere):
 
-    backend\\.venv\\Scripts\\python scripts\\export_golden_traces.py
+    python scripts/export_golden_traces.py
 
 The frontend tests replay these files, so they check the player against real engine output
 instead of hand-written events. Re-run after any change that alters a trace.

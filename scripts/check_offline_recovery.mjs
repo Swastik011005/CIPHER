@@ -20,9 +20,10 @@ const args = Object.fromEntries(
 )
 const port = Number(args.port ?? 8100)
 const root = resolve(fileURLToPath(import.meta.url), '..', '..')
-const python = join(root, 'backend', '.venv', 'Scripts', 'python.exe')
+const windows = process.platform === 'win32'
+const python = join(root, 'backend', '.venv', windows ? 'Scripts' : 'bin', windows ? 'python.exe' : 'python')
 if (!existsSync(python) || !existsSync(join(root, 'frontend', 'dist', 'index.html'))) {
-  console.error('Needs backend\\.venv and frontend\\dist: run scripts\\setup.cmd first.')
+  console.error('Needs backend/.venv and frontend/dist: run `python scripts/tasks.py setup` first.')
   process.exit(2)
 }
 

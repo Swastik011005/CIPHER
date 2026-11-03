@@ -1,8 +1,5 @@
-# Direct dependencies, exact versions (Stage 1 frozen stack).
-# The full resolved set is in requirements.lock.txt.
+# Runtime dependencies of the API server, exact versions. The test tools are in requirements-dev.txt.
+# The fully resolved runtime set (what a production install pulls in) is in requirements.lock.txt.
 fastapi==0.162.0
 uvicorn==0.54.0
 pydantic==2.14.2
-scapy==2.8.0
-pytest==9.2.0
-httpx==0.28.1

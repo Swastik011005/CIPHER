@@ -1,6 +1,6 @@
 """Run every scenario check with the shipped rules and print the result.
 
-    backend\\.venv\\Scripts\\python scripts\\run_scenario_checks.py
+    python scripts/run_scenario_checks.py   (with the backend virtual environment's Python)
 
 Each scenario runs in every IPS mode it supports (S5 and S6 are pinned to one) and its expected behaviour is
 checked: the same checks the Rules & Scenarios page shows under "Run all checks". Exit code 0 only if all pass.

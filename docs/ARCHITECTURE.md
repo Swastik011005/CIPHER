@@ -48,14 +48,16 @@ pauses and resumes explicitly (`FrameloopController`). Topology comes from the A
 keyed by topology ids, and `validateLayout` reports any mismatch.
 
 ## Run modes
-- **Demo mode** (`scripts\start-demo.cmd`): one process, `backend/app.py`, serves the API under `/api` and the built
-  `frontend/dist` at `/`. Works offline; this is what is presented.
-- **Development mode** (`scripts\start-dev.cmd`): the backend on :8000 plus the Vite dev server on :5173, which proxies `/api`.
+- **Demo mode** (`python scripts/tasks.py demo`, or `scripts\start-demo.cmd` on Windows): one process, `backend/app.py`,
+  serves the API under `/api` and the built `frontend/dist` at `/`. Works offline; this is what is presented.
+- **Development mode** (`python scripts/tasks.py dev`, or `scripts\start-dev.cmd`): the backend on :8000 plus the Vite dev
+  server on :5173, which proxies `/api`. Both run in one terminal; Ctrl+C stops both.
 
 ## Scripts (`scripts/`)
 | Script | Purpose |
 |---|---|
-| `setup.cmd`, `start-demo.cmd`, `start-dev.cmd`, `verify.cmd` | Install, run, and verify everything with one command each |
+| `tasks.py` | Cross-platform task runner (standard library only): `setup`, `verify`, `demo`, `dev`. See `docs/DEVELOPMENT.md` |
+| `setup.cmd`, `start-demo.cmd`, `start-dev.cmd`, `verify.cmd` | Windows wrappers that call `tasks.py` |
 | `run_scenario_checks.py` | The 93 scenario checks from the command line |
 | `lib/cdp.mjs` | Tiny Chrome DevTools driver (no extra dependency): navigate, evaluate, screenshot, record requests and console errors |
 | `rehearse_demo.mjs`, `check_offline_recovery.mjs` | Real-browser rehearsal of the demo (34 checks) and of engine loss and recovery (8 checks) |

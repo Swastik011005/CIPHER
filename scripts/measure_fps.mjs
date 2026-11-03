@@ -12,9 +12,11 @@
  * Output is one JSON object on stdout. Do not read a result as a pass unless `gpu` is the GPU you meant to test.
  */
 import { spawn } from 'node:child_process'
-import { mkdtempSync, existsSync, rmSync } from 'node:fs'
+import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+
+import { findBrowser } from './lib/browsers.mjs'
 
 const args = Object.fromEntries(
   process.argv.slice(2).reduce((acc, a, i, all) => (a.startsWith('--') ? [...acc, [a.slice(2), all[i + 1]]] : acc), []),
@@ -33,13 +35,9 @@ const cfg = {
   gpu: args.gpu ?? '', // optional Chrome switch value for --use-angle (for example d3d11); empty = browser default
 }
 
-const BROWSERS = {
-  chrome: ['C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe', 'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe'],
-  edge: ['C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe', 'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe'],
-}
-const exe = BROWSERS[cfg.browser]?.find((p) => existsSync(p))
+const exe = findBrowser(cfg.browser)
 if (!exe) {
-  console.error(JSON.stringify({ error: `no ${cfg.browser} installation found` }))
+  console.error(JSON.stringify({ error: `no ${cfg.browser} installation found (set NETSEC_BROWSER_PATH to its executable)` }))
   process.exit(2)
 }
 

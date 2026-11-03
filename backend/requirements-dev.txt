@@ -1,0 +1,5 @@
+# Everything needed to develop and test the backend: the runtime set plus the test tools.
+-r requirements.txt
+pytest==9.2.0
+httpx==0.28.1  # Starlette's TestClient
+scapy==2.8.0   # used by one test, which checks that synthetic packets can be built; the server does not import it
