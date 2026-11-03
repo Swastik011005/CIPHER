@@ -85,10 +85,13 @@ export async function openBrowser({ browser = 'chrome', width = 1920, height = 1
   await send('Page.enable')
   await send('Runtime.enable')
   await send('Log.enable')
+  await send('Network.enable')
   await send('Page.bringToFront')
 
   const api = {
     send,
+    /** URLs of every network request the page has made so far. */
+    requests: () => events.filter((e) => e.method === 'Network.requestWillBeSent').map((e) => e.params.request.url),
     /** Console errors and uncaught exceptions seen so far. */
     errors: () =>
       events

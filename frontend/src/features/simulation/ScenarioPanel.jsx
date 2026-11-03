@@ -63,7 +63,8 @@ export function ScenarioPanel() {
         setSelected((cur) => cur ?? items[0]?.id ?? null)
       })
       .catch((error) => {
-        if (!signal?.aborted) setScenarios({ status: 'error', items: [], error: error.message })
+        // Already have the list (the engine went away later)? Keep showing it: Run is disabled while offline.
+        if (!signal?.aborted) setScenarios((s) => (s.items.length > 0 ? { ...s, status: 'ready' } : { status: 'error', items: [], error: error.message }))
       })
   }, [])
 
