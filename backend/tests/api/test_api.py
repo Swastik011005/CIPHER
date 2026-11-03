@@ -21,7 +21,7 @@ def test_health_returns_200_and_says_it_is_a_local_simulation(client) -> None:
     assert body["mode"] == "simulation" and body["real_traffic"] is False
     assert body["topology"] == {"loaded": True, "valid": True, "nodes": 17, "links": 18}
     assert body["scenarios_available"] == ["S1", "S2", "S3", "S4", "S5", "S6", "S7"]
-    assert body["stage"] == 6 and body["uptime_s"] >= 0
+    assert body["stage"] == 7 and body["uptime_s"] >= 0
 
 
 def test_topology_returns_the_authoritative_topology(client, raw_topology) -> None:

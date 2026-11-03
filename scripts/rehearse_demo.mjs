@@ -218,6 +218,7 @@ try {
   await shot('11-rules-d1-disabled')
   await clickText('button', 'Scenarios & checks')
   await waitText('Run all checks')
+  await waitFor(() => ev(`!!document.querySelector('section[aria-label^="S2 "]')`), 'the S2 scenario card')
   await ev(`(() => { const card = document.querySelector('section[aria-label^="S2 "]'); [...card.querySelectorAll('button')].find((b) => b.textContent.trim() === 'Run check').click() })()`)
   await waitText('SOME FAIL', 30000)
   check('9 Rules: with D1 off the S2 check fails and shows expected 6, 12 / actual none', (await text()).includes('6, 12') && (await text()).includes('none'))

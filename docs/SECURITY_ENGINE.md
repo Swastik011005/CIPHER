@@ -1,4 +1,4 @@
-# Security engine (Stage 2, extended in Stage 4)
+# Security engine
 
 All of this changes **simulation state only**. Nothing is captured, scanned or blocked on a real network.
 
@@ -66,5 +66,6 @@ Rule ids in events look like `STAFF-IN:10`, `OUTSIDE-IN:implicit-deny`.
 (`usePlaybackDriver`) advances it by real time; events are published to the UI in the frame they are applied and the
 clock at 10 Hz. Packets are drawn from the player each frame (instanced meshes), never through React state.
 
-## Not implemented yet (do not assume)
-Detector D7 (host sweep, postponed by the specification), syslog packets, the Rules editor, PCAP export.
+## Not implemented (do not assume)
+Detector D7 (host sweep, postponed by the specification), syslog packets, the D3 half-open condition, PCAP export and hex view,
+mid-run rule edits. The Rules editor exists (see above). The full list is `LIMITATIONS.md`.

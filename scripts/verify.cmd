@@ -7,7 +7,7 @@ set "FAILED=0"
 
 echo === Backend tests (pytest)
 pushd "%ROOT%\backend"
-.venv\Scripts\python -m pytest -q -p no:cacheprovider
+.venv\Scripts\python -m pytest -o addopts= -q -p no:cacheprovider
 if errorlevel 1 set "FAILED=1"
 popd
 
