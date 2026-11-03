@@ -6,6 +6,25 @@
     "violation": 12,
     "suppression_s": 30.0
   },
+  "D2": {
+    "enabled": true,
+    "ports": [
+      22,
+      23,
+      3389
+    ],
+    "window_s": 30.0,
+    "suspicious": 6,
+    "violation": 12,
+    "suppression_s": 30.0
+  },
+  "D3": {
+    "enabled": true,
+    "window_s": 5.0,
+    "suspicious_pps": 25.0,
+    "violation_pps": 50.0,
+    "suppression_s": 30.0
+  },
   "D4": {
     "enabled": true,
     "suppression_s": 30.0,

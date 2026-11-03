@@ -20,8 +20,8 @@ def test_health_returns_200_and_says_it_is_a_local_simulation(client) -> None:
     assert body["status"] == "ok" and body["service"] == "netsec-ids-engine"
     assert body["mode"] == "simulation" and body["real_traffic"] is False
     assert body["topology"] == {"loaded": True, "valid": True, "nodes": 17, "links": 18}
-    assert body["scenarios_available"] == ["S1", "S2", "S3", "S5", "S6"]
-    assert body["stage"] == 4 and body["uptime_s"] >= 0
+    assert body["scenarios_available"] == ["S1", "S2", "S3", "S4", "S5", "S6", "S7"]
+    assert body["stage"] == 5 and body["uptime_s"] >= 0
 
 
 def test_topology_returns_the_authoritative_topology(client, raw_topology) -> None:
@@ -48,7 +48,7 @@ def test_topology_exposes_what_the_scene_needs(client) -> None:
 def test_scenarios_lists_only_what_exists_in_this_build(client) -> None:
     response = client.get("/api/scenarios")
     assert response.status_code == 200
-    assert [s["id"] for s in response.json()] == ["S1", "S2", "S3", "S5", "S6"]
+    assert [s["id"] for s in response.json()] == ["S1", "S2", "S3", "S4", "S5", "S6", "S7"]
 
 
 def test_run_s1_returns_a_valid_deterministic_trace(client) -> None:
@@ -68,7 +68,7 @@ def test_run_accepts_an_explicit_seed(client) -> None:
     assert a["seed"] == 5 and b["seed"] == 6 and a["trace_hash"] != b["trace_hash"]
 
 
-@pytest.mark.parametrize("scenario_id", ["S4", "S99", "../etc/passwd", "s1", "S1.json"])
+@pytest.mark.parametrize("scenario_id", ["S8", "S99", "../etc/passwd", "s1", "S1.json"])
 def test_unknown_or_unsafe_scenario_ids_return_404(client, scenario_id) -> None:
     response = client.post("/api/sim/run", json={"scenario_id": scenario_id})
     assert response.status_code == 404
@@ -126,7 +126,7 @@ def test_built_frontend_is_served_with_spa_fallback(tmp_path) -> None:
 
 def test_scenarios_report_which_ones_pin_the_ips_mode(client) -> None:
     pinned = {s["id"]: s["pinned_ips_mode"] for s in client.get("/api/scenarios").json()}
-    assert pinned == {"S1": None, "S2": None, "S3": None, "S5": "monitor", "S6": "enforce"}
+    assert pinned == {"S1": None, "S2": None, "S3": None, "S4": None, "S5": "monitor", "S6": "enforce", "S7": None}
 
 
 def test_a_pinned_scenario_ignores_the_requested_ips_mode(client) -> None:

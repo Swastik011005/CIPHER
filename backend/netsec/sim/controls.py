@@ -25,11 +25,11 @@ class IpsModeControl(_Strict):
 
 
 class DetectorControl(_Strict):
-    """Turn one detector (D1, D4, D5, D6) on or off in both sensors."""
+    """Turn one detector (D1 to D6) on or off in both sensors."""
 
     type: Literal["detector"]
     t: float = Field(ge=0)
-    detector: Literal["D1", "D4", "D5", "D6"]
+    detector: Literal["D1", "D2", "D3", "D4", "D5", "D6"]
     enabled: bool
 
 

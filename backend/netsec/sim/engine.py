@@ -34,10 +34,18 @@ from netsec.security.prevention.block_table import Block
 from netsec.security.prevention.ips import IpsEngine
 from netsec.sim.trace import TraceRecorder, canonical_json, trace_digest
 from netsec.sim.controls import ControlSpec, DetectorControl, IpsModeControl
-from netsec.traffic.flows import FlagProbeFlow, IcmpEchoFlow, PortScanFlow, TcpSessionFlow
+from netsec.traffic.flows import FlagProbeFlow, IcmpEchoFlow, PortScanFlow, SynFloodFlow, TcpSessionFlow
 from netsec.traffic.host_stack import HostStack
 from netsec.traffic.packet import IP_TCP_HEADER_BYTES, Packet, PacketSpec, tcp_flags
-from netsec.traffic.scenarios import FlagProbeSpec, FlowSpec, IcmpEchoSpec, PortScanSpec, ScenarioSpec, TcpSessionSpec
+from netsec.traffic.scenarios import (
+    FlagProbeSpec,
+    FlowSpec,
+    IcmpEchoSpec,
+    PortScanSpec,
+    ScenarioSpec,
+    SynFloodSpec,
+    TcpSessionSpec,
+)
 
 
 class EngineError(Exception):
@@ -194,7 +202,7 @@ class Engine:
                  if s.proto == "tcp" and s.port == spec.dport),
                 None,
             )
-            flow: TcpSessionFlow | IcmpEchoFlow | PortScanFlow | FlagProbeFlow = TcpSessionFlow(
+            flow: TcpSessionFlow | IcmpEchoFlow | PortScanFlow | FlagProbeFlow | SynFloodFlow = TcpSessionFlow(
                 flow_id=spec.id,
                 src_ip=src_ip,
                 dst_ip=dst_ip,
@@ -204,6 +212,19 @@ class Engine:
                 sport=49152 + rng.randrange(16384),
                 isn=rng.getrandbits(31),
             )
+        elif isinstance(spec, SynFloodSpec):
+            try:
+                flow = SynFloodFlow(
+                    flow_id=spec.id,
+                    src_ip=src_ip,
+                    dst_ip=dst_ip,
+                    dport=spec.dport,
+                    phases=[(p.rate, p.duration) for p in spec.phases],
+                    sport_base=10000 + rng.randrange(20000),
+                    isn=rng.getrandbits(31),
+                )
+            except ValueError as exc:
+                raise EngineError(str(exc)) from exc
         elif isinstance(spec, FlagProbeSpec):
             flow = FlagProbeFlow(
                 flow_id=spec.id,

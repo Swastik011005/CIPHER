@@ -34,6 +34,32 @@
       "severity": "high",
       "action": "drop",
       "duration_s": null
+    },
+    {
+      "detector": "D2",
+      "severity": "medium",
+      "action": "allow",
+      "duration_s": null
+    },
+    {
+      "detector": "D2",
+      "severity": "high",
+      "action": "block_source",
+      "duration_s": 30.0
+    },
+    {
+      "detector": "D3",
+      "severity": "medium",
+      "action": "rate_limit",
+      "duration_s": null,
+      "rate_pps": 10.0,
+      "burst": 20
+    },
+    {
+      "detector": "D3",
+      "severity": "high",
+      "action": "block_source",
+      "duration_s": 20.0
     }
   ]
 }

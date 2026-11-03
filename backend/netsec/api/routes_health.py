@@ -12,7 +12,7 @@ from netsec.traffic.scenarios import list_scenarios
 router = APIRouter(tags=["health"])
 
 SERVICE_NAME = "netsec-ids-engine"
-STAGE = 4
+STAGE = 5
 
 
 @router.get("/health")

@@ -13,6 +13,7 @@ from netsec.traffic.scenarios import list_scenarios, load_scenario
 
 SEEDS = [1, 2, 3, 4, 5]
 CORE = ["S1", "S2", "S3", "S5", "S6"]
+STAGE5 = ["S4", "S7"]
 
 # scenario -> mode -> (alerts, incidents, blocked, data packets blocked by IPS-1)
 EXPECTED = {
@@ -26,6 +27,10 @@ EXPECTED = {
     ("S5", "enforce"): (4, 1, 0),  # pinned: the requested mode is ignored
     ("S6", "monitor"): (4, 1, 24),  # pinned to Enforce
     ("S6", "enforce"): (4, 1, 24),
+    ("S4", "monitor"): (4, 1, 0),
+    ("S4", "enforce"): (4, 1, 305),
+    ("S7", "monitor"): (4, 1, 0),
+    ("S7", "enforce"): (4, 1, 18),
 }
 CASES = [(sid, mode, seed) for (sid, mode) in EXPECTED for seed in SEEDS]
 
@@ -116,7 +121,7 @@ def test_nothing_ids_1_does_ever_causes_a_drop_or_an_enforcement_event(runs, sid
     assert not [e for e in of(result, "packet.delivered") if e["pid"] in copies and e["node"] != "IDS-1"]
 
 
-@pytest.mark.parametrize("sid", ["S1", "S2", "S3"])
+@pytest.mark.parametrize("sid", ["S1", "S2", "S3", "S4", "S7"])
 def test_different_seeds_change_the_trace_but_not_what_happens(runs, sid) -> None:
     hashes = {runs(sid, "enforce", seed).trace_hash for seed in SEEDS}
     assert len(hashes) == len(SEEDS)
@@ -167,4 +172,4 @@ def test_s5_and_s6_are_identical_until_the_high_alert_then_s6_blocks(runs, seed)
 
 
 def test_all_core_scenarios_are_listed_by_the_engine() -> None:
-    assert [s.id for s in list_scenarios()] == CORE
+    assert [s.id for s in list_scenarios()] == sorted(CORE + STAGE5)  # S1 to S7 (there is no S4 gap any more)

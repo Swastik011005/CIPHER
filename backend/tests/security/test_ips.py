@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from netsec.security.config import IpsPolicyConfig, IpsRule, SecurityConfigError, load_detectors, load_ips_policy
+from netsec.security.config import IpsPolicyConfig, IpsRule, load_detectors, load_ips_policy
 from netsec.security.correlation import Correlator
 from netsec.security.detection.base import ObservedPacket
 from netsec.security.prevention.block_table import Block, BlockTable
@@ -95,10 +95,16 @@ def test_an_older_expiry_does_not_remove_a_newer_block() -> None:
     assert table.active("a", 20.0) is None
 
 
-def test_actions_that_are_not_implemented_are_refused_up_front() -> None:
-    policy = IpsPolicyConfig(allowlist=[], rules=[IpsRule(detector="D1", severity="high", action="rate_limit")])
-    with pytest.raises(SecurityConfigError, match="not implemented"):
-        IpsEngine("enforce", load_detectors(), policy, Correlator())
+def test_every_action_in_the_contract_is_implemented() -> None:
+    from netsec.security.prevention.ips import SUPPORTED_ACTIONS
+
+    assert SUPPORTED_ACTIONS == {"allow", "drop", "reject", "block_source", "rate_limit"}
+
+
+def test_rate_limit_rules_need_a_rate_and_a_burst() -> None:
+    with pytest.raises(ValueError, match="rate_pps and burst"):
+        IpsRule(detector="D3", severity="medium", action="rate_limit")
+    assert IpsRule(detector="D3", severity="medium", action="rate_limit", rate_pps=10, burst=20).burst == 20
 
 
 def test_block_rules_need_a_duration() -> None:

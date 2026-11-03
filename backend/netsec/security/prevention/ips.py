@@ -3,9 +3,10 @@
 Processing order for every packet that reaches it (frozen, Rev 3 A5):
 
 1. Is the source in the block table? Drop it.
-2. Run the detectors on the packet, so they always see the true traffic.
+2. Run the detectors on the packet, so they always see the true traffic (a rate limiter can never hide a flood).
 3. Look up the configured action for the most severe finding.
-4. Enforce mode applies the action; Monitor mode only records that it would have.
+4. Enforce mode applies the action; Monitor mode only records that it would have. For ``rate_limit`` only the
+   packets over the token bucket are acted on; the rest pass without an ``ips.action`` event.
 5. The caller forwards the packet unless it was dropped.
 
 The IPS is the only component that can enforce on a detection. IDS-1 has no such object.
@@ -22,9 +23,10 @@ from netsec.security.correlation import Correlator
 from netsec.security.detection.base import ObservedPacket
 from netsec.security.detection.engine import DetectionEngine, Observation
 from netsec.security.prevention.block_table import Block, BlockTable
+from netsec.security.prevention.rate_limiter import TokenBucket
 
 IpsMode = Literal["monitor", "enforce"]
-SUPPORTED_ACTIONS = frozenset({"allow", "drop", "reject", "block_source"})
+SUPPORTED_ACTIONS = frozenset({"allow", "drop", "reject", "block_source", "rate_limit"})
 ALLOWLIST_RULE = "allowlist"
 
 
@@ -54,6 +56,7 @@ class IpsEngine:
         self.mode = mode
         self.policy = policy
         self.blocks = BlockTable()
+        self._buckets: dict[str, TokenBucket] = {}  # one token bucket per rate-limited source
         self.detection = DetectionEngine(sensor, detectors, correlator)
         self.correlator = correlator
 
@@ -82,6 +85,19 @@ class IpsEngine:
             return IpsOutcome(observation=observation)
         if self.policy.is_allowlisted(packet.src):
             return IpsOutcome(observation=observation, action="allow", applied=True, rule=ALLOWLIST_RULE)
+
+        # 3b. rate limit: packets within the token bucket pass untouched; only the excess is acted on
+        if rule.action == "rate_limit":
+            bucket = self._buckets.get(packet.src)
+            if bucket is None:
+                bucket = self._buckets[packet.src] = TokenBucket(rule.rate_pps or 1.0, rule.burst or 1, now)
+            if bucket.allow(now):
+                return IpsOutcome(observation=observation)
+            if self.mode == "monitor":
+                return IpsOutcome(observation=observation, action="rate_limit", applied=False, rule=finding.rule)
+            return IpsOutcome(
+                observation=observation, action="rate_limit", applied=True, rule=finding.rule, drop_reason="rate_limited"
+            )
 
         # 4. enforce or only record
         if self.mode == "monitor":

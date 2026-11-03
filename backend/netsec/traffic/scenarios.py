@@ -73,7 +73,28 @@ class FlagProbeSpec(_Strict):
     interval: float = Field(default=0.5, gt=0)
 
 
-FlowSpec = Annotated[Union[TcpSessionSpec, IcmpEchoSpec, PortScanSpec, FlagProbeSpec], Field(discriminator="type")]
+class FloodPhase(_Strict):
+    """``rate`` packets per second for ``duration`` seconds."""
+
+    rate: float = Field(gt=0, le=200)
+    duration: float = Field(gt=0, le=60)
+
+
+class SynFloodSpec(_Strict):
+    """A SYN flood: bare SYNs to one port at a changing rate (each phase runs after the one before)."""
+
+    type: Literal["syn_flood"]
+    id: str
+    src: str
+    dst: str
+    dport: int = Field(ge=1, le=65535)
+    start: float = Field(ge=0)
+    phases: list[FloodPhase] = Field(min_length=1, max_length=10)
+
+
+FlowSpec = Annotated[
+    Union[TcpSessionSpec, IcmpEchoSpec, PortScanSpec, FlagProbeSpec, SynFloodSpec], Field(discriminator="type")
+]
 
 
 class ScenarioSpec(_Strict):
