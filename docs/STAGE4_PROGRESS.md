@@ -77,19 +77,57 @@ switch store logic.
 - UI: S5 and S6 show the pinned chip and no live switch; S2 shows the mode selector and the live switch. Switching an S2
   Enforce run to Monitor at 2.0 s through the button gave 0 blocked and 26 flagged, with the playhead staying at 2.0 s.
 
-## Performance (not what the target asks for)
-- The in-app browser rendered on the **Intel UHD Graphics** integrated GPU in this session (WebGL renderer string), not the
-  RTX 4050 an earlier session recorded. On it the scene ran 20 to 40 fps at about 1329 x 846 with 238 draw calls and
-  81k triangles, in both High and Low, with the Stage 3 and Stage 4 builds equal within noise (Stage 2 baseline in the same
-  pane: 33 fps). **The 55 fps RTX 4050 target was not measured and not met in this environment.**
-- Later in the session the window was throttled by the operating system (0.8 to 1 fps for any page, visible and focused), so
-  no further timing numbers were taken. Fixing it needs the Claude window in view; routing the app to the discrete GPU needs
-  a Windows graphics setting, which was not changed.
-- No normal Chrome window was available (Claude in Chrome had no connected browser).
+## Closures after the Stage 4 report (the two open items)
+
+### 1. Custom traffic (Rev 3 Day 4): done and verified live
+`POST /api/sim/run` accepts `custom_flows` (up to 5; any flow type: TCP session, ping, raw-flag probe, port scan, flood). They
+are added to the scenario's own flows and simulated with it. Rules that keep the past intact:
+- they are left out of `config_hash` and `run.meta` (like controls), and each draws its ports and sequence numbers from its own
+  random stream (`random.Random("<seed>:<flow id>")`), so nothing before its start moves; tested for S1, S2 and S3, five seeds;
+- a run with custom traffic may outlast the scenario: `run.end` falls when the last packet has settled, while `run.meta.duration`
+  stays the declared one;
+- bad requests (not a host, same source and destination, id clash, invalid port, more than 5) are HTTP 422.
+UI: the "Send traffic" card (Scenario panel column) has From, To, Kind (TCP connection, TCP with chosen flags with NULL/XMAS/
+SYN+FIN presets, Ping), Port, Count, "Send at T+x s" (the playhead rounded up to a tenth) and a "Staff → DB:3306" preset. It
+re-simulates and plays on from the playhead; the injected flows are listed with "open packet #n", and can be cleared.
+Live check (real backend, S1 loaded, PC-1 to DB-SRV:3306 at T+4.6 s): packet #8 "Dropped at CORE-SW1 (acl_deny)", rule
+`STAFF-IN:10`, hops PC-1 → ACC-SW2 → CORE-SW1 (VLAN 10, TTL 64), SPAN copy #14, IDS-1 alert D4 HIGH, counters 1 blocked / 1 alert /
+1 incident, and the `STAFF-IN:10` effect label over CORE-SW1 with its "1 DENIED" tag. Tests: 25 backend (prefix stability over five
+seeds, rule id, path, extension, refusals), 2 API, 25 frontend (validation, flow building, store, a real engine trace).
+
+### 2. The 55 fps target on the RTX 4050: NOT verified (external blocker); integrated-GPU numbers measured
+**Blocker.** The NVIDIA GeForce RTX 4050 Laptop GPU is registered with Windows but **not present**: `Get-PnpDevice -Class Display`
+reports it with `Present = False`, status Unknown; `Win32_VideoController` lists only Intel UHD Graphics; `nvidia-smi` refuses
+(insufficient permissions). So no browser can render on it right now. Both browsers open with `powerPreference: high-performance`
+(the app asks for the fast GPU) and still report the Intel adapter. Re-enabling the dGPU (device manager, BIOS or the vendor's
+hybrid-graphics switch) and Windows Graphics settings are system settings; nothing was changed. An earlier session recorded an
+RTX 4050 renderer and 59 to 60 fps in the in-app pane; that cannot be reproduced now and is not relied on.
+**Left unverified:** ">= 55 fps at High on the RTX 4050" (Stage 3 criterion 8 and the Day 5 S4-peak criterion).
+
+**What was measured instead** with `scripts/measure_fps.mjs` (a visible Chrome 156.0.8078.74 / Edge 156 window, throw-away
+profile, the app's own store drives the scenario, frames counted for the stated time; run it again on a machine whose dGPU
+is active with `node scripts/measure_fps.mjs --scenario S4 --mode monitor --start 11 --seconds 6 --quality high`):
+| Scene | Quality | Window (CSS px, DPR 1) | GPU as reported by WebGL | fps | worst 1% frame | draw calls | triangles |
+|---|---|---|---|---|---|---|---|
+| S2 Enforce, T+3 to 13 s | High | 1904 x 985 | Intel UHD Graphics (D3D11) | 14.1 | 166 ms | 233 | 80,788 |
+| S2 Enforce | Low | 1904 x 985 | Intel UHD Graphics | 55.3 | 33.5 ms | 233 | 80,788 |
+| S2 Enforce | Low | 1350 x 673 | Intel UHD Graphics | 58.1 | 33.4 ms | n/a | n/a |
+| S2 Enforce (Edge) | High | 1896 x 988 | Intel UHD Graphics | 17.8 | 183 ms | n/a | n/a |
+| S4 Monitor peak, T+11 to 17 s (about 400 packets on screen) | High | 1904 x 985 | Intel UHD Graphics | 16.1 | 133 ms | 250 | 101,500 |
+| S4 Monitor peak | Low | 1904 x 985 | Intel UHD Graphics | 35.2 | 33.8 ms | 249 | 101,044 |
+| S4 Enforce peak (about 260 packets) | High | 1904 x 985 | Intel UHD Graphics | 15.7 | 167 ms | 235 | 81,160 |
+| S4 Enforce peak | Low | 1904 x 985 | Intel UHD Graphics | 37.9 | 33.7 ms | 236 | 81,256 |
+Pixel ratio was 1.07 in High (the adaptive pixel ratio) and 1 in Low. Playback kept real time in every run (simulation seconds
+advanced equal to wall seconds within 5%). Reading: **Low meets the Rev 3 Day 6 target of >= 30 fps on an integrated GPU** (35 to 58 fps
+on this Intel UHD, including the S4 flood peak); **High does not run well on it** (14 to 18 fps). Draw calls stay at the 250
+budget at the S4 peak. Because of that, the app now switches itself to Low after five seconds below 25 fps (and says so, with a
+"Back to High" button); throttled pages (about 1 fps, hidden window) are not mistaken for a slow GPU.
+The in-app browser pane was unreliable for timing (throttled to about 1 fps whenever its window was covered), so no number
+in this document comes from it after the first Stage 3 session.
 
 ## Open items
-- 55 fps on the RTX 4050 in a normal browser window; free-running playback of S3 was not timed in this session.
-- Mid-run changes cover IPS mode and detector on or off only; rules and thresholds editing is the Rules page (later).
-- D5 has no scenario where IPS-1 acts on it (traffic to the Security network never reaches IPS-1); its drop action is
-  covered by unit tests. D6 has no product scenario; it is covered by `flag_probe` tests.
+- 55 fps at High on the RTX 4050 (blocked: the GPU is not present in Windows; see above).
+- Mid-run changes cover IPS mode, detector on or off and added traffic; editing rules and thresholds is the Rules page (not built).
+- D5 has no scenario where IPS-1 acts on it (traffic to the Security network never reaches IPS-1); its drop action is covered by unit
+  tests. D6 has no product scenario; it is covered by `flag_probe` tests and by custom traffic.
 - No screenshots are saved in the repository.
