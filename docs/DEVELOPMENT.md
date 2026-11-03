@@ -62,3 +62,23 @@ S1 monitor 2e87676465e7   S1 enforce 261f62311e3a   S2 monitor 720f81078ac3   S2
 S3 monitor fcfa8b6a1610   S3 enforce 896daec4ffc6   S4 monitor 87836d910fe4   S4 enforce d832a0637407
 S5 monitor c9c52eea62fa   S6 enforce e138d470f62a   S7 monitor d1d9fb806b20   S7 enforce 8c652bdb331e
 ```
+
+## Reference measurements (Stage A, Windows laptop)
+
+Recorded on one laptop (Intel Core i5-13450HX, Windows 11, Python 3.13.7, Node 24.15.0). Chrome rendered on the **Intel UHD**
+graphics (WebGL renderer string `ANGLE (Intel, Intel(R) UHD Graphics ... Direct3D11)`), not the discrete GPU, so none of this
+says anything about the 55 fps target on an RTX 4050, which remains unverified.
+
+| Check | Result |
+|---|---|
+| Backend tests | 948 passed (937 from v1.0 plus 11 tooling guard tests) |
+| Frontend tests | 277 passed in 18 files |
+| Scenario checks | 12 of 12 runs, 93 of 93 checks; trace hashes identical to the values above |
+| Production build | succeeds |
+| Fresh clone: `tasks.py setup` | 44 s with warm package caches; `tasks.py verify` 48 s |
+| Browser rehearsal (`rehearse_demo.mjs`, real Chrome, demo mode) | 34 of 34 checks, no console error, no request outside 127.0.0.1 |
+| Offline recovery (`check_offline_recovery.mjs`) | 8 of 8 checks |
+| Frame rate, S4 Enforce at its peak, 1904 x 985 | **High 19.4 fps** (worst 1% frame 150 ms), **Low 59.8 fps** (worst 1% frame 17.2 ms); 242 and 241 draw calls, about 82k triangles |
+
+Use these as the "before" numbers when judging rendering changes: the 3D stages must not make the High or Low figures worse.
+Run the browser tools with `--out <folder>` (rehearsal, offline recovery) to avoid rewriting the screenshots under `docs/demo`.
