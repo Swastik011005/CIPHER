@@ -182,3 +182,7 @@ export const useStore = create((set, get) => ({
   setSceneVisible: (visible) =>
     set((s) => ({ sceneVisible: visible, sceneEverVisible: s.sceneEverVisible || visible })),
 }))
+
+// Debug aid, only with ?debug=1: lets a script or the console drive the app's own store (a second import of
+// this module would be a different copy, with its own empty playback session).
+if (typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('debug')) window.__netsecStore = useStore
