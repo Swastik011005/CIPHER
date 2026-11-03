@@ -15,11 +15,21 @@ cd /d "%ROOT%\backend" || exit /b 1
 if not exist .venv\Scripts\python.exe ( %PY% -m venv .venv || exit /b 1 )
 
 echo [2/4] Installing backend dependencies...
-.venv\Scripts\python -m pip install --disable-pip-version-check -r requirements.txt || exit /b 1
+.venv\Scripts\python -m pip install --disable-pip-version-check --retries 8 --timeout 60 -r requirements.txt || (
+  echo.
+  echo The backend dependencies could not be installed. If the message above mentions "No matching distribution" or a
+  echo timeout, the package index was unreachable for a moment: check the internet connection and run this script again,
+  echo it continues where it stopped.
+  exit /b 1
+)
 
 echo [3/4] Installing frontend dependencies...
 cd /d "%ROOT%\frontend" || exit /b 1
-call npm ci --no-audit --no-fund || exit /b 1
+call npm ci --no-audit --no-fund --fetch-retries=5 --fetch-retry-maxtimeout=60000 || (
+  echo.
+  echo The frontend dependencies could not be installed. Check the internet connection and run this script again.
+  exit /b 1
+)
 
 echo [4/4] Building the frontend for demo mode...
 call npm run build || exit /b 1
