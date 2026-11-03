@@ -5,11 +5,7 @@ import { Banner, Button, Card, Chip, Spinner } from '../ui/index.js'
 import './pages.css'
 
 const PLANNED = [
-  ['S2', 'Port scan with IDS detection'],
-  ['S3', 'Unauthorized access'],
   ['S4', 'Excessive traffic'],
-  ['S5', 'Same traffic, IPS in Monitor mode'],
-  ['S6', 'Same traffic, IPS in Enforce mode'],
   ['S7', 'SSH brute force'],
 ]
 

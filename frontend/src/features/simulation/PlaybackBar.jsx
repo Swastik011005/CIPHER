@@ -1,25 +1,13 @@
 import { Pause, Play, RotateCcw, SkipForward } from 'lucide-react'
 import { useMemo } from 'react'
 
+import { markersFor } from '../../playback/markers.js'
 import { SPEEDS } from '../../playback/player.js'
 import { session } from '../../playback/session.js'
 import { useStore } from '../../state/store.js'
 import { Segmented } from '../../ui/index.js'
 
 const SPEED_OPTIONS = SPEEDS.map((s) => ({ value: s, label: `${s}×` }))
-
-/** Marks on the scrubber for the moments worth jumping to. */
-function markersFor(events, duration) {
-  const marks = []
-  for (const e of events) {
-    let kind = null
-    if (e.type === 'alert.raised') kind = e.severity === 'high' ? 'alert-high' : 'alert-medium'
-    else if (e.type === 'block.added') kind = 'block'
-    else if (e.type === 'block.expired') kind = 'unblock'
-    if (kind) marks.push({ key: e.seq, kind, left: (e.t / duration) * 100, title: `T+${e.t.toFixed(2)} s · ${e.type.replace('.', ' ')}${e.sensor ? ` (${e.sensor})` : ''}` })
-  }
-  return marks
-}
 
 function Counter({ label, value, tone }) {
   return (
@@ -45,9 +33,9 @@ export function PlaybackBar() {
 
   const markers = useMemo(
     () => (loaded && session.player ? markersFor(session.player.events, duration) : []),
-    // The run changes whenever its duration or its event list does.
+    // A re-run with a mid-run control keeps the run id but has new events, so key on the event list itself.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [loaded, duration, state?.meta?.run_id],
+    [loaded, duration, session.player?.events],
   )
   const counts = state?.counts
 

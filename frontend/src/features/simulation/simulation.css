@@ -376,6 +376,8 @@
 .scrubber__mark--alert-medium { background: var(--warn); }
 .scrubber__mark--block { background: var(--sensor); height: 12px; }
 .scrubber__mark--unblock { background: var(--ok); }
+.scrubber__mark--deny { background: var(--danger); opacity: 0.55; height: 6px; top: 2px; }
+.scrubber__mark--reject { background: var(--accent); height: 12px; }
 
 .playback__counters {
   display: flex;
@@ -439,6 +441,10 @@
   justify-content: space-between;
   gap: var(--space-3);
 }
+.mode-row--live {
+  margin-top: var(--space-4);
+}
+
 .mode-note {
   margin-top: var(--space-2);
   font-size: 12px;

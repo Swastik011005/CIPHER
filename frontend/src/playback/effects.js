@@ -15,7 +15,7 @@
  * @typedef {Object} Effect
  * @property {string} id        Stable: `<event seq>:<kind>`.
  * @property {string} kind      'deliver' | 'mirror' | 'radar' | 'sensor-ping' | 'sensor-alert' | 'ips-allow' | 'ips-flag'
- *                              | 'ips-block' | 'unblock' | 'fw-ripple' | 'acl-flash' | 'shatter'
+ *                              | 'ips-block' | 'ips-reject' | 'unblock' | 'fw-ripple' | 'acl-flash' | 'shatter'
  * @property {number} t0        Start time (s).
  * @property {number} dur       Duration (s).
  * @property {string} node      Device the effect is anchored to.
@@ -33,6 +33,7 @@ export const EFFECT_DURATION = Object.freeze({
   'ips-allow': 0.5,
   'ips-flag': 0.8,
   'ips-block': 0.9,
+  'ips-reject': 1.0,
   unblock: 1.0,
   'fw-ripple': 1.1,
   'acl-flash': 0.7,
@@ -96,8 +97,12 @@ export function buildEffects(events) {
         if (!e.applied) {
           // Monitor mode: the same amber flash, relabelled so it reads as "would block".
           const existing = flagEffects.get(e.pid)
-          if (existing) existing.label = 'would block'
-          else add(e, 'ips-flag', 'IPS-1', 'warn', e.pid, 'would block')
+          const label = e.action === 'block_source' ? 'would block' : `would ${e.action}`
+          if (existing) existing.label = label
+          else add(e, 'ips-flag', 'IPS-1', 'warn', e.pid, label)
+        } else if (e.action === 'reject') {
+          // The rejected packet shatters (from packet.dropped) and IPS-1 sends the reset back (a packet of its own).
+          add(e, 'ips-reject', 'IPS-1', 'danger', e.pid, `reject ${e.rule} · TCP reset`)
         } else if (e.action !== 'block_source') {
           // Blocking a source is drawn once, by `block.added`; each later drop is drawn by its shatter.
           add(e, 'ips-block', 'IPS-1', 'danger', e.pid, e.action)

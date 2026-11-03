@@ -30,7 +30,11 @@ const LOG_LIMIT = 60
  * @property {boolean} flagged   A sensor on the packet's own path judged it suspicious or malicious.
  * @property {{kind: 'allowed'|'flagged'|'blocked', t: number}|null} verdict  What an enforcement point decided, and when.
  * @property {{seq: number, t: number, type: string, node: string, tone: string, text: string}[]} trail  Decisions made about it.
+ * @property {string|null} injectedBy  The device that created this packet out of thin air (IPS-1's reject reset), else null.
  */
+
+/** A reset IPS-1 injects when it rejects a connection travels in a flow named `<original flow>:rst`. */
+export const isInjectedReset = (e) => e.mirror_of == null && typeof e.flow === 'string' && e.flow.endsWith(':rst')
 
 /** Verdict strength: a packet never goes back to a weaker verdict. */
 const VERDICT_RANK = { allowed: 1, flagged: 2, blocked: 3 }
@@ -57,6 +61,7 @@ export function initialState() {
     alerts: [],
     blocks: {},
     packets: {},
+    drops: {},
     nodes: {},
     ruleHits: {},
     log: [],
@@ -71,6 +76,7 @@ export function describeEvent(e) {
     case 'run.meta':
       return `Run ${e.scenario_id} started (IPS ${e.ips_mode})`
     case 'packet.created':
+      if (isInjectedReset(e)) return `IPS-1 injected a TCP reset spoofed as ${e.src}:${e.sport} to ${e.dst}`
       return e.mirror_of == null
         ? `${e.src} → ${e.dst}${e.dport != null ? `:${e.dport}` : ''} ${e.proto.toUpperCase()} ${e.flags.join('+')}`.trim()
         : `SPAN copy of #${e.mirror_of}`
@@ -83,7 +89,8 @@ export function describeEvent(e) {
     case 'alert.raised':
       return `${e.sensor} ALERT ${e.severity.toUpperCase()} ${e.rule}: ${e.reason}`
     case 'ips.action':
-      return `IPS-1 ${e.applied ? 'applied' : 'would apply'} ${e.action} to #${e.pid}`
+      if (e.action === 'reject' && e.applied) return `IPS-1 rejected #${e.pid} (${e.rule}) and sent a TCP reset`
+      return `IPS-1 ${e.applied ? 'applied' : 'would apply'} ${e.action} to #${e.pid}${e.rule ? ` (${e.rule})` : ''}`
     case 'block.added':
       return `IPS-1 blocked ${e.src} until T+${e.until.toFixed(1)}s`
     case 'block.expired':
@@ -148,6 +155,12 @@ export function applyEvent(state, e) {
         flagged: false,
         verdict: null,
         trail: [],
+        injectedBy: null,
+      }
+      if (isInjectedReset(e)) {
+        record.injectedBy = 'IPS-1'
+        record.verdict = { kind: 'blocked', t: e.t }
+        record.trail = [{ seq: e.seq, t: e.t, type: e.type, node: 'IPS-1', tone: 'danger', text: `IPS-1 created this TCP reset, spoofed as ${e.src}, to end the rejected connection` }]
       }
       next.packets = { ...state.packets, [e.pid]: record }
       next.counts = { ...state.counts }
@@ -228,6 +241,7 @@ export function applyEvent(state, e) {
         next.counts = { ...state.counts }
         if (end.type === 'delivered') next.counts[packet.flagged ? 'delivered_flagged' : 'delivered_clean'] += 1
         else next.counts[BLOCKED_REASONS.includes(e.reason) ? 'blocked' : 'other_drop'] += 1
+        if (end.type === 'dropped') next.drops = { ...state.drops, [e.reason]: (state.drops[e.reason] ?? 0) + 1 }
       }
       break
     }
@@ -260,7 +274,8 @@ export function applyEvent(state, e) {
       break
   }
 
-  if (TICKER_TYPES.has(e.type) && !(e.type === 'policy.decision' && e.action === 'permit')) {
+  const ticker = TICKER_TYPES.has(e.type) || (e.type === 'packet.created' && isInjectedReset(e))
+  if (ticker && !(e.type === 'policy.decision' && e.action === 'permit')) {
     next.log = [...state.log, { seq: e.seq, t: e.t, type: e.type, text: describeEvent(e) }].slice(-LOG_LIMIT)
   }
   return next

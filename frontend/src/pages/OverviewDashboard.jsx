@@ -18,14 +18,14 @@ const LAYERS = [
     name: 'IDS',
     where: 'IDS-1, passive',
     text: 'Watches copies of traffic sent to it over a SPAN port and raises alerts. It cannot block anything, because it is not in the path.',
-    stage: 'Implemented: D1 port-scan detection',
+    stage: 'Implemented: D1 port scan, D4 restricted service, D5 forbidden zone pair, D6 invalid TCP flags',
   },
   {
     icon: ShieldCheck,
     name: 'IPS',
     where: 'IPS-1, inline',
     text: 'Sits in the path to the servers, so it can drop, reject or block traffic once a rule says so.',
-    stage: 'Implemented: Monitor and Enforce (block source)',
+    stage: 'Implemented: Monitor and Enforce (drop, reject with a TCP reset, block source)',
   },
 ]
 

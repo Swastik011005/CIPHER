@@ -42,28 +42,42 @@ export const useStore = create((set, get) => ({
 
   // -- scenario run and playback ------------------------------------------------------
   /** The loaded run's identity and the engine's own summary; the trace itself lives in `session`. */
-  run: { status: 'idle', meta: null, error: null },
+  run: { status: 'idle', meta: null, error: null, request: null },
   /** Mirror of the trace player for the UI. `state` is the reducer state at `time`. */
   playback: { loaded: false, playing: false, speed: 1, time: 0, duration: 0, finished: false, state: null },
 
   /** Ask the engine to simulate a scenario and load its trace into the player (paused at T+0). */
-  runScenario: async (scenarioId, ipsMode) => {
-    set({ run: { status: 'loading', meta: null, error: null } })
+  runScenario: async (scenarioId, ipsMode, controls = [], resume = null) => {
+    set({ run: { status: 'loading', meta: null, error: null, request: null } })
     try {
-      const body = await api.runScenario({ scenario_id: scenarioId, ips_mode: ipsMode })
+      const body = await api.runScenario({ scenario_id: scenarioId, ips_mode: ipsMode, controls })
       const { events, ...meta } = body
       const player = session.load(body)
-      set({ run: { status: 'ready', meta, error: null } })
+      set({ run: { status: 'ready', meta, error: null, request: { scenarioId, ipsMode, controls } } })
       get().syncPlayback()
-      player.play()
+      if (resume) player.seek(resume.time) // a re-run from the playhead: everything before it is identical
+      if (!resume || resume.playing) player.play()
       get().syncPlayback()
     } catch (error) {
       session.clear()
       set({
-        run: { status: 'error', meta: null, error: error?.message ?? String(error) },
+        run: { status: 'error', meta: null, error: error?.message ?? String(error), request: null },
         playback: { loaded: false, playing: false, speed: 1, time: 0, duration: 0, finished: false, state: null },
       })
     }
+  },
+
+  /**
+   * Switch IPS-1's mode from the playhead onwards. The engine re-simulates the same run with a control at
+   * this time; every event before it stays identical, so the scene does not change behind the playhead.
+   */
+  switchIpsModeFromNow: async (mode) => {
+    const { run, playback } = get()
+    const request = run.request
+    if (!request || !playback.loaded) return
+    const t = Math.round(playback.time * 100) / 100
+    const controls = [...request.controls.filter((c) => !(c.type === 'ips_mode' && c.t >= t)), { type: 'ips_mode', t, mode }]
+    await get().runScenario(request.scenarioId, request.ipsMode, controls, { time: t, playing: playback.playing })
   },
 
   /** Copy the player's state into the store. Called by the driver and after every control. */
