@@ -65,6 +65,15 @@
   background: var(--surface-2);
   border: 1px solid var(--border);
 }
+.layer .chip {
+  /* the status line under each layer is a sentence, not a tag: let it wrap inside the card */
+  height: auto;
+  min-height: 22px;
+  padding-block: 3px;
+  white-space: normal;
+  line-height: 1.35;
+}
+
 .layer__head {
   display: flex;
   align-items: center;

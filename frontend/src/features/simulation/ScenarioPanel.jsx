@@ -167,6 +167,11 @@ export function ScenarioPanel() {
           <Chip tone="accent" mono>{run.meta.scenario_id}</Chip>
           <Chip mono>IPS {run.meta.ips_mode}</Chip>
           <Chip mono title="Identical runs give an identical hash">trace {run.meta.trace_hash.slice(0, 8)}</Chip>
+          {run.meta.rules_customised && (
+            <Chip tone="warn" title="This run used rules you changed on the Rules page">
+              custom rules
+            </Chip>
+          )}
         </div>
       )}
       <LiveReadout />

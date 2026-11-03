@@ -1,86 +1,87 @@
-import { useCallback, useEffect, useState } from 'react'
+import { RotateCcw } from 'lucide-react'
+import { useState } from 'react'
 
-import { api } from '../api/client.js'
-import { Banner, Button, Card, Spinner } from '../ui/index.js'
+import { DetectionTab } from '../features/rules/DetectionTab.jsx'
+import { FirewallTab } from '../features/rules/FirewallTab.jsx'
+import { PreventionTab } from '../features/rules/PreventionTab.jsx'
+import { ScenariosTab } from '../features/rules/ScenariosTab.jsx'
+import { rulesStatus } from '../features/rules/rulesLogic.js'
+import { useRules } from '../features/rules/useRules.js'
+import '../features/rules/rules.css'
+import { Banner, Button, Card, Chip, Segmented, Spinner } from '../ui/index.js'
 import './pages.css'
 
+const TABS = [
+  { value: 'firewall', label: 'Firewall & ACL' },
+  { value: 'detection', label: 'Detection (IDS)' },
+  { value: 'prevention', label: 'Prevention (IPS)' },
+  { value: 'scenarios', label: 'Scenarios & checks' },
+]
 
-/** Scenarios the engine reports having, loaded live from /api/scenarios. */
-function useScenarios() {
-  const [state, setState] = useState({ status: 'loading', items: [], error: null })
-
-  const load = useCallback((signal) => {
-    setState((s) => ({ ...s, status: 'loading', error: null }))
-    api
-      .scenarios({ signal })
-      .then((items) => setState({ status: 'ready', items, error: null }))
-      .catch((error) => {
-        if (!signal?.aborted) setState({ status: 'error', items: [], error: error.message })
-      })
-  }, [])
-
-  useEffect(() => {
-    const controller = new AbortController()
-    load(controller.signal)
-    return () => controller.abort()
-  }, [load])
-
-  return [state, load]
-}
-
-/** Page 5: scenarios the engine can run. Rule editors arrive with the security engine. */
+/**
+ * Page 5: the rules the engine runs with and the scenarios that exercise them. Every edit is sent to the
+ * backend, validated there and stored there; the next run (from this page or the 3D simulation) uses it.
+ */
 export function RulesScenarios() {
-  const [scenarios, reload] = useScenarios()
+  const rules = useRules()
+  const [tab, setTab] = useState('detection')
+  const status = rulesStatus(rules.rules)
 
   return (
-    <div className="page">
-      <Card eyebrow="Scenarios" title="Available in this build">
-        {scenarios.status === 'loading' && (
-          <div className="inline-status">
-            <Spinner /> <span className="muted">Asking the engine…</span>
+    <div className="page rules-page">
+      <div className="rules-head">
+        <Segmented label="Rules sections" value={tab} onChange={setTab} options={TABS} />
+        {rules.rules && (
+          <div className="rules-status" data-customised={status.customised}>
+            <Chip tone={status.customised ? 'warn' : 'ok'}>{status.customised ? 'Custom rules' : 'Shipped rules'}</Chip>
+            <span className="muted">{status.text}</span>
+            <span className="muted mono" title="Digest of every rule; it is part of each run's config hash">
+              rules {rules.rules.rules_hash}
+            </span>
+            <Button size="small" icon={<RotateCcw size={14} />} disabled={!status.customised || rules.busy} onClick={rules.reset}>
+              Reset to shipped
+            </Button>
           </div>
         )}
-        {scenarios.status === 'error' && (
-          <Banner tone="danger" title="Cannot load scenarios" action={<Button size="small" onClick={() => reload()}>Retry</Button>}>
-            {scenarios.error}
-          </Banner>
-        )}
-        {scenarios.status === 'ready' && (
-          <div className="table-scroll">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Name</th>
-                  <th>Description</th>
-                  <th>Duration</th>
-                  <th>Flows</th>
-                </tr>
-              </thead>
-              <tbody>
-                {scenarios.items.map((s) => (
-                  <tr key={s.id}>
-                    <td className="mono">{s.id}</td>
-                    <td>{s.name}</td>
-                    <td className="muted cell-wrap">{s.description}</td>
-                    <td className="mono">{s.duration} s</td>
-                    <td className="mono">{s.flow_count}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </Card>
-
-      <div className="grid grid--2">
-        <Card eyebrow="Policy" title="Rules and thresholds">
-          <p className="muted">
-            Firewall and ACL rules, detector thresholds and the IPS policy are edited here once the security engine exists.
-            Until then there is nothing to configure, so this page offers no controls.
-          </p>
-        </Card>
       </div>
+
+      {rules.feedback && (
+        <Banner
+          tone={rules.feedback.tone}
+          title={rules.feedback.title}
+          action={
+            <Button size="small" variant="ghost" onClick={rules.clearFeedback}>
+              Dismiss
+            </Button>
+          }
+        >
+          {rules.feedback.lines.length > 0 && (
+            <ul className="feedback-lines">
+              {rules.feedback.lines.map((line) => (
+                <li key={line}>{line}</li>
+              ))}
+            </ul>
+          )}
+        </Banner>
+      )}
+
+      {rules.status === 'loading' && !rules.rules && (
+        <Card>
+          <div className="inline-status">
+            <Spinner /> <span className="muted">Loading the rules from the engine…</span>
+          </div>
+        </Card>
+      )}
+      {rules.status === 'error' && (
+        <Banner tone="danger" title="Cannot load the rules" action={<Button size="small" onClick={rules.reload}>Retry</Button>}>
+          {rules.error}. The rules live in the backend, so start it with <code>python app.py</code> in the backend folder.
+        </Banner>
+      )}
+
+      {rules.rules && tab === 'firewall' && <FirewallTab rules={rules.rules} busy={rules.busy} onRestricted={rules.setRestrictedIps} />}
+      {rules.rules && tab === 'detection' && <DetectionTab rules={rules.rules} busy={rules.busy} onApply={rules.applyDetectors} />}
+      {rules.rules && tab === 'prevention' && <PreventionTab rules={rules.rules} detectors={rules.rules.detectors} />}
+      {tab === 'scenarios' && <ScenariosTab customised={status.customised} />}
     </div>
   )
 }
