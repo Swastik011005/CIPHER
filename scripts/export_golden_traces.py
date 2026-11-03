@@ -19,18 +19,41 @@ sys.path.insert(0, str(ROOT / "backend"))
 
 from netsec.network.topology import load_topology  # noqa: E402
 from netsec.sim.engine import run_scenario  # noqa: E402
-from netsec.traffic.scenarios import load_scenario  # noqa: E402
+from netsec.traffic.scenarios import ScenarioSpec, load_scenario  # noqa: E402
 
 OUT = ROOT / "frontend" / "src" / "playback" / "fixtures"
 
 RUNS = [("s1-monitor", "S1", "monitor"), ("s2-monitor", "S2", "monitor"), ("s2-enforce", "S2", "enforce")]
 
 
+def one_session(scenario_id: str, src: str, dst: str, dport: int) -> ScenarioSpec:
+    """A single TCP attempt, used only as a test fixture for the firewall and ACL effects.
+    These are not product scenarios; the frozen scenario files are untouched."""
+    return ScenarioSpec.model_validate(
+        {
+            "id": scenario_id,
+            "name": "effect fixture",
+            "description": "single TCP session",
+            "duration": 8.0,
+            "default_seed": 1,
+            "flows": [{"type": "tcp_session", "id": "F", "src": src, "dst": dst, "dport": dport, "start": 0.5, "request_bytes": 100}],
+        }
+    )
+
+
+# Traces that exercise the firewall ripple and the ACL flash, which S1 and S2 never trigger.
+FIXTURE_RUNS = [
+    ("fw-deny", one_session("X1", "EXT-ATK", "DB-SRV", 3306), "monitor"),
+    ("acl-deny", one_session("X2", "PC-1", "DB-SRV", 3306), "monitor"),
+]
+
+
 def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True)
     graph = load_topology()
-    for name, scenario_id, mode in RUNS:
-        result = run_scenario(graph, load_scenario(scenario_id), ips_mode=mode)
+    runs = [(name, load_scenario(scenario_id), mode) for name, scenario_id, mode in RUNS] + FIXTURE_RUNS
+    for name, spec, mode in runs:
+        result = run_scenario(graph, spec, ips_mode=mode)
         body = {
             "run_id": result.run_id,
             "scenario_id": result.scenario_id,
