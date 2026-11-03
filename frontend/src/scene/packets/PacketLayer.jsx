@@ -36,6 +36,7 @@ const SELECT_RING = new THREE.Mesh(
 )
 
 const blend = new THREE.Color()
+const DEBUG = typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('debug')
 
 function colorFor(packet, t, out) {
   const { key, from, u } = packetColorAt(packet, t)
@@ -69,6 +70,7 @@ export function PacketLayer({ topology }) {
   useFrame(() => {
     const player = session.player
     const used = { tcp: 0, udp: 0, icmp: 0 }
+    if (DEBUG) window.__netsecPackets = {}
     const selectedPid = useStore.getState().selection.packetId
     let selectedAt = null
 
@@ -96,6 +98,7 @@ export function PacketLayer({ topology }) {
         mesh.setMatrixAt(index, scratch.m)
         mesh.setColorAt(index, colorFor(packet, t, blend))
         pidAt.current[packet.proto][index] = packet.pid
+        if (DEBUG) (window.__netsecPackets ??= {})[packet.pid] = [scratch.p.x, scratch.p.y, scratch.p.z]
         if (packet.pid === selectedPid) selectedAt = selVec.copy(scratch.p)
       }
     }

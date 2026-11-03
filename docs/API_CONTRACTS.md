@@ -7,9 +7,11 @@ Base: `http://127.0.0.1:8000/api` (the Vite dev server proxies `/api`). Interact
 | `GET /health` | `status`, `service`, `version`, `stage`, `uptime_s`, `mode: "simulation"`, `real_traffic: false`, topology summary, `scenarios_available` |
 | `GET /topology` | The frozen topology plus `summary` and the validator `validation` report |
 | `GET /scenarios` | Scenarios present in this build |
-| `POST /sim/run` | Body `{scenario_id, seed?, ips_mode?}` where `ips_mode` is `monitor` (default) or `enforce`; returns `{run_id, scenario_id, seed, ips_mode, duration, config_hash, trace_hash, summary, events}` |
+| `POST /sim/run` | Body `{scenario_id, seed?, ips_mode?, controls?}` where `ips_mode` is `monitor` (default) or `enforce` (ignored by S5 and S6, which pin it); `controls` is a list of mid-run changes `{type:"ips_mode",t,mode}` or `{type:"detector",t,detector,enabled}` that never change events before `t`; returns `{run_id, scenario_id, seed, ips_mode, duration, config_hash, trace_hash, summary, events}` |
 
-Errors are JSON `{detail}`: 404 unknown scenario (ids must match `S<number>`), 422 invalid request.
+Errors are JSON `{detail}`: 404 unknown scenario (ids must match `S<number>`), 422 invalid request (including an IPS-mode control on a pinned scenario). `GET /scenarios` also reports `pinned_ips_mode`.
+
+A reject injects a packet whose `flow` is `<original flow>:rst`; no new event type is used.
 
 ## Trace events
 Frozen in `contracts/events.json` and `backend/netsec/sim/events.py`; mirrored in `frontend/src/protocol/events.js`.
