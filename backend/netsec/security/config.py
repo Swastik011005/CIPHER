@@ -36,14 +36,93 @@ class D1Config(_Strict):
         return self
 
 
+def _check_cidr(value: str) -> str:
+    IPv4Network(value, strict=False)
+    return value
+
+
+class RestrictedService(_Strict):
+    """A service only certain sources may use, for example the database, which only the application server may reach."""
+
+    name: str
+    dst: str
+    dport: int = Field(ge=1, le=65535)
+    allowed_sources: list[str]
+
+    @field_validator("dst")
+    @classmethod
+    def _valid_dst(cls, value: str) -> str:
+        IPv4Address(value)
+        return value
+
+    @field_validator("allowed_sources")
+    @classmethod
+    def _valid_sources(cls, values: list[str]) -> list[str]:
+        return [_check_cidr(v) for v in values]
+
+
+class D4Config(_Strict):
+    """Restricted service: a TCP packet to a restricted service from a source that is not allowed to use it."""
+
+    enabled: bool = True
+    suppression_s: float = Field(default=30.0, ge=0)
+    services: list[RestrictedService] = Field(
+        default_factory=lambda: [
+            RestrictedService(name="MySQL database", dst="10.0.30.20", dport=3306, allowed_sources=["10.0.30.10/32"])
+        ]
+    )
+
+
+class ForbiddenPair(_Strict):
+    """Traffic that policy says must never flow from one zone to another."""
+
+    name: str
+    src: str
+    dst: str
+
+    @field_validator("src", "dst")
+    @classmethod
+    def _valid_cidr(cls, value: str) -> str:
+        return _check_cidr(value)
+
+
+class D5Config(_Strict):
+    """Forbidden zone pair: any packet from a source zone to a destination zone that policy forbids."""
+
+    enabled: bool = True
+    suppression_s: float = Field(default=30.0, ge=0)
+    pairs: list[ForbiddenPair] = Field(
+        default_factory=lambda: [
+            ForbiddenPair(name="Staff to Security network", src="10.0.10.0/24", dst="10.0.99.0/24"),
+            ForbiddenPair(name="Outside to Security network", src="203.0.113.0/24", dst="10.0.99.0/24"),
+        ]
+    )
+
+
+INVALID_FLAG_SIGNATURES = ("null", "xmas", "syn_fin", "syn_rst", "fin_rst")
+
+
+class D6Config(_Strict):
+    """Invalid TCP flags: flag combinations no legitimate TCP stack sends (scan and evasion signatures)."""
+
+    enabled: bool = True
+    suppression_s: float = Field(default=30.0, ge=0)
+    signatures: list[Literal["null", "xmas", "syn_fin", "syn_rst", "fin_rst"]] = Field(
+        default_factory=lambda: list(INVALID_FLAG_SIGNATURES)
+    )
+
+
 class DetectorsConfig(_Strict):
     D1: D1Config
+    D4: D4Config = Field(default_factory=D4Config)
+    D5: D5Config = Field(default_factory=D5Config)
+    D6: D6Config = Field(default_factory=D6Config)
 
 
 class IpsRule(_Strict):
     """What the IPS does when a detector reaches a severity (only in Enforce mode)."""
 
-    detector: Literal["D1"]
+    detector: Literal["D1", "D4", "D5", "D6"]
     severity: Literal["low", "medium", "high"]
     action: Literal["allow", "drop", "reject", "block_source", "rate_limit"]
     duration_s: Optional[float] = Field(default=None, gt=0)

@@ -1,0 +1,13 @@
+{
+  "id": "S3",
+  "name": "Unauthorized access",
+  "description": "Four attempts to reach places policy forbids. (a) PC-1 to the database on 3306: the core ACL denies it and IDS-1 alerts (D4). (b) LAPTOP-1 to the security network: the core ACL denies it and IDS-1 alerts (D5). (c) EXT-ATK to the database: FW1 denies it and IDS-1 never sees it. (d) ADMIN-PC to the database: the ACL allows it (VLAN 20), then IPS-1 rejects it with a TCP reset (Enforce) or only records it (Monitor).",
+  "duration": 40.0,
+  "default_seed": 1,
+  "flows": [
+    { "type": "tcp_session", "id": "F1-staff-to-db", "src": "PC-1", "dst": "DB-SRV", "dport": 3306, "start": 1.0, "request_bytes": 140 },
+    { "type": "tcp_session", "id": "F2-staff-to-security", "src": "LAPTOP-1", "dst": "SEC-LOG", "dport": 22, "start": 7.0, "request_bytes": 96 },
+    { "type": "tcp_session", "id": "F3-outside-to-db", "src": "EXT-ATK", "dst": "DB-SRV", "dport": 3306, "start": 13.0, "request_bytes": 140 },
+    { "type": "tcp_session", "id": "F4-admin-to-db", "src": "ADMIN-PC", "dst": "DB-SRV", "dport": 3306, "start": 19.0, "request_bytes": 140 }
+  ]
+}

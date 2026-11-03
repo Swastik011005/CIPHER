@@ -47,6 +47,8 @@ class Finding:
 
 class Detector(Protocol):
     rule: str
+    enabled: bool
+    suppression_s: float
 
     def observe(self, packet: ObservedPacket, now: float) -> Optional[Finding]:
         """Update state with ``packet`` seen at ``now`` seconds; return the standing finding, if any."""

@@ -99,5 +99,11 @@ class IpsEngine:
             self.blocks.add(outcome.new_block)
         return outcome
 
-    def expire(self, src: str, until: float) -> None:
-        self.blocks.remove(src, until)
+    def expire(self, src: str, until: float) -> bool:
+        """End the block on ``src`` that runs to ``until``. False when it was already lifted."""
+        return self.blocks.remove(src, until)
+
+    def set_mode(self, mode: IpsMode) -> list[Block]:
+        """Change mode. Monitor never drops anything, so switching to it lifts all active blocks (returned)."""
+        self.mode = mode
+        return self.blocks.clear() if mode == "monitor" else []

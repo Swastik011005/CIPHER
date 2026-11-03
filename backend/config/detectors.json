@@ -5,5 +5,46 @@
     "suspicious": 6,
     "violation": 12,
     "suppression_s": 30.0
+  },
+  "D4": {
+    "enabled": true,
+    "suppression_s": 30.0,
+    "services": [
+      {
+        "name": "MySQL database",
+        "dst": "10.0.30.20",
+        "dport": 3306,
+        "allowed_sources": [
+          "10.0.30.10/32"
+        ]
+      }
+    ]
+  },
+  "D5": {
+    "enabled": true,
+    "suppression_s": 30.0,
+    "pairs": [
+      {
+        "name": "Staff to Security network",
+        "src": "10.0.10.0/24",
+        "dst": "10.0.99.0/24"
+      },
+      {
+        "name": "Outside to Security network",
+        "src": "203.0.113.0/24",
+        "dst": "10.0.99.0/24"
+      }
+    ]
+  },
+  "D6": {
+    "enabled": true,
+    "suppression_s": 30.0,
+    "signatures": [
+      "null",
+      "xmas",
+      "syn_fin",
+      "syn_rst",
+      "fin_rst"
+    ]
   }
 }

@@ -10,7 +10,7 @@ from __future__ import annotations
 import hashlib
 import random
 from dataclasses import dataclass, replace
-from typing import Optional
+from typing import Optional, Sequence
 
 from netsec.analysis.stats import compute_stats
 from netsec.network.forwarding import DEFAULT_TTL, Hop, RoutePlan, compute_route
@@ -33,10 +33,11 @@ from netsec.security.policy.models import PolicyFile, load_policies
 from netsec.security.prevention.block_table import Block
 from netsec.security.prevention.ips import IpsEngine
 from netsec.sim.trace import TraceRecorder, canonical_json, trace_digest
-from netsec.traffic.flows import IcmpEchoFlow, PortScanFlow, TcpSessionFlow
+from netsec.sim.controls import ControlSpec, DetectorControl, IpsModeControl
+from netsec.traffic.flows import FlagProbeFlow, IcmpEchoFlow, PortScanFlow, TcpSessionFlow
 from netsec.traffic.host_stack import HostStack
-from netsec.traffic.packet import Packet, PacketSpec
-from netsec.traffic.scenarios import IcmpEchoSpec, PortScanSpec, ScenarioSpec, TcpSessionSpec
+from netsec.traffic.packet import IP_TCP_HEADER_BYTES, Packet, PacketSpec, tcp_flags
+from netsec.traffic.scenarios import FlagProbeSpec, IcmpEchoSpec, PortScanSpec, ScenarioSpec, TcpSessionSpec
 
 
 class EngineError(Exception):
@@ -96,8 +97,12 @@ class Engine:
 
     # -- running -------------------------------------------------------------------------
 
-    def run(self, scenario: ScenarioSpec) -> RunResult:
-        """Simulate ``scenario`` to completion and return the finished trace."""
+    def run(self, scenario: ScenarioSpec, controls: Sequence[ControlSpec] = ()) -> RunResult:
+        """Simulate ``scenario`` to completion and return the finished trace.
+
+        ``controls`` change configuration at a given time. They are deliberately left out of
+        ``config_hash`` and ``run.meta`` so that everything before a control is identical to the run without it.
+        """
         config_json = canonical_json(
             {
                 "topology": self.graph.topology.model_dump(mode="json"),
@@ -125,6 +130,10 @@ class Engine:
         self._duration_us = to_us(scenario.duration)
         for flow_spec in scenario.flows:
             self._start_flow(flow_spec)
+        for control in controls:
+            if scenario.pinned_ips_mode is not None and isinstance(control, IpsModeControl):
+                raise EngineError(f"scenario {scenario.id} pins the IPS mode, so it cannot be switched")
+            self.scheduler.schedule(to_us(control.t), Priority.CONTROL, lambda now, c=control: self._apply_control(now, c))
         self.scheduler.run()
 
         end_us = to_us(scenario.duration)
@@ -155,7 +164,7 @@ class Engine:
             raise EngineError(f"{node_id!r} is not a host that can send or receive traffic")
         return stack.ip
 
-    def _start_flow(self, spec: TcpSessionSpec | IcmpEchoSpec | PortScanSpec) -> None:
+    def _start_flow(self, spec: TcpSessionSpec | IcmpEchoSpec | PortScanSpec | FlagProbeSpec) -> None:
         src_ip = self._host_ip(spec.src)
         dst_ip = self._host_ip(spec.dst)
         if isinstance(spec, TcpSessionSpec):
@@ -164,13 +173,25 @@ class Engine:
                  if s.proto == "tcp" and s.port == spec.dport),
                 None,
             )
-            flow: TcpSessionFlow | IcmpEchoFlow | PortScanFlow = TcpSessionFlow(
+            flow: TcpSessionFlow | IcmpEchoFlow | PortScanFlow | FlagProbeFlow = TcpSessionFlow(
                 flow_id=spec.id,
                 src_ip=src_ip,
                 dst_ip=dst_ip,
                 dport=spec.dport,
                 service=service,
                 request_bytes=spec.request_bytes,
+                sport=49152 + self.rng.randrange(16384),
+                isn=self.rng.getrandbits(31),
+            )
+        elif isinstance(spec, FlagProbeSpec):
+            flow = FlagProbeFlow(
+                flow_id=spec.id,
+                src_ip=src_ip,
+                dst_ip=dst_ip,
+                dport=spec.dport,
+                flags=tcp_flags(*spec.flags),
+                count=spec.count,
+                interval=spec.interval,
                 sport=49152 + self.rng.randrange(16384),
                 isn=self.rng.getrandbits(31),
             )
@@ -390,7 +411,7 @@ class Engine:
                 t_us,
                 pid=pkt.pid,
                 action=outcome.action,
-                mode=self.ips_mode,
+                mode=self.ips.mode,
                 applied=outcome.applied,
                 rule=outcome.rule,
             )
@@ -398,6 +419,8 @@ class Engine:
             self._announce_block(outcome.new_block, t_us)
         if outcome.drop_reason is not None:
             self._drop(t_us, pkt, node.id, outcome.drop_reason)
+            if outcome.drop_reason == "ips_reject":
+                self._inject_reset(pkt, node, t_us)
             return True
         return False
 
@@ -410,8 +433,54 @@ class Engine:
             self.scheduler.schedule(until_us, Priority.EXPIRY, lambda now, b=block: self._expire_block(b, now))
 
     def _expire_block(self, block: Block, t_us: int) -> None:
-        self.ips.expire(block.src, block.until)
-        self.trace.emit("block.expired", t_us, src=block.src)
+        if self.ips.expire(block.src, block.until):  # a block lifted earlier by a control already expired
+            self.trace.emit("block.expired", t_us, src=block.src)
+
+    def _apply_control(self, t_us: int, control: ControlSpec) -> None:
+        if isinstance(control, IpsModeControl):
+            for block in self.ips.set_mode(control.mode):
+                self.trace.emit("block.expired", t_us, src=block.src)
+        elif isinstance(control, DetectorControl):
+            self.ids.set_enabled(control.detector, control.enabled)
+            self.ips.detection.set_enabled(control.detector, control.enabled)
+
+    def _inject_reset(self, pkt: Packet, node, t_us: int) -> None:
+        """IPS-1 rejects a TCP connection attempt: it sends the client a RST that looks like it came from the server.
+
+        The RST is a synthetic packet that starts at the IPS and travels the reverse path to the client.
+        Nothing real is sent. The rejected packet itself was already dropped by the caller.
+        """
+        if pkt.proto != "tcp" or "RST" in pkt.flags:
+            return
+        full = compute_route(self.graph, self.tables, pkt.dst, pkt.src, DEFAULT_TTL)
+        start = next((i for i, h in enumerate(full.hops) if h.src == node.id), None)
+        if start is None or full.outcome != "delivered":
+            return
+        plan = RoutePlan(
+            origin=node.id,
+            hops=full.hops[start:],
+            outcome=full.outcome,
+            terminal_node=full.terminal_node,
+            l3_nodes=full.l3_nodes,
+        )
+        rst = Packet(
+            pid=self._new_pid(),
+            flow=f"{pkt.flow}:rst",
+            proto="tcp",
+            src=pkt.dst,
+            dst=pkt.src,
+            sport=pkt.dport,
+            dport=pkt.sport,
+            flags=tcp_flags("RST", "ACK"),
+            ttl=DEFAULT_TTL,
+            length=IP_TCP_HEADER_BYTES,
+            seq=0,
+            ack=pkt.seq + max(pkt.payload_bytes, 1),
+            icmp=None,
+            app=None,
+        )
+        self._emit_created(t_us, rst)
+        self._depart(rst, plan, 0, t_us)
 
     def _maybe_mirror(self, pkt: Packet, hop: Hop, t_us: int) -> None:
         """Ingress SPAN: copy every packet entering the SPAN node (except excluded VLANs).
@@ -443,6 +512,11 @@ def run_scenario(
     scenario: ScenarioSpec,
     seed: Optional[int] = None,
     ips_mode: IpsMode = "monitor",
+    controls: Sequence[ControlSpec] = (),
 ) -> RunResult:
-    """Convenience wrapper: run ``scenario`` with ``seed`` (default: the scenario's own)."""
-    return Engine(graph, scenario.default_seed if seed is None else seed, ips_mode).run(scenario)
+    """Convenience wrapper: run ``scenario`` with ``seed`` (default: the scenario's own).
+
+    A scenario that pins its IPS mode (S5 Monitor, S6 Enforce) overrides ``ips_mode``.
+    """
+    mode = scenario.pinned_ips_mode or ips_mode
+    return Engine(graph, scenario.default_seed if seed is None else seed, mode).run(scenario, controls)
