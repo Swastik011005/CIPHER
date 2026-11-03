@@ -9,11 +9,13 @@ from typing import Optional
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from netsec import __version__
 from netsec.api import routes_health, routes_rules, routes_sim, routes_topology
+from netsec.api.protection import RateLimitMiddleware, RequestSizeLimitMiddleware, SecurityHeadersMiddleware
 from netsec.config import FRONTEND_DIST_DIR, Settings, load_settings
 from netsec.network.topology import TopologyError, load_topology
 from netsec.network.validator import validate_topology
@@ -23,7 +25,16 @@ from netsec.traffic.scenarios import ScenarioError, ScenarioNotFound
 
 log = logging.getLogger("netsec.api")
 
-DEV_ORIGINS = ["http://localhost:5173", "http://127.0.0.1:5173"]
+
+def _log_settings(settings: Settings) -> None:
+    """One line saying how the server is configured, and a warning for each setting that widens its exposure."""
+    log.info("settings: %s", settings.summary())
+    if settings.public_bind and not settings.rules_read_only:
+        log.warning("Rule edits are enabled on a publicly bound server: every visitor shares, and can change, the rules.")
+    if settings.public_bind and not settings.rate_limit_enabled:
+        log.warning("Rate limiting is off on a publicly bound server.")
+    if settings.public_bind and not settings.cors_origins:
+        log.info("No NETSEC_CORS_ORIGINS: only same-origin browsers can call the API.")
 
 
 def create_app(
@@ -36,23 +47,43 @@ def create_app(
     settings = settings or load_settings()
     graph = load_topology(topology_path)
 
+    docs = {} if settings.enable_docs else {"docs_url": None, "redoc_url": None, "openapi_url": None}
     app = FastAPI(
         title="NetSec IDS/IPS Simulation Engine",
         version=__version__,
-        description="Local-only simulation API. All traffic is synthetic.",
+        description="Simulation API. All traffic is synthetic.",
+        **docs,
     )
     app.state.graph = graph
     app.state.validation = validate_topology(graph.topology)
     app.state.started_at = time.monotonic()
     app.state.scenarios_dir = scenarios_dir
+    app.state.settings = settings
     app.state.rules = RuleStore()  # the rules every run uses; edited through /api/rules, reset on restart
+    app.state.rules_read_only = settings.rules_read_only  # production: nobody can change the rules the others run with
 
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=DEV_ORIGINS,
-        allow_methods=["GET", "POST", "PUT"],
-        allow_headers=["Content-Type"],
-    )
+    # Each add_middleware wraps the ones added before it, so the first is innermost. CORS is outermost: it answers
+    # preflights before any limit applies, and its headers reach even the 413 and 429 answers a browser must be able to read.
+    app.add_middleware(RequestSizeLimitMiddleware, max_bytes=settings.max_body_bytes)
+    if settings.rate_limit_enabled:
+        app.add_middleware(
+            RateLimitMiddleware,
+            limits={"run": settings.rate_run_per_min, "validate": settings.rate_validate_per_min, "api": settings.rate_api_per_min},
+            trust_proxy=settings.trust_proxy,
+            hops=settings.trusted_proxy_hops,
+            client_ip_header=settings.client_ip_header,
+        )
+    app.add_middleware(SecurityHeadersMiddleware)
+    app.add_middleware(GZipMiddleware, minimum_size=1024)
+    if settings.cors_origins:
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=list(settings.cors_origins),
+            allow_methods=["GET", "POST", "PUT"],
+            allow_headers=["Content-Type"],
+            expose_headers=["Retry-After"],
+        )
+    _log_settings(settings)
 
     @app.exception_handler(ScenarioNotFound)
     def _scenario_not_found(_: Request, exc: ScenarioNotFound) -> JSONResponse:
@@ -78,7 +109,8 @@ def create_app(
     app.include_router(routes_sim.router, prefix="/api")
     app.include_router(routes_rules.router, prefix="/api")
 
-    _mount_frontend(app, frontend_dist if frontend_dist is not None else FRONTEND_DIST_DIR)
+    if settings.serve_frontend:
+        _mount_frontend(app, frontend_dist if frontend_dist is not None else FRONTEND_DIST_DIR)
     return app
 
 
