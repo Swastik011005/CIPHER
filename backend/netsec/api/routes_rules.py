@@ -11,6 +11,7 @@ from typing import Any
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, ConfigDict, Field
 
+from netsec.analysis.ios_export import export_cisco
 from netsec.security.ruleset import LIMITS, MAX_RESTRICTED_IPS, OTHER_EDITABLE, RuleError, RuleSet, RuleStore, policy_view
 
 router = APIRouter(tags=["rules"])
@@ -128,6 +129,12 @@ def put_restricted(body: RestrictedEdit, request: Request) -> dict[str, Any]:
     except RuleError as exc:
         raise HTTPException(status_code=422, detail=exc.problems) from exc
     return {**rules_view(store), "changed": [{"restricted_ips": now}]}
+
+
+@router.get("/rules/export/cisco")
+def export_ios(request: Request) -> dict[str, Any]:
+    """The firewall and ACL policies in force, as Cisco IOS access-list configuration."""
+    return export_cisco(_store(request).current)
 
 
 @router.post("/rules/reset")
