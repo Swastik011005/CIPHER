@@ -35,6 +35,8 @@ class Check:
 
 
 def _show(value: Any, compare: str = "eq") -> str:
+    if isinstance(value, bool):
+        return "yes" if value else "no"
     text = ", ".join(map(str, value)) if isinstance(value, (list, tuple)) else str(value)
     return f"at least {text}" if compare == "ge" else (text if text != "" else "none")
 
