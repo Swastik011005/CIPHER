@@ -574,3 +574,80 @@
   cursor: pointer;
   text-decoration: underline;
 }
+
+/* -- send traffic form ------------------------------------------------------------------- */
+.send-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.field select,
+.field input {
+  width: 100%;
+  min-height: 34px;
+  padding: 4px 8px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--text-1);
+  font: inherit;
+  font-size: 13px;
+}
+
+.field select:focus-visible,
+.field input:focus-visible,
+.flag-chip:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.send-hint {
+  margin: 8px 0;
+  font-size: 12px;
+}
+
+.send-flags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  margin-bottom: 8px;
+}
+
+.flag-chip {
+  padding: 3px 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-2);
+  font: 600 11px/16px var(--font-mono);
+  cursor: pointer;
+}
+
+.flag-chip[aria-pressed='true'] {
+  border-color: var(--accent);
+  background: rgba(77, 163, 255, 0.18);
+  color: var(--text-1);
+}
+
+.send-problems {
+  margin: 6px 0;
+  color: var(--warn);
+  font-size: 12px;
+}
+
+.send-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}

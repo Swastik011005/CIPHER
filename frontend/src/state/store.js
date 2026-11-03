@@ -47,13 +47,13 @@ export const useStore = create((set, get) => ({
   playback: { loaded: false, playing: false, speed: 1, time: 0, duration: 0, finished: false, state: null },
 
   /** Ask the engine to simulate a scenario and load its trace into the player (paused at T+0). */
-  runScenario: async (scenarioId, ipsMode, controls = [], resume = null) => {
+  runScenario: async (scenarioId, ipsMode, controls = [], resume = null, customFlows = []) => {
     set({ run: { status: 'loading', meta: null, error: null, request: null } })
     try {
-      const body = await api.runScenario({ scenario_id: scenarioId, ips_mode: ipsMode, controls })
+      const body = await api.runScenario({ scenario_id: scenarioId, ips_mode: ipsMode, controls, custom_flows: customFlows })
       const { events, ...meta } = body
       const player = session.load(body)
-      set({ run: { status: 'ready', meta, error: null, request: { scenarioId, ipsMode, controls } } })
+      set({ run: { status: 'ready', meta, error: null, request: { scenarioId, ipsMode, controls, customFlows } } })
       get().syncPlayback()
       if (resume) player.seek(resume.time) // a re-run from the playhead: everything before it is identical
       if (!resume || resume.playing) player.play()
@@ -77,7 +77,27 @@ export const useStore = create((set, get) => ({
     if (!request || !playback.loaded) return
     const t = Math.round(playback.time * 100) / 100
     const controls = [...request.controls.filter((c) => !(c.type === 'ips_mode' && c.t >= t)), { type: 'ips_mode', t, mode }]
-    await get().runScenario(request.scenarioId, request.ipsMode, controls, { time: t, playing: playback.playing })
+    await get().runScenario(request.scenarioId, request.ipsMode, controls, { time: t, playing: playback.playing }, request.customFlows)
+  },
+
+  /**
+   * Inject one more flow at the playhead and play on. The run is re-simulated with the extra traffic;
+   * everything before the flow's start is identical, so the scene does not change behind the playhead.
+   */
+  injectTraffic: async (flow) => {
+    const { run, playback } = get()
+    const request = run.request
+    if (!request || !playback.loaded) return
+    const customFlows = [...request.customFlows, flow]
+    await get().runScenario(request.scenarioId, request.ipsMode, request.controls, { time: playback.time, playing: true }, customFlows)
+  },
+
+  /** Remove all injected traffic from the run, keeping the playhead where it is. */
+  clearInjectedTraffic: async () => {
+    const { run, playback } = get()
+    const request = run.request
+    if (!request || !playback.loaded) return
+    await get().runScenario(request.scenarioId, request.ipsMode, request.controls, { time: playback.time, playing: playback.playing }, [])
   },
 
   /** Copy the player's state into the store. Called by the driver and after every control. */

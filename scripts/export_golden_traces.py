@@ -19,7 +19,9 @@ sys.path.insert(0, str(ROOT / "backend"))
 
 from netsec.network.topology import load_topology  # noqa: E402
 from netsec.sim.engine import run_scenario  # noqa: E402
-from netsec.traffic.scenarios import ScenarioSpec, load_scenario  # noqa: E402
+from pydantic import TypeAdapter  # noqa: E402
+
+from netsec.traffic.scenarios import FlowSpec, ScenarioSpec, load_scenario  # noqa: E402
 
 OUT = ROOT / "frontend" / "src" / "playback" / "fixtures"
 
@@ -54,12 +56,26 @@ FIXTURE_RUNS = [
 ]  # S3 covers both of these in the product; the single-attempt fixtures stay for the effect tests
 
 
+# The Send traffic case from Rev 3: PC-1 to the database on 3306, injected into S1 at T+5 s.
+CUSTOM_RUNS = [
+    (
+        "custom-staff-db",
+        "S1",
+        "monitor",
+        [{"type": "tcp_session", "id": "X1", "src": "PC-1", "dst": "DB-SRV", "dport": 3306, "start": 5.0, "request_bytes": 100}],
+    ),
+]
+
+
 def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True)
     graph = load_topology()
-    runs = [(name, load_scenario(scenario_id), mode) for name, scenario_id, mode in RUNS] + FIXTURE_RUNS
-    for name, spec, mode in runs:
-        result = run_scenario(graph, spec, ips_mode=mode)
+    flows = TypeAdapter(FlowSpec)
+    runs = [(name, load_scenario(scenario_id), mode, []) for name, scenario_id, mode in RUNS]
+    runs += [(name, spec, mode, []) for name, spec, mode in FIXTURE_RUNS]
+    runs += [(name, load_scenario(sid), mode, [flows.validate_python(f) for f in custom]) for name, sid, mode, custom in CUSTOM_RUNS]
+    for name, spec, mode, custom in runs:
+        result = run_scenario(graph, spec, ips_mode=mode, custom_flows=custom)
         body = {
             "run_id": result.run_id,
             "scenario_id": result.scenario_id,
