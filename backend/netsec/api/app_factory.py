@@ -13,10 +13,11 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from netsec import __version__
-from netsec.api import routes_health, routes_sim, routes_topology
+from netsec.api import routes_health, routes_rules, routes_sim, routes_topology
 from netsec.config import FRONTEND_DIST_DIR, Settings, load_settings
 from netsec.network.topology import TopologyError, load_topology
 from netsec.network.validator import validate_topology
+from netsec.security.ruleset import RuleStore
 from netsec.sim.engine import EngineError
 from netsec.traffic.scenarios import ScenarioError, ScenarioNotFound
 
@@ -44,11 +45,12 @@ def create_app(
     app.state.validation = validate_topology(graph.topology)
     app.state.started_at = time.monotonic()
     app.state.scenarios_dir = scenarios_dir
+    app.state.rules = RuleStore()  # the rules every run uses; edited through /api/rules, reset on restart
 
     app.add_middleware(
         CORSMiddleware,
         allow_origins=DEV_ORIGINS,
-        allow_methods=["GET", "POST"],
+        allow_methods=["GET", "POST", "PUT"],
         allow_headers=["Content-Type"],
     )
 
@@ -74,6 +76,7 @@ def create_app(
     app.include_router(routes_health.router, prefix="/api")
     app.include_router(routes_topology.router, prefix="/api")
     app.include_router(routes_sim.router, prefix="/api")
+    app.include_router(routes_rules.router, prefix="/api")
 
     _mount_frontend(app, frontend_dist if frontend_dist is not None else FRONTEND_DIST_DIR)
     return app

@@ -7,6 +7,7 @@ from typing import Any, Literal, Optional
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, ConfigDict, Field
 
+from netsec.analysis.expectations import expectation_text, run_checks
 from netsec.sim.controls import ControlSpec
 from netsec.sim.engine import EngineError, run_scenario
 from netsec.traffic.scenarios import FlowSpec
@@ -38,6 +39,7 @@ def scenarios(request: Request) -> list[dict[str, Any]]:
             "default_seed": s.default_seed,
             "flow_count": len(s.flows),
             "pinned_ips_mode": s.pinned_ips_mode,
+            "expected": {mode: expectation_text(s.id, mode) for mode in ([s.pinned_ips_mode] if s.pinned_ips_mode else ["monitor", "enforce"])},
         }
         for s in list_scenarios(request.app.state.scenarios_dir)
     ]
@@ -49,7 +51,7 @@ def run(body: RunRequest, request: Request) -> dict[str, Any]:
     state = request.app.state
     scenario = load_scenario(body.scenario_id, state.scenarios_dir)
     try:
-        result = run_scenario(state.graph, scenario, body.seed, body.ips_mode, body.controls, body.custom_flows)
+        result = run_scenario(state.graph, scenario, body.seed, body.ips_mode, body.controls, body.custom_flows, state.rules.current)
     except EngineError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     return {
@@ -60,6 +62,55 @@ def run(body: RunRequest, request: Request) -> dict[str, Any]:
         "duration": result.duration,
         "config_hash": result.config_hash,
         "trace_hash": result.trace_hash,
+        "rules_hash": state.rules.current.digest(),
+        "rules_customised": state.rules.customised,
         "summary": result.stats.model_dump(),
         "events": result.events,
+    }
+
+
+class ValidateRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    #: scenarios to check; omit for all of them
+    scenario_ids: Optional[list[str]] = Field(default=None, max_length=20)
+
+
+@router.post("/sim/validate")
+def validate(body: ValidateRequest, request: Request) -> dict[str, Any]:
+    """Run scenarios (each in the IPS modes it supports) with the current rules and check what they are expected to do."""
+    state = request.app.state
+    rules = state.rules.current
+    wanted = body.scenario_ids or [s.id for s in list_scenarios(state.scenarios_dir)]
+    results = []
+    for scenario_id in wanted:
+        scenario = load_scenario(scenario_id, state.scenarios_dir)
+        modes = [scenario.pinned_ips_mode] if scenario.pinned_ips_mode else ["monitor", "enforce"]
+        for mode in modes:
+            result = run_scenario(state.graph, scenario, None, mode, rules=rules)
+            checks = run_checks(scenario.id, mode, result)
+            results.append(
+                {
+                    "scenario_id": scenario.id,
+                    "name": scenario.name,
+                    "ips_mode": mode,
+                    "passed": all(c["passed"] for c in checks),
+                    "checks": checks,
+                    "config_hash": result.config_hash,
+                    "trace_hash": result.trace_hash,
+                    "summary": result.stats.model_dump(),
+                }
+            )
+    checks_total = sum(len(r["checks"]) for r in results)
+    checks_passed = sum(1 for r in results for c in r["checks"] if c["passed"])
+    return {
+        "rules_hash": rules.digest(),
+        "rules_customised": state.rules.customised,
+        "results": results,
+        "summary": {
+            "runs": len(results),
+            "runs_passed": sum(1 for r in results if r["passed"]),
+            "checks": checks_total,
+            "checks_passed": checks_passed,
+        },
     }
