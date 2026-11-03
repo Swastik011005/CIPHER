@@ -43,6 +43,16 @@ connection-starting packets per source and target (more than 25 pps MEDIUM, more
 flood with a token bucket (10 pps, burst 20) per source: packets within it pass untouched, packets over it are dropped (`rate_limited`); a HIGH flood
 is blocked for 20 s. The detectors see every packet before the limiter, so limiting cannot hide a flood. Details: `STAGE5_PROGRESS.md`.
 
+## Editing the rules (Stage 6)
+`GET/PUT /api/rules` (see `API_CONTRACTS.md`) change what the next run uses; the JSON files in `backend/config` stay the shipped defaults.
+What can be edited: each detector's switch and its numeric settings within fixed limits (D1 window, thresholds and suppression; D2 also
+its ports; D3 window and packet-rate thresholds; D6 its signature list; D4 and D5 their switch and suppression), and the restricted outside
+addresses. What cannot: the IPS action table, the allowlist and the firewall/ACL rules themselves are shown, not edited, because they are
+the design (and IDS-1 stays passive whatever is edited). Every edit is validated first and applied whole or not at all. Disabled
+detectors raise no alert and give the IPS nothing to act on; thresholds move the alerts; a restricted address is denied by FW1 rule 10
+before any sensor sees it. Detectors still run before enforcement, the token bucket still limits to 10 packets a second, pinned scenarios
+stay pinned and controls and custom traffic stay prefix-stable under any rule set.
+
 ## Policy files
 `config/policies/fw1.json` (OUTSIDE-IN, INSIDE-OUT, restricted addresses) and `core_acl.json` (STAFF-IN). Ordered rules,
 first match wins, implicit deny at the end. Stateful policies remember permitted flows and permit their return traffic

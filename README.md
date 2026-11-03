@@ -44,7 +44,7 @@ throttled tabs; the 3D scene starts as soon as the tab receives frames.
 | `contracts/` | Frozen trace event schema shared by both sides |
 | `docs/` | Architecture, topology, API, progress and issues |
 | `packet-tracer/` | Cisco Packet Tracer lab plan (not yet built) |
-| `scripts/` | Dev start script |
+| `scripts/` | Dev start script; browser tools that drive a real Chrome window: `measure_fps.mjs`, `measure_memory.mjs`, `capture_screens.mjs`, `capture_devices.mjs`, `check_rules_ui.mjs` |
 
 See `docs/ARCHITECTURE.md`, `docs/NETWORK_TOPOLOGY.md`, `docs/API_CONTRACTS.md`, `docs/SECURITY_ENGINE.md`.
 
