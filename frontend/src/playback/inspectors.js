@@ -12,7 +12,7 @@ const COUNTERS = {
   l2switch: [['received', 'Received'], ['sent', 'Forwarded']],
   firewall: [['received', 'Received'], ['sent', 'Forwarded'], ['permits', 'Permitted'], ['denies', 'Denied']],
   ids: [['mirrorsIn', 'SPAN copies received'], ['inspected', 'Copies inspected'], ['flagged', 'Flagged'], ['alerts', 'Alerts raised']],
-  ips: [['received', 'Received'], ['inspected', 'Inspected'], ['flagged', 'Flagged'], ['actions', 'IPS actions'], ['dropped', 'Dropped']],
+  ips: [['received', 'Received'], ['inspected', 'Inspected'], ['flagged', 'Flagged'], ['actions', 'IPS actions'], ['limited', 'Rate-limited'], ['dropped', 'Dropped (all reasons)']],
   syslog: [['received', 'Received']],
   segment: [['received', 'Received'], ['sent', 'Forwarded']],
 }

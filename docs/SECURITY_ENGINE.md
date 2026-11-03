@@ -37,6 +37,12 @@ checks: HIGH severity, no history, first packet fires. IPS-1 acts on them in Enf
 Reject drops the packet and injects a synthetic TCP RST (flow `<flow>:rst`) spoofed as the server, back to the client.
 IDS-1 sees the same traffic through its SPAN copies (taken before the ACL) and only alerts. Details: `STAGE4_PROGRESS.md`.
 
+## D2, D3 and rate limiting (Stage 5)
+D2 counts connection attempts to ports 22, 23 and 3389 per source and target (6 MEDIUM, 12 HIGH in 30 s; HIGH blocks 30 s). D3 counts
+connection-starting packets per source and target (more than 25 pps MEDIUM, more than 50 pps HIGH, averaged over 5 s). IPS-1 answers a MEDIUM
+flood with a token bucket (10 pps, burst 20) per source: packets within it pass untouched, packets over it are dropped (`rate_limited`); a HIGH flood
+is blocked for 20 s. The detectors see every packet before the limiter, so limiting cannot hide a flood. Details: `STAGE5_PROGRESS.md`.
+
 ## Policy files
 `config/policies/fw1.json` (OUTSIDE-IN, INSIDE-OUT, restricted addresses) and `core_acl.json` (STAFF-IN). Ordered rules,
 first match wins, implicit deny at the end. Stateful policies remember permitted flows and permit their return traffic
@@ -51,4 +57,4 @@ Rule ids in events look like `STAFF-IN:10`, `OUTSIDE-IN:implicit-deny`.
 clock at 10 Hz. Packets are drawn from the player each frame (instanced meshes), never through React state.
 
 ## Not implemented yet (do not assume)
-Detectors D2, D3 and D7, rate limiting, syslog packets, the Rules editor, scenarios S4 and S7, PCAP export.
+Detector D7 (host sweep, postponed by the specification), syslog packets, the Rules editor, PCAP export.

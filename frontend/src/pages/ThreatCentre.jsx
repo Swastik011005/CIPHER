@@ -9,6 +9,8 @@ const SEVERITY_TONE = { low: 'info', medium: 'warn', high: 'danger' }
 /** Detector names, as the specification defines them. */
 const RULE_NAMES = {
   D1: 'Port scan',
+  D2: 'Brute force',
+  D3: 'Flood',
   D4: 'Restricted service',
   D5: 'Forbidden zone pair',
   D6: 'Invalid TCP flags',
@@ -19,6 +21,7 @@ const DROP_LABELS = {
   fw_deny: ['FW1 deny', 'Firewall policy'],
   acl_deny: ['ACL deny', 'CORE-SW1 ACL'],
   ips_drop: ['IPS drop', 'IPS-1'],
+  rate_limited: ['IPS rate limit', 'IPS-1 token bucket (over the limit)'],
   ips_reject: ['IPS reject', 'IPS-1, with a TCP reset'],
   blocked_source: ['Blocked source', 'IPS-1 block table'],
   ttl_expired: ['TTL expired', 'Network'],

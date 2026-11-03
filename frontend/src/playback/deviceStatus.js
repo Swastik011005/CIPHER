@@ -27,8 +27,11 @@ export function deviceTags(node, address, state) {
     if (stats?.alerts) tags.push({ text: plural(stats.alerts, 'ALERT'), tone: 'sensor' })
   } else if (node.id === 'IPS-1') {
     tags.push(state.meta.ips_mode === 'enforce' ? { text: 'ENFORCE', tone: 'ok' } : { text: 'MONITOR', tone: 'warn' })
-    if (stats?.dropped) tags.push({ text: `${stats.dropped} DROPPED`, tone: 'danger' })
-    else if (stats?.actions) tags.push({ text: plural(stats.actions, 'WOULD-BLOCK'), tone: 'warn' })
+    const limited = stats?.limited ?? 0
+    const otherDrops = (stats?.dropped ?? 0) - limited
+    if (limited) tags.push({ text: `${limited} LIMITED`, tone: 'warn' })
+    if (otherDrops > 0) tags.push({ text: `${otherDrops} DROPPED`, tone: 'danger' })
+    else if (!limited && stats?.actions) tags.push({ text: plural(stats.actions, 'WOULD-BLOCK'), tone: 'warn' })
   } else if (stats?.denies) {
     tags.push({ text: `${stats.denies} DENIED`, tone: 'danger' })
   }

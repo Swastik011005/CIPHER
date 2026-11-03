@@ -40,7 +40,7 @@ export const isInjectedReset = (e) => e.mirror_of == null && typeof e.flow === '
 const VERDICT_RANK = { allowed: 1, flagged: 2, blocked: 3 }
 
 /** Counters kept for every device, shown in the device inspector. */
-const NODE_KEYS = ['received', 'sent', 'delivered', 'dropped', 'permits', 'denies', 'inspected', 'flagged', 'alerts', 'actions', 'mirrorsIn', 'mirrorsOut']
+const NODE_KEYS = ['received', 'sent', 'delivered', 'dropped', 'permits', 'denies', 'inspected', 'flagged', 'alerts', 'actions', 'limited', 'mirrorsIn', 'mirrorsOut']
 
 
 export function initialState() {
@@ -201,7 +201,9 @@ export function applyEvent(state, e) {
       if (!packet) break
       const wouldAct = e.action !== 'allow'
       const text = wouldAct
-        ? `${e.applied ? 'IPS-1 applied' : 'IPS-1 would apply (Monitor mode)'} ${e.action}${e.rule ? ` · ${e.rule}` : ''}`
+        ? e.action === 'rate_limit'
+          ? `${e.applied ? 'IPS-1 rate-limited it' : 'IPS-1 would rate-limit it (Monitor mode)'}: over the source's token bucket${e.rule ? ` · ${e.rule}` : ''}`
+          : `${e.applied ? 'IPS-1 applied' : 'IPS-1 would apply (Monitor mode)'} ${e.action}${e.rule ? ` · ${e.rule}` : ''}`
         : 'IPS-1 allowed it'
       const tone = wouldAct ? (e.applied ? 'danger' : 'warn') : 'ok'
       let updated = annotate(packet, e, { verdict: wouldAct ? (e.applied ? 'blocked' : 'flagged') : null, node: 'IPS-1', tone, text })
@@ -237,6 +239,7 @@ export function applyEvent(state, e) {
       if (end.type === 'dropped' && packet.verdict?.kind !== 'blocked') ended = { ...ended, verdict: { kind: 'blocked', t: e.t } }
       next.packets = { ...state.packets, [e.pid]: ended }
       next.nodes = bumpNode(state.nodes, e.node, end.type, e.t)
+      if (e.reason === 'rate_limited') next.nodes = bumpNode(next.nodes, e.node, 'limited', e.t)
       if (packet.mirrorOf == null) {
         next.counts = { ...state.counts }
         if (end.type === 'delivered') next.counts[packet.flagged ? 'delivered_flagged' : 'delivered_clean'] += 1

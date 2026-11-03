@@ -15,7 +15,7 @@
  * @typedef {Object} Effect
  * @property {string} id        Stable: `<event seq>:<kind>`.
  * @property {string} kind      'deliver' | 'mirror' | 'radar' | 'sensor-ping' | 'sensor-alert' | 'ips-allow' | 'ips-flag'
- *                              | 'ips-block' | 'ips-reject' | 'unblock' | 'fw-ripple' | 'acl-flash' | 'shatter'
+ *                              | 'ips-block' | 'ips-reject' | 'ips-limit' | 'unblock' | 'fw-ripple' | 'acl-flash' | 'shatter'
  * @property {number} t0        Start time (s).
  * @property {number} dur       Duration (s).
  * @property {string} node      Device the effect is anchored to.
@@ -34,6 +34,7 @@ export const EFFECT_DURATION = Object.freeze({
   'ips-flag': 0.8,
   'ips-block': 0.9,
   'ips-reject': 1.0,
+  'ips-limit': 0.7,
   unblock: 1.0,
   'fw-ripple': 1.1,
   'acl-flash': 0.7,
@@ -44,6 +45,17 @@ export const EFFECT_DURATION = Object.freeze({
 export const MAX_EFFECT_DURATION = Math.max(...Object.values(EFFECT_DURATION))
 
 const SEVERITY_TONE = { low: 'info', medium: 'warn', high: 'danger' }
+
+/**
+ * Visual sampling. In a flood, hundreds of packets a second would each want a ring or a burst of shards, more
+ * than the fixed pools hold and more than anyone can read. For the busy kinds, at most this many effects of a
+ * kind may be alive at once (later ones are skipped), and a drop by a rate limiter or a block table gets a
+ * burst of shards at most this often. Quiet traces (S1 to S3, S7) never reach these limits, and every
+ * packet is still counted, listed and inspectable: only the extra decoration is thinned.
+ */
+const ALIVE_CAP = Object.freeze({ deliver: 12, mirror: 12, 'ips-allow': 10, 'ips-flag': 10, 'ips-limit': 6, 'sensor-ping': 4 })
+const BULK_SHATTER_SPACING = 0.08
+const BULK_DROP_REASONS = new Set(['rate_limited', 'blocked_source'])
 
 /** Quiet per-copy pings at IDS-1 are limited to one per this many seconds so a scan does not strobe. */
 const PING_SPACING = 0.5
@@ -61,8 +73,21 @@ export function buildEffects(events) {
   const flagEffects = new Map()
   let lastPing = -Infinity
 
-  const add = (e, kind, node, tone, pid = null, label = null) =>
-    out.push({ id: `${e.seq}:${kind}`, kind, t0: e.t, dur: EFFECT_DURATION[kind], node, tone, pid, label })
+  const alive = {}
+  let lastBulkShatter = -Infinity
+  /** Add an effect unless the busy-kind cap says it would only add clutter. Returns it, or null when skipped. */
+  const add = (e, kind, node, tone, pid = null, label = null) => {
+    const cap = ALIVE_CAP[kind]
+    if (cap !== undefined) {
+      const queue = (alive[kind] ??= [])
+      while (queue.length > 0 && queue[0] <= e.t - EFFECT_DURATION[kind]) queue.shift()
+      if (queue.length >= cap) return null
+      queue.push(e.t)
+    }
+    const effect = { id: `${e.seq}:${kind}`, kind, t0: e.t, dur: EFFECT_DURATION[kind], node, tone, pid, label }
+    out.push(effect)
+    return effect
+  }
 
   for (const e of events) {
     switch (e.type) {
@@ -86,8 +111,8 @@ export function buildEffects(events) {
           if (e.classification === 'normal') add(e, 'ips-allow', e.node, 'ok', e.pid)
           else {
             flagged.add(e.pid)
-            add(e, 'ips-flag', e.node, 'warn', e.pid, e.rules.join(', '))
-            flagEffects.set(e.pid, out[out.length - 1])
+            const effect = add(e, 'ips-flag', e.node, 'warn', e.pid, e.rules.join(', '))
+            if (effect) flagEffects.set(e.pid, effect)
           }
         }
         break
@@ -97,9 +122,12 @@ export function buildEffects(events) {
         if (!e.applied) {
           // Monitor mode: the same amber flash, relabelled so it reads as "would block".
           const existing = flagEffects.get(e.pid)
-          const label = e.action === 'block_source' ? 'would block' : `would ${e.action}`
+          const label = e.action === 'block_source' ? 'would block' : e.action === 'rate_limit' ? 'would rate-limit' : `would ${e.action}`
           if (existing) existing.label = label
           else add(e, 'ips-flag', 'IPS-1', 'warn', e.pid, label)
+        } else if (e.action === 'rate_limit') {
+          // One ring per burst of limited packets, not one per packet; the drops themselves are counted and listed.
+          add(e, 'ips-limit', 'IPS-1', 'warn', e.pid, `rate limit · ${e.rule}`)
         } else if (e.action === 'reject') {
           // The rejected packet shatters (from packet.dropped) and IPS-1 sends the reset back (a packet of its own).
           add(e, 'ips-reject', 'IPS-1', 'danger', e.pid, `reject ${e.rule} · TCP reset`)
@@ -132,7 +160,12 @@ export function buildEffects(events) {
         break
 
       case 'packet.dropped':
-        if (!mirrorPids.has(e.pid)) add(e, 'shatter', e.node, 'danger', e.pid, e.reason)
+        if (mirrorPids.has(e.pid)) break
+        if (BULK_DROP_REASONS.has(e.reason)) {
+          if (e.t - lastBulkShatter < BULK_SHATTER_SPACING) break
+          lastBulkShatter = e.t
+        }
+        add(e, 'shatter', e.node, 'danger', e.pid, e.reason)
         break
 
       default:

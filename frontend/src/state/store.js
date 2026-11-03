@@ -174,6 +174,21 @@ export const useStore = create((set, get) => ({
   settings: { quality: 'high', labels: 'all', showManagementLinks: true },
   setSetting: (key, value) => set((s) => ({ settings: { ...s.settings, [key]: value } })),
 
+  /** Set when the app lowered the quality by itself because the frame rate stayed low (once per session). */
+  qualityNotice: null,
+  autoLowered: false,
+  lowerQualityAutomatically: (fps) =>
+    set((s) =>
+      s.autoLowered || s.settings.quality === 'low'
+        ? s
+        : {
+            autoLowered: true,
+            settings: { ...s.settings, quality: 'low' },
+            qualityNotice: `The frame rate stayed around ${Math.round(fps)} fps, so the scene switched to Low quality (no ambient occlusion, bloom or shadows).`,
+          },
+    ),
+  dismissQualityNotice: () => set({ qualityNotice: null }),
+
   // -- scene visibility -----------------------------------------------------------------
   /** The persistent Canvas only renders while the Simulation page is showing it. */
   sceneVisible: false,

@@ -53,7 +53,16 @@ describe('effects follow the trace', () => {
     expect(kinds(enforce, 'ips-block')[0].t0).toBe(ofType(s2e.events, 'block.added')[0].t)
     expect(kinds(enforce, 'unblock')).toHaveLength(1)
     expect(kinds(enforce, 'unblock')[0].t0).toBe(ofType(s2e.events, 'block.expired')[0].t)
-    expect(kinds(enforce, 'shatter').map((e) => e.pid).sort()).toEqual(blocked.map((e) => e.pid).sort())
+    // Every drop shatters, except that bulk drops (block table, rate limiter) are sampled to one burst per 0.08 s.
+    let last = -Infinity
+    const expected = blocked.filter((e) => {
+      if (e.reason !== 'blocked_source' && e.reason !== 'rate_limited') return true
+      if (e.t - last < 0.08) return false
+      last = e.t
+      return true
+    })
+    expect(kinds(enforce, 'shatter').map((e) => e.pid).sort()).toEqual(expected.map((e) => e.pid).sort())
+    expect(expected.length).toBeGreaterThanOrEqual(blocked.length - 5) // S2 loses a few shatters to sampling: its retries land on top of scan probes
     expect(kinds(enforce, 'shatter').every((e) => e.node === 'IPS-1')).toBe(true)
   })
 

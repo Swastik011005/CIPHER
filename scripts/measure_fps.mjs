@@ -100,6 +100,7 @@ const MEASURE = `(async (cfg) => {
   const gl = c.getContext('webgl2')
   const ext = gl && gl.getExtension('WEBGL_debug_renderer_info')
   const renderer = ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : 'unknown'
+  store.setState({ autoLowered: true }) // measure the preset that was asked for: no automatic switch to Low
   st().setSetting('quality', cfg.quality)
   await st().runScenario(cfg.scenario, cfg.mode)
   if (st().playback.playing) st().togglePlay()
@@ -114,7 +115,10 @@ const MEASURE = `(async (cfg) => {
   requestAnimationFrame(tick)
   const t0 = st().playback.time
   const w0 = performance.now()
+  let peakPackets = 0
+  const poll = setInterval(() => { peakPackets = Math.max(peakPackets, Object.keys(window.__netsecPackets || {}).length) }, 100)
   await sleep(cfg.seconds * 1000)
+  clearInterval(poll)
   stop = true
   const wall = (performance.now() - w0) / 1000
   const t1 = st().playback.time
@@ -131,7 +135,7 @@ const MEASURE = `(async (cfg) => {
     simTimeAdvanced: +(t1 - t0).toFixed(2), wallSeconds: +wall.toFixed(2),
     frames: gaps.length, fps: +(1000 / avgGap).toFixed(1), worst1PercentFrameMs: +p99.toFixed(1), maxFrameMs: +sorted.at(-1).toFixed(1),
     drawCalls: scene && scene.meshes, triangles: scene && scene.triangles, pixelRatio: scene && scene.pixelRatio, sceneFpsCounter: scene && scene.fps,
-    packetsOnScreen: Object.keys(window.__netsecPackets || {}).length,
+    peakPacketsOnScreen: peakPackets,
     playbackAtEnd: { playing: st().playback.playing, time: st().playback.time, finished: st().playback.finished, speed: st().playback.speed, t0 },
   }
 })(${JSON.stringify(cfg)})`

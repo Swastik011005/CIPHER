@@ -10,7 +10,7 @@ import { buildLinkPaths, packetPosition } from '../links/linkPaths.js'
 import { PALETTE } from '../palette.js'
 import { RING_STYLE, SHARDS, SHARD_POOL, TONE_COLOR, labelOpacity, ringOpacity, shardOffset } from './effectMath.js'
 
-const RING_POOL = 32
+export const RING_POOL = 64
 const LABEL_POOL = 4
 const FLOOR_LIFT = 0.04
 
