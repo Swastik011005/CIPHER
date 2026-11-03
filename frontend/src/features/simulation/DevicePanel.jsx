@@ -1,6 +1,8 @@
 import { Crosshair, X } from 'lucide-react'
+import { useMemo } from 'react'
 
-import { describeInterfaces, neighboursOf, securityRole } from '../../scene/deviceInfo.js'
+import { deviceInspector } from '../../playback/inspectors.js'
+import { describeInterfaces, neighboursOf, primaryAddress, securityRole } from '../../scene/deviceInfo.js'
 import { useStore } from '../../state/store.js'
 import { Button, Card, Chip, StatusDot } from '../../ui/index.js'
 
@@ -16,8 +18,83 @@ const TYPE_LABELS = {
   segment: 'Network segment',
 }
 
+/** Live counters, rule hits, alerts and blocks for this device at the playhead. */
+function LiveSection({ live, node }) {
+  return (
+    <>
+      <h3 className="panel-heading">Live at the playhead</h3>
+      <dl className="stat-grid">
+        {live.counters.map((c) => (
+          <div key={c.key} className="stat-grid__item">
+            <dt>{c.label}</dt>
+            <dd className="mono">{c.value}</dd>
+          </div>
+        ))}
+      </dl>
+
+      {live.rules.length > 0 && (
+        <>
+          <h3 className="panel-heading">Policy rules hit</h3>
+          <table className="table table--compact">
+            <thead>
+              <tr>
+                <th>Rule</th>
+                <th>Action</th>
+                <th>Hits</th>
+              </tr>
+            </thead>
+            <tbody>
+              {live.rules.map((r) => (
+                <tr key={r.ruleId}>
+                  <td className="mono">{r.ruleId}</td>
+                  <td>
+                    <Chip tone={r.action === 'permit' ? 'ok' : 'danger'}>{r.action}</Chip>
+                  </td>
+                  <td className="mono">{r.count}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </>
+      )}
+
+      {live.alerts.length > 0 && (
+        <>
+          <h3 className="panel-heading">{node.id} alerts</h3>
+          <ul className="event-list">
+            {live.alerts.map((a) => (
+              <li key={a.alert_id}>
+                <Chip tone={a.severity === 'high' ? 'danger' : 'warn'}>{a.severity}</Chip>
+                <span className="mono">T+{a.t.toFixed(1)}</span>
+                <span>
+                  {a.rule}: {a.reason}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+
+      {live.blocks.length > 0 && (
+        <>
+          <h3 className="panel-heading">Active blocks (IPS-1)</h3>
+          <ul className="event-list">
+            {live.blocks.map((b) => (
+              <li key={b.src}>
+                <Chip tone="danger">blocked</Chip>
+                <span className="mono">{b.src}</span>
+                <span>{b.remaining.toFixed(1)} s left · {b.rule}</span>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+    </>
+  )
+}
+
 /**
- * Details of the selected device, taken from the topology.
+ * Details of the selected device, taken from the topology and, while a run is loaded, from the trace.
  * @param {{node: any, topology: any}} props
  */
 export function DevicePanel({ node, topology }) {
@@ -27,6 +104,10 @@ export function DevicePanel({ node, topology }) {
   const interfaces = describeInterfaces(node, topology)
   const neighbours = neighboursOf(node, topology)
   const role = securityRole(node)
+  const state = useStore((s) => s.playback.state)
+  const time = useStore((s) => s.playback.time)
+  const address = primaryAddress(node)?.split('/')[0] ?? null
+  const live = useMemo(() => (state?.meta ? deviceInspector(node, address, state, time) : null), [node, address, state, time])
 
   return (
     <Card
@@ -45,7 +126,7 @@ export function DevicePanel({ node, topology }) {
         <Chip tone="accent">{TYPE_LABELS[node.type] ?? node.type}</Chip>
         {zone && <Chip>{zone.name}</Chip>}
         <Chip>
-          <StatusDot tone="neutral" /> Idle · no simulation running
+          <StatusDot tone={live?.status.tone ?? 'neutral'} /> {live?.status.text ?? 'Idle · no simulation running'}
         </Chip>
       </div>
 
@@ -58,6 +139,8 @@ export function DevicePanel({ node, topology }) {
           <span>{role.text}</span>
         </div>
       )}
+
+      {live && <LiveSection live={live} node={node} />}
 
       <h3 className="panel-heading">Interfaces</h3>
       <table className="table table--compact">

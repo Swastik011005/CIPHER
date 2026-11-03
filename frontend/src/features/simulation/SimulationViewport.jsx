@@ -92,7 +92,7 @@ function useSceneShortcuts() {
       if (event.target instanceof HTMLElement && /^(INPUT|TEXTAREA|SELECT)$/.test(event.target.tagName)) return
       if (event.metaKey || event.ctrlKey || event.altKey) return
       const store = useStore.getState()
-      if (event.key === 'Escape') store.select(null)
+      if (event.key === 'Escape') store.clearSelection()
       else if (event.key.toLowerCase() === 'f' && store.selection.selectedId) store.requestFocus(store.selection.selectedId)
       else if (/^[1-6]$/.test(event.key)) store.requestPreset(CAMERA_PRESETS[Number(event.key) - 1].id)
     }

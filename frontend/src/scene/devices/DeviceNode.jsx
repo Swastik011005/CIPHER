@@ -3,6 +3,7 @@ import { useFrame, useThree } from '@react-three/fiber'
 import { memo, useRef } from 'react'
 import { MathUtils } from 'three'
 
+import { deviceTags, parseTagsKey, ringStateFor, tagsKey } from '../../playback/deviceStatus.js'
 import { labelAddress, primaryAddress } from '../deviceInfo.js'
 import { box, ring } from '../geometries.js'
 import { NODE_LAYOUT, SLAB_TOP } from '../layout.js'
@@ -35,7 +36,7 @@ export const DeviceNode = memo(function DeviceNode({ node }) {
   const showLabel = useStore((s) => labelShown(s.settings.labels, selected, hovered))
   const detail = useStore((s) => (selected || hovered ? 'full' : s.labelDetail))
   const address = primaryAddress(node)?.split('/')[0] ?? null
-  const blocked = useStore((s) => address !== null && Boolean(s.playback.state?.blocks[address]))
+  const tags = parseTagsKey(useStore((s) => tagsKey(deviceTags(node, address, s.playback.state))))
   const gl = useThree((s) => s.gl)
 
   const liftRef = useRef(null)
@@ -46,7 +47,7 @@ export const DeviceNode = memo(function DeviceNode({ node }) {
     if (Math.abs(group.position.y - target) > 1e-4) group.position.y = MathUtils.damp(group.position.y, target, 14, delta)
   })
 
-  const state = blocked ? 'blocked' : selected ? 'selected' : hovered ? 'hover' : 'idle'
+  const state = ringStateFor(tags, selected, hovered)
   const [x, z] = layout.position
   const baseY = SLAB_TOP + (layout.y ?? 0)
   const labelOffset = layout.labelOffset ?? [0, 0, 0]
@@ -108,7 +109,11 @@ export const DeviceNode = memo(function DeviceNode({ node }) {
             <div className="dev-label__name">
               <span className="dev-label__dot" />
               {node.label}
-              {blocked && <span className="dev-label__tag">BLOCKED</span>}
+              {tags.map((tag) => (
+                <span key={tag.text} className="dev-label__tag" data-tone={tag.tone}>
+                  {tag.text}
+                </span>
+              ))}
             </div>
             <div className="dev-label__addr">{labelAddress(node)}</div>
           </div>

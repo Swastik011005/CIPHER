@@ -111,8 +111,13 @@ export const useStore = create((set, get) => ({
   },
 
   // -- selection ----------------------------------------------------------------------
-  selection: { selectedId: null, hoveredId: null },
-  select: (id) => set((s) => ({ selection: { ...s.selection, selectedId: id } })),
+  selection: { selectedId: null, hoveredId: null, packetId: null },
+  /** Select a device (or clear with null). Selecting a device clears any selected packet. */
+  select: (id) => set((s) => ({ selection: { ...s.selection, selectedId: id, packetId: id === null ? s.selection.packetId : null } })),
+  /** Select a packet by id (or clear with null). Selecting a packet clears any selected device. */
+  selectPacket: (pid) => set((s) => ({ selection: { ...s.selection, packetId: pid, selectedId: pid === null ? s.selection.selectedId : null } })),
+  /** Clear both selections. */
+  clearSelection: () => set((s) => ({ selection: { ...s.selection, selectedId: null, packetId: null } })),
   hover: (id) =>
     set((s) => (s.selection.hoveredId === id ? s : { selection: { ...s.selection, hoveredId: id } })),
 
