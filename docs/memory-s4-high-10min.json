@@ -1,0 +1,272 @@
+{
+  "minutes": 10,
+  "scenario": "S4",
+  "mode": "enforce",
+  "quality": "high",
+  "samples": 20,
+  "baselineHeapMB": 53.66,
+  "finalHeapMB": 53,
+  "heapGrowthPercent": -1.2,
+  "limitPercent": 15,
+  "withinLimit": true,
+  "peakHeapMB": 53.98,
+  "domNodes": {
+    "first": 1183,
+    "last": 1130
+  },
+  "listeners": {
+    "first": 3394,
+    "last": 3394
+  },
+  "geometries": {
+    "first": 174,
+    "last": 174
+  },
+  "textures": {
+    "first": 54,
+    "last": 54
+  },
+  "consoleErrors": 0,
+  "series": [
+    {
+      "t": 30,
+      "heapMB": 51.92,
+      "domNodes": 1183,
+      "listeners": 3394,
+      "documents": 1,
+      "geometries": 174,
+      "textures": 54,
+      "fps": 32,
+      "simTime": 15.4,
+      "packets": 1323
+    },
+    {
+      "t": 60,
+      "heapMB": 52.11,
+      "domNodes": 1160,
+      "listeners": 3392,
+      "documents": 1,
+      "geometries": 174,
+      "textures": 54,
+      "fps": 34,
+      "simTime": 30.8,
+      "packets": 1375
+    },
+    {
+      "t": 91,
+      "heapMB": 53.66,
+      "domNodes": 1183,
+      "listeners": 3394,
+      "documents": 1,
+      "geometries": 174,
+      "textures": 54,
+      "fps": 25,
+      "simTime": 15.2,
+      "packets": 1306
+    },
+    {
+      "t": 121,
+      "heapMB": 52.13,
+      "domNodes": 924,
+      "listeners": 3380,
+      "documents": 1,
+      "geometries": 174,
+      "textures": 54,
+      "fps": 33,
+      "simTime": 0.6,
+      "packets": 0
+    },
+    {
+      "t": 151,
+      "heapMB": 53.83,
+      "domNodes": 1183,
+      "listeners": 3394,
+      "documents": 1,
+      "geometries": 174,
+      "textures": 54,
+      "fps": 30,
+      "simTime": 16,
+      "packets": 1348
+    },
+    {
+      "t": 181,
+      "heapMB": 52.4,
+      "domNodes": 948,
+      "listeners": 3381,
+      "documents": 1,
+      "geometries": 174,
+      "textures": 54,
+      "fps": 25,
+      "simTime": 1.5,
+      "packets": 1
+    },
+    {
+      "t": 211,
+      "heapMB": 53.98,
+      "domNodes": 1181,
+      "listeners": 3394,
+      "documents": 1,
+      "geometries": 174,
+      "textures": 54,
+      "fps": 34,
+      "simTime": 18,
+      "packets": 1353
+    },
+    {
+      "t": 242,
+      "heapMB": 52.12,
+      "domNodes": 948,
+      "listeners": 3382,
+      "documents": 1,
+      "geometries": 174,
+      "textures": 54,
+      "fps": 41,
+      "simTime": 2.3,
+      "packets": 1
+    },
+    {
+      "t": 272,
+      "heapMB": 53.33,
+      "domNodes": 1181,
+      "listeners": 3394,
+      "documents": 1,
+      "geometries": 174,
+      "textures": 54,
+      "fps": 30,
+      "simTime": 18.6,
+      "packets": 1354
+    },
+    {
+      "t": 302,
+      "heapMB": 52.25,
+      "domNodes": 1032,
+      "listeners": 3387,
+      "documents": 1,
+      "geometries": 174,
+      "textures": 54,
+      "fps": 39,
+      "simTime": 3.4,
+      "packets": 9
+    },
+    {
+      "t": 332,
+      "heapMB": 53.71,
+      "domNodes": 1181,
+      "listeners": 3394,
+      "documents": 1,
+      "geometries": 174,
+      "textures": 54,
+      "fps": 33,
+      "simTime": 19.4,
+      "packets": 1355
+    },
+    {
+      "t": 362,
+      "heapMB": 52.47,
+      "domNodes": 1116,
+      "listeners": 3393,
+      "documents": 1,
+      "geometries": 174,
+      "textures": 54,
+      "fps": 32,
+      "simTime": 3.8,
+      "packets": 15
+    },
+    {
+      "t": 393,
+      "heapMB": 53.71,
+      "domNodes": 1181,
+      "listeners": 3394,
+      "documents": 1,
+      "geometries": 174,
+      "textures": 54,
+      "fps": 34,
+      "simTime": 19.2,
+      "packets": 1355
+    },
+    {
+      "t": 423,
+      "heapMB": 52.29,
+      "domNodes": 1130,
+      "listeners": 3394,
+      "documents": 1,
+      "geometries": 174,
+      "textures": 54,
+      "fps": 36,
+      "simTime": 4.9,
+      "packets": 36
+    },
+    {
+      "t": 453,
+      "heapMB": 53.8,
+      "domNodes": 1181,
+      "listeners": 3394,
+      "documents": 1,
+      "geometries": 174,
+      "textures": 54,
+      "fps": 33,
+      "simTime": 21.1,
+      "packets": 1359
+    },
+    {
+      "t": 483,
+      "heapMB": 52.52,
+      "domNodes": 1130,
+      "listeners": 3394,
+      "documents": 1,
+      "geometries": 174,
+      "textures": 54,
+      "fps": 33,
+      "simTime": 5.7,
+      "packets": 59
+    },
+    {
+      "t": 513,
+      "heapMB": 53.88,
+      "domNodes": 1181,
+      "listeners": 3394,
+      "documents": 1,
+      "geometries": 174,
+      "textures": 54,
+      "fps": 31,
+      "simTime": 22,
+      "packets": 1360
+    },
+    {
+      "t": 544,
+      "heapMB": 52.66,
+      "domNodes": 1130,
+      "listeners": 3394,
+      "documents": 1,
+      "geometries": 174,
+      "textures": 54,
+      "fps": 34,
+      "simTime": 6.5,
+      "packets": 105
+    },
+    {
+      "t": 574,
+      "heapMB": 53.95,
+      "domNodes": 1181,
+      "listeners": 3394,
+      "documents": 1,
+      "geometries": 174,
+      "textures": 54,
+      "fps": 27,
+      "simTime": 22.8,
+      "packets": 1363
+    },
+    {
+      "t": 605,
+      "heapMB": 53,
+      "domNodes": 1130,
+      "listeners": 3394,
+      "documents": 1,
+      "geometries": 174,
+      "textures": 54,
+      "fps": 7,
+      "simTime": 7.1,
+      "packets": 142
+    }
+  ]
+}
