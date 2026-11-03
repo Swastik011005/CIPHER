@@ -1,21 +1,10 @@
 @echo off
-rem Starts the backend (http://127.0.0.1:8000) and the frontend (http://127.0.0.1:5173) in two windows.
-rem First-time setup: scripts\setup.cmd (see README.md).
+rem Development mode: the backend on :8000 and the Vite dev server on :5173 with hot reload.
+rem Windows wrapper: the work is done by scripts\tasks.py, which also runs on macOS and Linux:
+rem     python scripts/tasks.py dev
 setlocal
-set "ROOT=%~dp0.."
-
-if not exist "%ROOT%\backend\.venv\Scripts\python.exe" (
-  echo Backend virtual environment not found. Run scripts\setup.cmd first.
-  exit /b 1
-)
-if not exist "%ROOT%\frontend\node_modules" (
-  echo Frontend dependencies not found. Run scripts\setup.cmd first.
-  exit /b 1
-)
-
-start "NetSec backend" cmd /k "cd /d %ROOT%\backend && .venv\Scripts\python app.py"
-start "NetSec frontend" cmd /k "cd /d %ROOT%\frontend && npm run dev"
-
-echo Backend:  http://127.0.0.1:8000  (API docs at /docs)
-echo Frontend: http://127.0.0.1:5173
-endlocal
+where py >nul 2>nul
+if %errorlevel%==0 ( set "PY=py -3" ) else ( set "PY=python" )
+%PY% --version >nul 2>nul || ( echo Python was not found. Install Python 3.12 or newer from python.org, then run this again. & exit /b 1 )
+%PY% "%~dp0tasks.py" dev %*
+exit /b %errorlevel%

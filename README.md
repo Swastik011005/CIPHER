@@ -49,19 +49,25 @@ More detail: `docs/ARCHITECTURE.md` and `docs/SECURITY_ENGINE.md`.
 Requirements: Python 3.12 or newer (developed on 3.13), Node.js 20.19 or newer (developed on 24), and a current Chromium-based
 browser with WebGL 2.
 
-Windows scripts are provided today (cross-platform setup is the first planned improvement, see the roadmap):
+One task runner (Python standard library only) does the work the same way on Windows, macOS and Linux:
 
 ```
-scripts\setup.cmd           first time only, needs the internet: virtual environment, dependencies, production build
-scripts\verify.cmd          optional: backend tests, the 93 scenario checks, frontend tests and the production build
-scripts\start-demo.cmd      one process serves the API and the built front end at http://127.0.0.1:8000/simulation
-scripts\start-dev.cmd       backend on :8000 plus the Vite dev server on http://127.0.0.1:5173 (hot reload)
+python scripts/tasks.py setup     # first time only, needs the internet: virtual environment, dependencies, production build
+python scripts/tasks.py verify    # backend tests, the scenario checks, frontend tests and the production build
+python scripts/tasks.py demo      # one process serves the API and the built front end at http://127.0.0.1:8000/simulation
+python scripts/tasks.py dev       # backend on :8000 plus the Vite dev server on http://127.0.0.1:5173 (hot reload)
 ```
 
-By hand:
+On Windows the same tasks are also available as `scripts\setup.cmd`, `scripts\verify.cmd`, `scripts\start-demo.cmd` and
+`scripts\start-dev.cmd`. `setup --runtime-only` installs only what the server needs, without the test tools.
+
+> The task runner has been run on **Windows only**. It is written for macOS and Linux as well, and the continuous
+> integration workflow runs the backend and frontend checks on Linux, but nothing here has been run on those systems yet.
+
+By hand (Windows paths shown; on macOS and Linux use `.venv/bin/python`):
 
 ```
-cd backend  && python -m venv .venv && .venv\Scripts\python -m pip install -r requirements.txt
+cd backend  && python -m venv .venv && .venv\Scripts\python -m pip install -r requirements-dev.txt
 cd frontend && npm ci && npm run build
 cd backend  && .venv\Scripts\python app.py        # http://127.0.0.1:8000, API docs at /docs
 ```
@@ -72,9 +78,11 @@ any other host.
 ## Tests
 
 ```
-cd backend  && .venv\Scripts\python -m pytest
-cd frontend && npx vitest run
+python scripts/tasks.py verify                       # everything below, with a pass/fail summary
+python scripts/tasks.py verify --only backend        # or just one step: backend, scenarios, frontend, build
 ```
+
+Continuous integration (`.github/workflows/ci.yml`) runs the same steps on every push and pull request.
 
 The release record for v1.0 (937 backend tests, 277 frontend tests, 93 of 93 scenario checks, production build, browser
 rehearsal) is in `docs/STAGE7_PROGRESS.md`, together with what was **not** verified. Notably, the 55 fps target on a discrete
@@ -94,7 +102,7 @@ GPU was never measured, and a second laptop was never tested. See `docs/LIMITATI
 
 `v1.0` is the first complete release of the simulation. Further work happens on the `develop` branch:
 
-1. Cross-platform setup and continuous integration.
+1. Cross-platform setup and continuous integration (in progress on `develop`).
 2. Deployment readiness (explicit production configuration, secure CORS, read-only shared rules).
 3. 3D interactivity: stronger selection feedback, double-click focus, cable inspection.
 4. A pop-out viewer for inspecting a single device model.
@@ -105,7 +113,8 @@ The network topology and the security behaviour are frozen: visual work must not
 ## Branches and contributions
 
 `main` is stable and release-ready, `develop` integrates approved work, and each feature lives on a `feature/*` branch.
-Only tested, approved changes reach `main`. The full process will be described in `CONTRIBUTING.md`.
+Only tested, approved changes reach `main`. The process is described in [CONTRIBUTING.md](CONTRIBUTING.md), and the commands,
+dependency files and CI in [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
 
 ## Development note
 

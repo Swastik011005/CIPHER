@@ -4,14 +4,11 @@
  * profile and never changes any system setting.
  */
 import { spawn } from 'node:child_process'
-import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
-const BROWSERS = {
-  chrome: ['C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe', 'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe'],
-  edge: ['C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe', 'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe'],
-}
+import { findBrowser } from './browsers.mjs'
 
 export const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
@@ -33,8 +30,8 @@ export async function waitFor(fn, what, ms = 20000) {
  * @param {{browser?: string, width?: number, height?: number, port?: number, extraFlags?: string[]}} options
  */
 export async function openBrowser({ browser = 'chrome', width = 1920, height = 1080, port = 9555, extraFlags = [] } = {}) {
-  const exe = BROWSERS[browser]?.find((p) => existsSync(p))
-  if (!exe) throw new Error(`no ${browser} installation found`)
+  const exe = findBrowser(browser)
+  if (!exe) throw new Error(`no ${browser} installation found (set NETSEC_BROWSER_PATH to its executable)`)
   const profile = mkdtempSync(join(tmpdir(), 'netsec-cdp-'))
   const child = spawn(
     exe,

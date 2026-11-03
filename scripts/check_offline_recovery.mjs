@@ -1,7 +1,10 @@
 /**
  * Offline and recovery check for demo mode, in a real Chrome window.
  *
- *   node scripts/check_offline_recovery.mjs [--port 8100]
+ *   node scripts/check_offline_recovery.mjs [--port 8100] [--out docs/demo]
+ *
+ * Two screenshots (14-engine-offline.png, 15-engine-recovered.png) are written to --out, which defaults to the tracked
+ * docs/demo folder, so pass another folder to run the check without modifying tracked files.
  *
  * Starts its own backend (it serves the built frontend, one process) on a spare port, opens the app, plays a scenario,
  * then kills the backend while the page is open and checks that the page says so and keeps what it already has;
@@ -9,7 +12,7 @@
  * makes no request outside 127.0.0.1 (nothing needs the internet). Needs `npm run build` to have been run.
  */
 import { spawn } from 'node:child_process'
-import { existsSync } from 'node:fs'
+import { existsSync, mkdirSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -20,9 +23,12 @@ const args = Object.fromEntries(
 )
 const port = Number(args.port ?? 8100)
 const root = resolve(fileURLToPath(import.meta.url), '..', '..')
-const python = join(root, 'backend', '.venv', 'Scripts', 'python.exe')
+const out = resolve(args.out ?? join(root, 'docs', 'demo'))
+mkdirSync(out, { recursive: true })
+const windows = process.platform === 'win32'
+const python = join(root, 'backend', '.venv', windows ? 'Scripts' : 'bin', windows ? 'python.exe' : 'python')
 if (!existsSync(python) || !existsSync(join(root, 'frontend', 'dist', 'index.html'))) {
-  console.error('Needs backend\\.venv and frontend\\dist: run scripts\\setup.cmd first.')
+  console.error('Needs backend/.venv and frontend/dist: run `python scripts/tasks.py setup` first.')
   process.exit(2)
 }
 
@@ -77,7 +83,7 @@ try {
   check('scrubbing the loaded run still works offline (the trace is already in the browser)', scrubbed === 5, `time=${scrubbed}`)
   const runDisabled = await ev(`[...document.querySelectorAll('button')].find((b) => b.textContent.trim() === 'Run')?.disabled`)
   check('the Run button is disabled while the engine is offline', runDisabled === true, `disabled=${runDisabled}`)
-  await browser.screenshot(join(root, 'docs', 'demo', '14-engine-offline.png'))
+  await browser.screenshot(join(out, '14-engine-offline.png'))
 
   await startBackend()
   await waitFor(async () => !(await text()).includes('Engine offline'), 'the page to notice the engine is back', 20000)
@@ -86,7 +92,7 @@ try {
   await ev(`window.__netsecStore.getState().runScenario('S1', 'monitor')`)
   await waitFor(() => ev(`window.__netsecStore.getState().run.status === 'ready' && window.__netsecStore.getState().run.meta.scenario_id === 'S1'`), 'S1 to run after recovery', 20000)
   check('a new run works after recovery', true)
-  await browser.screenshot(join(root, 'docs', 'demo', '15-engine-recovered.png'))
+  await browser.screenshot(join(out, '15-engine-recovered.png'))
 
   const external = [...new Set(browser.requests().map((u) => new URL(u).hostname))].filter((h) => !['127.0.0.1', 'localhost', ''].includes(h))
   check('no request left 127.0.0.1 (nothing needs the internet)', external.length === 0, external.join(', '))
