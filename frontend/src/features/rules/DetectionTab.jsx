@@ -120,7 +120,7 @@ function DetectorCard({ id, detector, draft, errors, onChange }) {
  * The detector settings: switches and thresholds, one draft for all of them, applied together (the server
  * accepts all of an edit or none of it).
  */
-export function DetectionTab({ rules, busy, onApply }) {
+export function DetectionTab({ rules, busy, onApply, readOnly = false }) {
   const [draft, setDraft] = useState(() => initialDraft(rules.detectors))
   // A new server state (after Apply or Reset) replaces the draft.
   useEffect(() => setDraft(initialDraft(rules.detectors)), [rules])
@@ -131,22 +131,27 @@ export function DetectionTab({ rules, busy, onApply }) {
 
   return (
     <>
-      <div className="detector-grid">
-        {Object.entries(rules.detectors).map(([id, detector]) => (
-          <DetectorCard key={id} id={id} detector={detector} draft={draft[id]} errors={errors} onChange={edit(id)} />
-        ))}
-      </div>
-      <div className="apply-bar glass" role="region" aria-label="Pending detector changes" data-pending={count > 0}>
+      {/* A disabled fieldset disables every switch and field inside it, for the mouse, the keyboard and screen readers. */}
+      <fieldset className="rules-lock" disabled={readOnly} data-locked={readOnly}>
+        <legend className="sr-only">Detector settings{readOnly ? ' (read-only on this server)' : ''}</legend>
+        <div className="detector-grid">
+          {Object.entries(rules.detectors).map(([id, detector]) => (
+            <DetectorCard key={id} id={id} detector={detector} draft={draft[id]} errors={errors} onChange={edit(id)} />
+          ))}
+        </div>
+      </fieldset>
+      <div className="apply-bar glass" role="region" aria-label="Pending detector changes" data-pending={count > 0 && !readOnly}>
         <span>
-          {count === 0 && !blocked && 'No unsaved changes. Edits apply to the next run.'}
-          {count > 0 && !blocked && `${count} unsaved change${count === 1 ? '' : 's'}`}
-          {blocked && `${Object.keys(errors).length} value${Object.keys(errors).length === 1 ? '' : 's'} to fix before applying`}
+          {readOnly && 'Read-only: these settings are shown but cannot be changed on this server.'}
+          {!readOnly && count === 0 && !blocked && 'No unsaved changes. Edits apply to the next run.'}
+          {!readOnly && count > 0 && !blocked && `${count} unsaved change${count === 1 ? '' : 's'}`}
+          {!readOnly && blocked && `${Object.keys(errors).length} value${Object.keys(errors).length === 1 ? '' : 's'} to fix before applying`}
         </span>
         <span className="apply-bar__buttons">
-          <Button size="small" variant="ghost" disabled={count === 0 && !blocked} onClick={() => setDraft(initialDraft(rules.detectors))}>
+          <Button size="small" variant="ghost" disabled={readOnly || (count === 0 && !blocked)} onClick={() => setDraft(initialDraft(rules.detectors))}>
             Discard
           </Button>
-          <Button variant="primary" size="small" disabled={count === 0 || blocked || busy} onClick={() => onApply(changes)}>
+          <Button variant="primary" size="small" disabled={readOnly || count === 0 || blocked || busy} onClick={() => onApply(changes)}>
             Apply
           </Button>
         </span>

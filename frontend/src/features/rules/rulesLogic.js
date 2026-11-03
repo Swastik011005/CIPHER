@@ -185,3 +185,19 @@ export function rulesStatus(rules) {
   if (restricted) parts.push('the restricted addresses')
   return { customised: true, text: `Custom rules in force: ${parts.join(' and ')}.` }
 }
+
+/**
+ * Whether the server has locked the rules (a public deployment: the rules are shared by every visitor), and what to say.
+ * `null` when rules can be edited, exactly as in a local run.
+ * @param {{read_only?: boolean, read_only_reason?: string | null} | null | undefined} rules  The GET /api/rules response.
+ * @returns {{title: string, text: string} | null}
+ */
+export function readOnlyNotice(rules) {
+  if (!rules?.read_only) return null
+  return {
+    title: 'Rules are read-only on this server',
+    text:
+      (rules.read_only_reason ?? 'The rules are shared by every visitor, so they cannot be changed here.') +
+      ' You can still read every rule, run every scenario, run all checks and export the policy as Cisco IOS text.',
+  }
+}

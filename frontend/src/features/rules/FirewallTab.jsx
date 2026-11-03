@@ -68,7 +68,7 @@ function PolicyTable({ policy, restricted, ruleHits }) {
 }
 
 /** Restricted source addresses: FW1 denies them first (rule OUTSIDE-IN:10). Each change goes straight to the server. */
-function RestrictedAddresses({ restricted, busy, onChange }) {
+function RestrictedAddresses({ restricted, busy, onChange, readOnly = false }) {
   const [text, setText] = useState('')
   const [problem, setProblem] = useState(null)
   const addresses = restricted.addresses
@@ -91,7 +91,7 @@ function RestrictedAddresses({ restricted, busy, onChange }) {
         {addresses.map((address) => (
           <span key={address} className="chip chip--mono chip--removable">
             {address}
-            <button type="button" aria-label={`Remove ${address}`} disabled={busy} onClick={() => onChange(addresses.filter((a) => a !== address))}>
+            <button type="button" aria-label={`Remove ${address}`} disabled={busy || readOnly} onClick={() => onChange(addresses.filter((a) => a !== address))}>
               <X size={12} aria-hidden="true" />
             </button>
           </span>
@@ -100,13 +100,15 @@ function RestrictedAddresses({ restricted, busy, onChange }) {
       <form className="add-address" onSubmit={add} noValidate>
         <label className="field">
           <span className="field__label">Add an address</span>
-          <input type="text" value={text} placeholder="203.0.113.66" onChange={(e) => setText(e.target.value)} aria-invalid={Boolean(problem)} aria-label="Address to restrict" />
+          <input type="text" value={text} placeholder="203.0.113.66" disabled={readOnly} onChange={(e) => setText(e.target.value)} aria-invalid={Boolean(problem)} aria-label="Address to restrict" />
         </label>
-        <Button type="submit" variant="primary" size="small" disabled={busy || text.trim() === ''}>
+        <Button type="submit" variant="primary" size="small" disabled={readOnly || busy || text.trim() === ''}>
           Add
         </Button>
         <span className="muted field__hint">
-          {addresses.length} of {restricted.max} used · shipped: {restricted.defaults.join(', ') || 'none'}
+          {readOnly
+            ? 'Read-only on this server: the restricted addresses cannot be changed here.'
+            : `${addresses.length} of ${restricted.max} used · shipped: ${restricted.defaults.join(', ') || 'none'}`}
         </span>
       </form>
       {problem && (
@@ -168,12 +170,12 @@ function IosExport({ rulesHash }) {
   )
 }
 
-export function FirewallTab({ rules, busy, onRestricted }) {
+export function FirewallTab({ rules, busy, onRestricted, readOnly = false }) {
   const ruleHits = useStore((s) => s.playback.state?.ruleHits)
   const loaded = useStore((s) => Boolean(s.playback.state?.meta))
   return (
     <div className="stack">
-      <RestrictedAddresses restricted={rules.restricted_ips} busy={busy} onChange={onRestricted} />
+      <RestrictedAddresses restricted={rules.restricted_ips} busy={busy} onChange={onRestricted} readOnly={readOnly} />
       {!loaded && <p className="muted">Hit counts appear here for the run loaded in the 3D simulation.</p>}
       {rules.policies.map((policy) => (
         <PolicyTable key={policy.name} policy={policy} restricted={rules.restricted_ips.addresses} ruleHits={ruleHits} />

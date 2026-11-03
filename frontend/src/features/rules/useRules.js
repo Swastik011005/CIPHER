@@ -48,13 +48,15 @@ export function useRules() {
     } catch (error) {
       if (alive.current) {
         const problems = error.problems?.length ? error.problems : [error.message]
-        setFeedback({ tone: 'danger', title: error.status === 422 ? 'The server refused that edit; nothing was changed' : 'The edit could not be sent', lines: problems })
+        const refused = error.status === 422 || error.status === 403
+        setFeedback({ tone: 'danger', title: refused ? 'The server refused that edit; nothing was changed' : 'The edit could not be sent', lines: problems })
+        if (error.status === 403) load() // the server is read-only: show it as it is now
       }
       return false
     } finally {
       if (alive.current) setBusy(false)
     }
-  }, [])
+  }, [load])
 
   const applyDetectors = useCallback(
     (changes) =>

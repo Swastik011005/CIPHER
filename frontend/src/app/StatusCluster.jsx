@@ -1,3 +1,4 @@
+import { offlineAdvice } from '../api/client.js'
 import { useStore } from '../state/store.js'
 import { Chip, Spinner, StatusDot } from '../ui/index.js'
 
@@ -19,7 +20,7 @@ export function ConnectionIndicator({ compact = false }) {
     status === 'online'
       ? `Backend ${health?.version ?? ''} reachable (uptime ${health?.uptime_s ?? '?'} s)`
       : status === 'offline'
-        ? `${error ?? 'Backend unreachable'}. Start it with "python app.py"; retrying every 3 s.`
+        ? `${error ?? 'Backend unreachable'}. ${offlineAdvice()}`
         : 'Waiting for the first health check'
   const checked = lastCheckedAt ? ` Last check ${new Date(lastCheckedAt).toLocaleTimeString()}.` : ''
 

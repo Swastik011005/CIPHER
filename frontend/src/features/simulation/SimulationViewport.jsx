@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 
 import { CAMERA_PRESETS } from '../../scene/layout.js'
 import { useStore } from '../../state/store.js'
-import { Banner, Button, Segmented, Spinner } from '../../ui/index.js'
+import { Banner, Button, EngineHint, Segmented, Spinner } from '../../ui/index.js'
 import { PlaybackBar } from './PlaybackBar.jsx'
 import { SceneSlot } from './SceneSlot.jsx'
 
@@ -156,7 +156,8 @@ export function SimulationViewport({ layoutIssues }) {
               </Button>
             }
           >
-            {topology.error}. The 3D scene is built from the backend, so start it with <code>python app.py</code> in the backend folder.
+            {topology.error}.{' '}
+            <EngineHint local={<>The 3D scene is built from the backend, so start it with <code>python app.py</code> in the backend folder.</>} />
           </Banner>
         </div>
       )}

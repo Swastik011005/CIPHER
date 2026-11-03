@@ -41,9 +41,37 @@ function describeErrorBody(body, fallback) {
 }
 
 /**
+ * The API base from the build-time setting VITE_API_BASE: `/api` (same origin: development and demo mode) or the full
+ * URL of a separately hosted API, e.g. `https://api.example.com/api`. Blank or unset means `/api`; trailing slashes go.
+ * @param {string | undefined} value
+ */
+export function normaliseApiBase(value) {
+  const base = (value ?? '').trim().replace(/\/+$/, '')
+  return base === '' ? '/api' : base
+}
+
+export const API_BASE = normaliseApiBase(import.meta.env?.VITE_API_BASE)
+
+/** True when the API is on another origin than the page (a separately hosted back end). */
+export function isRemoteApi(base = API_BASE) {
+  return /^https?:\/\//i.test(base)
+}
+
+/**
+ * What to tell the person when the engine cannot be reached. A local engine has to be started by hand; a hosted one
+ * may only be asleep (free hosting stops an idle service and takes about a minute to wake it).
+ * @param {string} [base]
+ */
+export function offlineAdvice(base = API_BASE) {
+  return isRemoteApi(base)
+    ? 'The engine is hosted separately. If it was idle it may be waking up, which can take about a minute; this page keeps retrying.'
+    : 'Start it with "python app.py"; retrying every 3 s.'
+}
+
+/**
  * @param {{baseUrl?: string, fetchImpl?: typeof fetch}} [options]
  */
-export function createApiClient({ baseUrl = import.meta.env?.VITE_API_BASE ?? '/api', fetchImpl } = {}) {
+export function createApiClient({ baseUrl = API_BASE, fetchImpl } = {}) {
   /**
    * @param {string} path
    * @param {{method?: string, body?: unknown, signal?: AbortSignal, timeoutMs?: number}} [options]
