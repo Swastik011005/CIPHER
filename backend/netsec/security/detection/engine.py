@@ -13,6 +13,9 @@ from netsec.security.config import DetectorsConfig
 from netsec.security.correlation import Correlator
 from netsec.security.detection.base import SEVERITY_RANK, Detector, Finding, ObservedPacket
 from netsec.security.detection.d1_port_scan import PortScanDetector
+from netsec.security.detection.d4_restricted_service import RestrictedServiceDetector
+from netsec.security.detection.d5_forbidden_zone_pair import ForbiddenZonePairDetector
+from netsec.security.detection.d6_invalid_tcp_flags import InvalidFlagsDetector
 
 
 @dataclass(frozen=True)
@@ -42,10 +45,22 @@ class DetectionEngine:
     def __init__(self, sensor: str, config: DetectorsConfig, correlator: Correlator) -> None:
         self.sensor = sensor
         self.correlator = correlator
-        self._suppression = config.D1.suppression_s
-        self.detectors: list[Detector] = [PortScanDetector(config.D1)]
+        # Order matters only for ties: the first of equally severe findings is the one the IPS acts on.
+        self.detectors: list[Detector] = [
+            PortScanDetector(config.D1),
+            RestrictedServiceDetector(config.D4),
+            ForbiddenZonePairDetector(config.D5),
+            InvalidFlagsDetector(config.D6),
+        ]
+        self._suppression = {d.rule: d.suppression_s for d in self.detectors}
         # (rule, src, dst) -> (time of last alert, severity rank of last alert)
         self._last_alert: dict[tuple[str, str, str], tuple[float, int]] = {}
+
+    def set_enabled(self, rule: str, enabled: bool) -> None:
+        """Switch one detector on or off (a mid-run control). Its history is kept."""
+        for detector in self.detectors:
+            if detector.rule == rule:
+                detector.enabled = enabled
 
     def observe(self, packet: ObservedPacket, now: float) -> Observation:
         observation = Observation()
@@ -75,7 +90,7 @@ class DetectionEngine:
         key = (finding.rule, finding.src, finding.dst)
         rank = SEVERITY_RANK[finding.severity]
         last = self._last_alert.get(key)
-        if last is not None and rank <= last[1] and now - last[0] < self._suppression:
+        if last is not None and rank <= last[1] and now - last[0] < self._suppression[finding.rule]:
             return False
         self._last_alert[key] = (now, rank)
         return True

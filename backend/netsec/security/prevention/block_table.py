@@ -26,8 +26,16 @@ class BlockTable:
     def add(self, block: Block) -> None:
         self._blocks[block.src] = block
 
-    def remove(self, src: str, until: float) -> None:
+    def remove(self, src: str, until: float) -> bool:
         """Drop the block on ``src`` only if it is the one ending at ``until`` (a newer block stays)."""
         block = self._blocks.get(src)
         if block is not None and block.until == until:
             del self._blocks[src]
+            return True
+        return False
+
+    def clear(self) -> list[Block]:
+        """Remove every block; returns them in a stable order."""
+        cleared = sorted(self._blocks.values(), key=lambda b: (b.until, b.src))
+        self._blocks.clear()
+        return cleared

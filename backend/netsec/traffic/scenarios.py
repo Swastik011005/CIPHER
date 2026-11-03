@@ -59,7 +59,21 @@ class PortScanSpec(_Strict):
     rate: float = Field(gt=0, le=50)
 
 
-FlowSpec = Annotated[Union[TcpSessionSpec, IcmpEchoSpec, PortScanSpec], Field(discriminator="type")]
+class FlagProbeSpec(_Strict):
+    """Raw TCP segments with chosen flags (``count`` of them, ``interval`` apart): for example a NULL or XMAS probe."""
+
+    type: Literal["flag_probe"]
+    id: str
+    src: str
+    dst: str
+    dport: int = Field(ge=1, le=65535)
+    flags: list[Literal["SYN", "ACK", "FIN", "RST", "PSH", "URG"]]
+    start: float = Field(ge=0)
+    count: int = Field(default=1, ge=1, le=50)
+    interval: float = Field(default=0.5, gt=0)
+
+
+FlowSpec = Annotated[Union[TcpSessionSpec, IcmpEchoSpec, PortScanSpec, FlagProbeSpec], Field(discriminator="type")]
 
 
 class ScenarioSpec(_Strict):
@@ -68,6 +82,8 @@ class ScenarioSpec(_Strict):
     description: str
     duration: float = Field(gt=0)
     default_seed: int
+    #: When set, the scenario always runs with the IPS in this mode (S5 and S6), whatever the caller asks for.
+    pinned_ips_mode: Optional[Literal["monitor", "enforce"]] = None
     flows: list[FlowSpec] = Field(min_length=1)
 
 

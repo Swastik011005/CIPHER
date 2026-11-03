@@ -23,7 +23,13 @@ from netsec.traffic.scenarios import ScenarioSpec, load_scenario  # noqa: E402
 
 OUT = ROOT / "frontend" / "src" / "playback" / "fixtures"
 
-RUNS = [("s1-monitor", "S1", "monitor"), ("s2-monitor", "S2", "monitor"), ("s2-enforce", "S2", "enforce")]
+RUNS = [
+    ("s1-monitor", "S1", "monitor"),
+    ("s2-monitor", "S2", "monitor"),
+    ("s2-enforce", "S2", "enforce"),
+    ("s3-monitor", "S3", "monitor"),
+    ("s3-enforce", "S3", "enforce"),
+]
 
 
 def one_session(scenario_id: str, src: str, dst: str, dport: int) -> ScenarioSpec:
@@ -45,7 +51,7 @@ def one_session(scenario_id: str, src: str, dst: str, dport: int) -> ScenarioSpe
 FIXTURE_RUNS = [
     ("fw-deny", one_session("X1", "EXT-ATK", "DB-SRV", 3306), "monitor"),
     ("acl-deny", one_session("X2", "PC-1", "DB-SRV", 3306), "monitor"),
-]
+]  # S3 covers both of these in the product; the single-attempt fixtures stay for the effect tests
 
 
 def main() -> None:

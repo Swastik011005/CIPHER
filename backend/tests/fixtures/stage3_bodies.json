@@ -1,0 +1,23 @@
+{
+  "s1-monitor": {
+    "scenario": "S1",
+    "mode": "monitor",
+    "events": 328,
+    "stage3_trace_hash": "8a94cf3a07ad18a03f7ee9d373ad1e1085d66f029a7961cd5ec98ee51a5b5ddb",
+    "body_sha256": "b8798c25cc974852cd84332354a96fadd4ef1a686b8eae81c8f0ad254409463d"
+  },
+  "s2-monitor": {
+    "scenario": "S2",
+    "mode": "monitor",
+    "events": 1219,
+    "stage3_trace_hash": "6391b67dd76580f15380a21e73a825c35331ae5ca6740d5e0e8ae830e606b984",
+    "body_sha256": "7e647cd4d5a68ec0cf1291cec977bb12228f2af4a2e61d38d601070935320fd6"
+  },
+  "s2-enforce": {
+    "scenario": "S2",
+    "mode": "enforce",
+    "events": 812,
+    "stage3_trace_hash": "dc8c0ef5721bf9218d3992ce513aeb3cbe2ef50be84251f5e58e40ac2a4651dd",
+    "body_sha256": "fbb5029d97c86b84db7453f7c6fbdae859b9854dcd0d0cd704ad796009f3af43"
+  }
+}

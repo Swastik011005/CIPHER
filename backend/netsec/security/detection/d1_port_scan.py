@@ -23,6 +23,8 @@ class PortScanDetector:
 
     def __init__(self, config: D1Config) -> None:
         self.config = config
+        self.enabled = config.enabled
+        self.suppression_s = config.suppression_s
         self._seen: dict[tuple[str, str], deque[tuple[float, int]]] = {}
 
     @staticmethod
@@ -30,7 +32,7 @@ class PortScanDetector:
         return packet.proto == "tcp" and "SYN" in packet.flags and "ACK" not in packet.flags
 
     def observe(self, packet: ObservedPacket, now: float) -> Optional[Finding]:
-        if not self.config.enabled or not self._is_connection_attempt(packet) or packet.dport is None:
+        if not self.enabled or not self._is_connection_attempt(packet) or packet.dport is None:
             return None
 
         key = (packet.src, packet.dst)

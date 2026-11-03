@@ -187,6 +187,57 @@ class IcmpEchoFlow:
         return []
 
 
+class FlagProbeFlow:
+    """Raw TCP segments with fixed flags. Whatever the server answers is ignored."""
+
+    def __init__(
+        self,
+        flow_id: str,
+        src_ip: str,
+        dst_ip: str,
+        dport: int,
+        flags: tuple[str, ...],
+        count: int,
+        interval: float,
+        sport: int,
+        isn: int,
+    ) -> None:
+        self.flow_id = flow_id
+        self.src_ip = src_ip
+        self.dst_ip = dst_ip
+        self.dport = dport
+        self.flags = flags
+        self.count = count
+        self.interval = interval
+        self.sport = sport
+        self._isn = isn
+
+    def initial(self) -> list[tuple[float, PacketSpec]]:
+        return [
+            (
+                i * self.interval,
+                PacketSpec(
+                    flow=self.flow_id,
+                    proto="tcp",
+                    src=self.src_ip,
+                    dst=self.dst_ip,
+                    sport=self.sport,
+                    dport=self.dport,
+                    flags=self.flags,
+                    length=IP_TCP_HEADER_BYTES,
+                    seq=self._isn + i,
+                ),
+            )
+            for i in range(self.count)
+        ]
+
+    def matches(self, pkt: Packet) -> bool:
+        return pkt.proto == "tcp" and pkt.src == self.dst_ip and pkt.dport == self.sport
+
+    def on_packet(self, pkt: Packet) -> list[PacketSpec]:
+        return []
+
+
 class PortScanFlow:
     """A SYN scan. Open ports answer SYN-ACK and the scanner resets them (half-open scan);
     closed ports answer RST-ACK. The scanner knows nothing the replies do not tell it."""

@@ -20,8 +20,8 @@ def test_health_returns_200_and_says_it_is_a_local_simulation(client) -> None:
     assert body["status"] == "ok" and body["service"] == "netsec-ids-engine"
     assert body["mode"] == "simulation" and body["real_traffic"] is False
     assert body["topology"] == {"loaded": True, "valid": True, "nodes": 17, "links": 18}
-    assert body["scenarios_available"] == ["S1", "S2"]
-    assert body["stage"] == 2 and body["uptime_s"] >= 0
+    assert body["scenarios_available"] == ["S1", "S2", "S3", "S5", "S6"]
+    assert body["stage"] == 4 and body["uptime_s"] >= 0
 
 
 def test_topology_returns_the_authoritative_topology(client, raw_topology) -> None:
@@ -48,7 +48,7 @@ def test_topology_exposes_what_the_scene_needs(client) -> None:
 def test_scenarios_lists_only_what_exists_in_this_build(client) -> None:
     response = client.get("/api/scenarios")
     assert response.status_code == 200
-    assert [s["id"] for s in response.json()] == ["S1", "S2"]
+    assert [s["id"] for s in response.json()] == ["S1", "S2", "S3", "S5", "S6"]
 
 
 def test_run_s1_returns_a_valid_deterministic_trace(client) -> None:
@@ -68,7 +68,7 @@ def test_run_accepts_an_explicit_seed(client) -> None:
     assert a["seed"] == 5 and b["seed"] == 6 and a["trace_hash"] != b["trace_hash"]
 
 
-@pytest.mark.parametrize("scenario_id", ["S3", "S99", "../etc/passwd", "s1", "S1.json"])
+@pytest.mark.parametrize("scenario_id", ["S4", "S99", "../etc/passwd", "s1", "S1.json"])
 def test_unknown_or_unsafe_scenario_ids_return_404(client, scenario_id) -> None:
     response = client.post("/api/sim/run", json={"scenario_id": scenario_id})
     assert response.status_code == 404
@@ -122,3 +122,37 @@ def test_built_frontend_is_served_with_spa_fallback(tmp_path) -> None:
     assert client.get("/api/health").json()["status"] == "ok"
     assert client.get("/api/nope").status_code == 404
     assert client.get("/%2e%2e/%2e%2e/secret").text == "<html>app</html>"  # no traversal outside dist
+
+
+def test_scenarios_report_which_ones_pin_the_ips_mode(client) -> None:
+    pinned = {s["id"]: s["pinned_ips_mode"] for s in client.get("/api/scenarios").json()}
+    assert pinned == {"S1": None, "S2": None, "S3": None, "S5": "monitor", "S6": "enforce"}
+
+
+def test_a_pinned_scenario_ignores_the_requested_ips_mode(client) -> None:
+    body = client.post("/api/sim/run", json={"scenario_id": "S6", "ips_mode": "monitor"}).json()
+    assert body["ips_mode"] == "enforce" and body["summary"]["blocked"] == 24
+    assert client.post("/api/sim/run", json={"scenario_id": "S5", "ips_mode": "enforce"}).json()["ips_mode"] == "monitor"
+
+
+def test_controls_are_applied_and_leave_the_prefix_unchanged(client) -> None:
+    base = client.post("/api/sim/run", json={"scenario_id": "S2", "ips_mode": "monitor"}).json()
+    live = client.post(
+        "/api/sim/run",
+        json={"scenario_id": "S2", "ips_mode": "monitor", "controls": [{"type": "ips_mode", "t": 1.0, "mode": "enforce"}]},
+    ).json()
+    assert [e for e in live["events"] if e["t"] < 1.0] == [e for e in base["events"] if e["t"] < 1.0]
+    assert live["summary"]["blocked"] == 24 and base["summary"]["blocked"] == 0
+
+
+def test_a_mode_switch_on_a_pinned_scenario_is_a_422_and_bad_controls_are_rejected(client) -> None:
+    pinned = client.post("/api/sim/run", json={"scenario_id": "S5", "controls": [{"type": "ips_mode", "t": 2.0, "mode": "enforce"}]})
+    assert pinned.status_code == 422 and "pins the IPS mode" in pinned.json()["detail"]
+    for bad in ({"type": "ips_mode", "t": -1, "mode": "enforce"}, {"type": "detector", "t": 1, "detector": "D9", "enabled": True}, {"type": "nope"}):
+        assert client.post("/api/sim/run", json={"scenario_id": "S1", "controls": [bad]}).status_code == 422
+
+
+def test_the_s3_trace_over_the_api_contains_the_reset_and_all_four_dispositions(client) -> None:
+    body = client.post("/api/sim/run", json={"scenario_id": "S3", "ips_mode": "enforce"}).json()
+    assert sorted(e["reason"] for e in body["events"] if e["type"] == "packet.dropped") == ["acl_deny", "acl_deny", "fw_deny", "ips_reject"]
+    assert any(e["type"] == "packet.created" and e["flow"] == "F4-admin-to-db:rst" for e in body["events"])
