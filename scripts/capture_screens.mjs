@@ -35,7 +35,9 @@ const OVERFLOW = `(() => {
     const r = e.getBoundingClientRect()
     return r.width > 0 && r.right > w + 1 && getComputedStyle(e).position !== 'fixed' && !e.closest('.table-scroll, canvas, .scene-canvas, [data-allow-overflow]')
   }).slice(0, 5).map((e) => e.tagName.toLowerCase() + '.' + String(e.className).split(' ')[0] + ' right=' + Math.round(e.getBoundingClientRect().right))
-  return { clientWidth: w, scrollWidth: document.documentElement.scrollWidth, scrollsSideways: document.documentElement.scrollWidth > w + 1, wide }
+  // The page may scroll inside its own main region instead of the window: check every scroll container too.
+  const inner = [...document.querySelectorAll('main, .app__main, [class*="main"], .page, .sim')].filter((e) => e.scrollWidth > e.clientWidth + 1).map((e) => e.tagName.toLowerCase() + '.' + String(e.className).split(' ')[0] + ' scroll=' + e.scrollWidth + ' client=' + e.clientWidth)
+  return { clientWidth: w, scrollWidth: document.documentElement.scrollWidth, scrollsSideways: document.documentElement.scrollWidth > w + 1 || inner.length > 0, wide, inner }
 })()`
 
 const browser = await openBrowser({ width: 1920, height: 1080 })
@@ -49,7 +51,7 @@ try {
       await sleep(name === 'simulation' ? 4000 : 1500)
       if (name === 'simulation') {
         await waitFor(() => browser.evaluate('!!document.querySelector("canvas") && !!window.__netsecStore'), 'the 3D scene', 30000)
-        await browser.evaluate(`(async () => { const s = window.__netsecStore.getState(); await s.runScenario('${args.scenario ?? 'S4'}', 'enforce'); s.togglePlay(); s.seekTo(${args.at ?? 12.5}); })()`)
+        await browser.evaluate(`(async () => { window.__netsecStore.setState({ autoLowered: true }); window.__netsecStore.getState().setSetting('quality', 'high'); const s = window.__netsecStore.getState(); await s.runScenario('${args.scenario ?? 'S4'}', 'enforce'); s.togglePlay(); s.seekTo(${args.at ?? 12.5}); })()`)
         await sleep(2500)
         for (const preset of ['overview', 'perimeter', 'staff', 'core', 'servers', 'secops']) {
           await browser.evaluate(`window.__netsecStore.getState().requestPreset('${preset}')`)
