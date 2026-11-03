@@ -37,7 +37,7 @@ from netsec.sim.controls import ControlSpec, DetectorControl, IpsModeControl
 from netsec.traffic.flows import FlagProbeFlow, IcmpEchoFlow, PortScanFlow, TcpSessionFlow
 from netsec.traffic.host_stack import HostStack
 from netsec.traffic.packet import IP_TCP_HEADER_BYTES, Packet, PacketSpec, tcp_flags
-from netsec.traffic.scenarios import FlagProbeSpec, IcmpEchoSpec, PortScanSpec, ScenarioSpec, TcpSessionSpec
+from netsec.traffic.scenarios import FlagProbeSpec, FlowSpec, IcmpEchoSpec, PortScanSpec, ScenarioSpec, TcpSessionSpec
 
 
 class EngineError(Exception):
@@ -97,11 +97,21 @@ class Engine:
 
     # -- running -------------------------------------------------------------------------
 
-    def run(self, scenario: ScenarioSpec, controls: Sequence[ControlSpec] = ()) -> RunResult:
+    def run(
+        self,
+        scenario: ScenarioSpec,
+        controls: Sequence[ControlSpec] = (),
+        custom_flows: Sequence[FlowSpec] = (),
+    ) -> RunResult:
         """Simulate ``scenario`` to completion and return the finished trace.
 
         ``controls`` change configuration at a given time. They are deliberately left out of
         ``config_hash`` and ``run.meta`` so that everything before a control is identical to the run without it.
+
+        ``custom_flows`` are extra traffic injected by the user (the Send traffic form). They are left out of
+        ``config_hash`` for the same reason, and each draws its ports and sequence numbers from a random stream of
+        its own, so adding one never shifts anything that happens before it starts. A run with custom traffic may
+        last longer than the scenario declares: ``run.end`` then falls when the last packet has settled.
         """
         config_json = canonical_json(
             {
@@ -130,6 +140,14 @@ class Engine:
         self._duration_us = to_us(scenario.duration)
         for flow_spec in scenario.flows:
             self._start_flow(flow_spec)
+        scenario_ids = {f.id for f in scenario.flows}
+        for flow_spec in custom_flows:
+            if flow_spec.id in scenario_ids:
+                raise EngineError(f"custom flow id {flow_spec.id!r} is already used by scenario {scenario.id}")
+            scenario_ids.add(flow_spec.id)
+            if flow_spec.src == flow_spec.dst:
+                raise EngineError(f"custom flow {flow_spec.id!r} has the same source and destination")
+            self._start_flow(flow_spec, rng=random.Random(f"{self.seed}:{flow_spec.id}"))
         for control in controls:
             if scenario.pinned_ips_mode is not None and isinstance(control, IpsModeControl):
                 raise EngineError(f"scenario {scenario.id} pins the IPS mode, so it cannot be switched")
@@ -137,6 +155,8 @@ class Engine:
         self.scheduler.run()
 
         end_us = to_us(scenario.duration)
+        if custom_flows:
+            end_us = max(end_us, self.scheduler.now_us)
         if self.scheduler.now_us > end_us:
             raise EngineError(
                 f"scenario {scenario.id} needs {to_seconds(self.scheduler.now_us)}s "
@@ -149,7 +169,7 @@ class Engine:
             scenario_id=scenario.id,
             seed=self.seed,
             ips_mode=self.ips_mode,
-            duration=scenario.duration,
+            duration=to_seconds(end_us),
             config_hash=config_hash,
             trace_hash=trace_digest(self.trace.events),
             events=self.trace.events,
@@ -164,7 +184,8 @@ class Engine:
             raise EngineError(f"{node_id!r} is not a host that can send or receive traffic")
         return stack.ip
 
-    def _start_flow(self, spec: TcpSessionSpec | IcmpEchoSpec | PortScanSpec | FlagProbeSpec) -> None:
+    def _start_flow(self, spec: FlowSpec, rng: Optional[random.Random] = None) -> None:
+        rng = rng or self.rng
         src_ip = self._host_ip(spec.src)
         dst_ip = self._host_ip(spec.dst)
         if isinstance(spec, TcpSessionSpec):
@@ -180,8 +201,8 @@ class Engine:
                 dport=spec.dport,
                 service=service,
                 request_bytes=spec.request_bytes,
-                sport=49152 + self.rng.randrange(16384),
-                isn=self.rng.getrandbits(31),
+                sport=49152 + rng.randrange(16384),
+                isn=rng.getrandbits(31),
             )
         elif isinstance(spec, FlagProbeSpec):
             flow = FlagProbeFlow(
@@ -192,8 +213,8 @@ class Engine:
                 flags=tcp_flags(*spec.flags),
                 count=spec.count,
                 interval=spec.interval,
-                sport=49152 + self.rng.randrange(16384),
-                isn=self.rng.getrandbits(31),
+                sport=49152 + rng.randrange(16384),
+                isn=rng.getrandbits(31),
             )
         elif isinstance(spec, PortScanSpec):
             flow = PortScanFlow(
@@ -202,8 +223,8 @@ class Engine:
                 dst_ip=dst_ip,
                 ports=spec.ports,
                 rate=spec.rate,
-                sport=49152 + self.rng.randrange(16384),
-                isn=self.rng.getrandbits(31),
+                sport=49152 + rng.randrange(16384),
+                isn=rng.getrandbits(31),
             )
         else:
             flow = IcmpEchoFlow(
@@ -213,7 +234,7 @@ class Engine:
                 count=spec.count,
                 interval=spec.interval,
                 payload_bytes=spec.payload_bytes,
-                icmp_id=self.rng.getrandbits(16),
+                icmp_id=rng.getrandbits(16),
             )
         self._stacks[spec.src].add_flow(flow)
         for offset, packet_spec in flow.initial():
@@ -513,10 +534,11 @@ def run_scenario(
     seed: Optional[int] = None,
     ips_mode: IpsMode = "monitor",
     controls: Sequence[ControlSpec] = (),
+    custom_flows: Sequence[FlowSpec] = (),
 ) -> RunResult:
     """Convenience wrapper: run ``scenario`` with ``seed`` (default: the scenario's own).
 
     A scenario that pins its IPS mode (S5 Monitor, S6 Enforce) overrides ``ips_mode``.
     """
     mode = scenario.pinned_ips_mode or ips_mode
-    return Engine(graph, scenario.default_seed if seed is None else seed, mode).run(scenario, controls)
+    return Engine(graph, scenario.default_seed if seed is None else seed, mode).run(scenario, controls, custom_flows)

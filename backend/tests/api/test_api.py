@@ -156,3 +156,27 @@ def test_the_s3_trace_over_the_api_contains_the_reset_and_all_four_dispositions(
     body = client.post("/api/sim/run", json={"scenario_id": "S3", "ips_mode": "enforce"}).json()
     assert sorted(e["reason"] for e in body["events"] if e["type"] == "packet.dropped") == ["acl_deny", "acl_deny", "fw_deny", "ips_reject"]
     assert any(e["type"] == "packet.created" and e["flow"] == "F4-admin-to-db:rst" for e in body["events"])
+
+
+def test_custom_flows_over_the_api_show_the_acl_denial_and_keep_the_prefix(client) -> None:
+    flow = {"type": "tcp_session", "id": "X1", "src": "PC-1", "dst": "DB-SRV", "dport": 3306, "start": 5.0, "request_bytes": 100}
+    base = client.post("/api/sim/run", json={"scenario_id": "S1"}).json()
+    live = client.post("/api/sim/run", json={"scenario_id": "S1", "custom_flows": [flow]}).json()
+    assert [e for e in live["events"] if e["t"] < 5.0] == [e for e in base["events"] if e["t"] < 5.0]
+    deny = [e for e in live["events"] if e["type"] == "policy.decision" and e["action"] == "deny"]
+    assert [(d["node"], d["rule_id"]) for d in deny] == [("CORE-SW1", "STAFF-IN:10")]
+    assert live["summary"]["blocked"] == 1 and live["config_hash"] == base["config_hash"]
+
+
+def test_bad_custom_flows_are_422(client) -> None:
+    ok = {"type": "tcp_session", "id": "X1", "src": "PC-1", "dst": "DB-SRV", "dport": 3306, "start": 5.0, "request_bytes": 100}
+    for bad in (
+        {**ok, "src": "IPS-1"},  # not a host
+        {**ok, "dst": "PC-1"},  # same source and destination
+        {**ok, "id": "F1-https"},  # clashes with the scenario's own flow
+        {**ok, "dport": 70000},  # invalid port
+        {**ok, "type": "nope"},
+    ):
+        assert client.post("/api/sim/run", json={"scenario_id": "S1", "custom_flows": [bad]}).status_code == 422
+    too_many = [{**ok, "id": f"X{i}"} for i in range(6)]
+    assert client.post("/api/sim/run", json={"scenario_id": "S1", "custom_flows": too_many}).status_code == 422
