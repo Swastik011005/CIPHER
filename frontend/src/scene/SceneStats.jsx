@@ -2,6 +2,9 @@ import { useFrame, useThree } from '@react-three/fiber'
 import { useEffect, useRef } from 'react'
 import { Vector3 } from 'three'
 
+import { useStore } from '../state/store.js'
+import { shouldLowerQuality } from './quality.js'
+
 /**
  * Counts what the main pass draws by walking the scene. The renderer's own counters are not
  * usable here: the post-processing composer resets them for every full-screen pass, so they
@@ -28,7 +31,7 @@ export function countScene(scene) {
  * `meshes` is the number of draw calls in the main pass; the shadow pass roughly doubles it.
  */
 export function SceneStats() {
-  const state = useRef({ frames: 0, since: performance.now() })
+  const state = useRef({ frames: 0, since: performance.now(), samples: [] })
   const camera = useThree((s) => s.camera)
   const canvas = useThree((s) => s.gl.domElement)
 
@@ -64,6 +67,10 @@ export function SceneStats() {
       pixelRatio: gl.getPixelRatio(),
       sampledAt: Date.now(),
     }
+    // On a slow GPU the High preset runs far below Rev 3's targets: fall back to Low once, and say so.
+    s.samples = [...s.samples, window.__netsecScene.fps].slice(-10)
+    const store = useStore.getState()
+    if (shouldLowerQuality(s.samples, store.settings.quality, store.autoLowered)) store.lowerQualityAutomatically(window.__netsecScene.fps)
     s.frames = 0
     s.since = now
   })

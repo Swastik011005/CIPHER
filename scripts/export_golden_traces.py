@@ -31,6 +31,9 @@ RUNS = [
     ("s2-enforce", "S2", "enforce"),
     ("s3-monitor", "S3", "monitor"),
     ("s3-enforce", "S3", "enforce"),
+    ("s4-monitor", "S4", "monitor"),
+    ("s4-enforce", "S4", "enforce"),
+    ("s7-enforce", "S7", "enforce"),
 ]
 
 

@@ -100,6 +100,7 @@ const MEASURE = `(async (cfg) => {
   const gl = c.getContext('webgl2')
   const ext = gl && gl.getExtension('WEBGL_debug_renderer_info')
   const renderer = ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : 'unknown'
+  store.setState({ autoLowered: true }) // measure the preset that was asked for: no automatic switch to Low
   st().setSetting('quality', cfg.quality)
   await st().runScenario(cfg.scenario, cfg.mode)
   if (st().playback.playing) st().togglePlay()

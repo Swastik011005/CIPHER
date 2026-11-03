@@ -101,13 +101,13 @@ export function securityRole(node) {
       return {
         tone: 'sensor',
         title: 'Passive sensor',
-        text: 'Receives SPAN copies of traffic entering CORE-SW1 and will raise alerts. It never forwards, drops or blocks traffic. Detectors: D1 port scan, D4 restricted service, D5 forbidden zone pair, D6 invalid TCP flags.',
+        text: 'Receives SPAN copies of traffic entering CORE-SW1 and will raise alerts. It never forwards, drops or blocks traffic. Detectors: D1 port scan, D2 brute force, D3 flood, D4 restricted service, D5 forbidden zone pair, D6 invalid TCP flags.',
       }
     case 'ips':
       return {
         tone: 'accent',
         title: 'Inline prevention point',
-        text: 'Sits in the path of server traffic, so it is the only sensor that can block. In Enforce mode it blocks a scanning source for a limited time, drops invalid packets and rejects forbidden connections with a synthetic TCP reset; in Monitor mode it only records what it would do.',
+        text: 'Sits in the path of server traffic, so it is the only sensor that can block. In Enforce mode it blocks a scanning source for a limited time, drops invalid packets, rejects forbidden connections with a synthetic TCP reset and rate-limits floods; in Monitor mode it only records what it would do.',
       }
     case 'firewall':
       return {

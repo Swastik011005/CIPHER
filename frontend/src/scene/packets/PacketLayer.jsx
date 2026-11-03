@@ -6,9 +6,8 @@ import { session } from '../../playback/session.js'
 import { useStore } from '../../state/store.js'
 import { buildLinkPaths, packetPosition } from '../links/linkPaths.js'
 import { PALETTE } from '../palette.js'
+import { PACKET_CAPACITY as CAPACITY } from './capacity.js'
 import { packetColorAt } from './packetColor.js'
-
-const CAPACITY = 400
 /** A dropped packet stays visible, red, where it died for this long, then its shatter effect takes over. */
 export const DROP_MARKER_S = 0.18
 

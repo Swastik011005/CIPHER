@@ -138,7 +138,7 @@ export function ScenarioPanel() {
           <p className="muted mode-note">
             {effectiveMode === 'monitor'
               ? 'Monitor: IDS-1 and IPS-1 both detect and alert. IPS-1 only records what it would do (block, drop or reject); nothing is dropped by it.'
-              : 'Enforce: IPS-1 acts on what it detects: it blocks a scanning source, drops invalid packets and rejects forbidden connections with a TCP reset. IDS-1 still only alerts: it is passive.'}
+              : 'Enforce: IPS-1 acts on what it detects: it blocks a scanning source, drops invalid packets, rejects forbidden connections with a TCP reset and rate-limits a flood before blocking it. IDS-1 still only alerts: it is passive.'}
           </p>
         </>
       )}

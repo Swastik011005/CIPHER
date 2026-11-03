@@ -110,6 +110,9 @@ export function SimulationViewport({ layoutIssues }) {
   const topology = useStore((s) => s.topology)
   const connection = useStore((s) => s.connection)
   const loadTopology = useStore((s) => s.loadTopology)
+  const qualityNotice = useStore((s) => s.qualityNotice)
+  const dismissQualityNotice = useStore((s) => s.dismissQualityNotice)
+  const setSetting = useStore((s) => s.setSetting)
   const debug = new URLSearchParams(window.location.search).has('debug')
   useSceneShortcuts()
 
@@ -154,6 +157,26 @@ export function SimulationViewport({ layoutIssues }) {
             }
           >
             {topology.error}. The 3D scene is built from the backend, so start it with <code>python app.py</code> in the backend folder.
+          </Banner>
+        </div>
+      )}
+      {qualityNotice && (
+        <div className="viewport__bottom-banner">
+          <Banner
+            tone="info"
+            title="Switched to Low quality"
+            action={
+              <>
+                <Button size="small" onClick={() => { setSetting('quality', 'high'); dismissQualityNotice() }}>
+                  Back to High
+                </Button>
+                <Button size="small" variant="ghost" onClick={dismissQualityNotice}>
+                  Dismiss
+                </Button>
+              </>
+            }
+          >
+            {qualityNotice} You can change this under View.
           </Banner>
         </div>
       )}

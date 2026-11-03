@@ -6,7 +6,7 @@
 /** @param {any} e A trace event. */
 export function markerTitle(e) {
   if (e.type === 'policy.decision') return `${e.node} denied a packet (${e.rule_id})`
-  if (e.type === 'ips.action') return `IPS-1 ${e.action} (${e.rule})`
+  if (e.type === 'ips.action') return e.action === 'rate_limit' ? `IPS-1 starts rate limiting (${e.rule})` : `IPS-1 ${e.action} (${e.rule})`
   if (e.type === 'alert.raised') return `${e.sensor} alert ${e.rule} ${e.severity}`
   return e.type.replace('.', ' ')
 }
@@ -36,8 +36,14 @@ export function markerKind(e) {
  */
 export function markersFor(events, duration) {
   const marks = []
+  let limiting = false
   for (const e of events) {
-    const kind = markerKind(e)
+    let kind = markerKind(e)
+    // Rate limiting acts on dozens of packets: mark where it starts, once, not each packet.
+    if (e.type === 'ips.action' && e.applied && e.action === 'rate_limit' && !limiting) {
+      limiting = true
+      kind = 'limit'
+    }
     if (kind) marks.push({ key: e.seq, kind, t: e.t, left: (e.t / duration) * 100, title: `T+${e.t.toFixed(2)} s · ${markerTitle(e)}` })
   }
   return marks

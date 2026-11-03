@@ -1,13 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
 
 import { api } from '../api/client.js'
-import { Banner, Button, Card, Chip, Spinner } from '../ui/index.js'
+import { Banner, Button, Card, Spinner } from '../ui/index.js'
 import './pages.css'
 
-const PLANNED = [
-  ['S4', 'Excessive traffic'],
-  ['S7', 'SSH brute force'],
-]
 
 /** Scenarios the engine reports having, loaded live from /api/scenarios. */
 function useScenarios() {
@@ -78,18 +74,6 @@ export function RulesScenarios() {
       </Card>
 
       <div className="grid grid--2">
-        <Card eyebrow="Roadmap" title="Scenarios still to build">
-          <ul className="planned">
-            {PLANNED.map(([id, name]) => (
-              <li key={id}>
-                <Chip mono>{id}</Chip>
-                <span>{name}</span>
-                <Chip tone="warn">Planned</Chip>
-              </li>
-            ))}
-          </ul>
-        </Card>
-
         <Card eyebrow="Policy" title="Rules and thresholds">
           <p className="muted">
             Firewall and ACL rules, detector thresholds and the IPS policy are edited here once the security engine exists.
