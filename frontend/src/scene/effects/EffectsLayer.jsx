@@ -94,9 +94,10 @@ export function EffectsLayer({ topology }) {
       material.color.copy(COLORS[effect.tone])
       material.opacity = ringOpacity(progress, style.strength)
 
-      if (effect.label && style.label && labels < LABEL_POOL) {
-        const group = labelGroups.current[labels]
-        const text = labelTexts.current[labels]
+      const group = labelGroups.current[labels]
+      const text = labelTexts.current[labels]
+      // drei's Html mounts its content a moment after the group, so the very first frame can find no text element yet.
+      if (effect.label && style.label && labels < LABEL_POOL && group && text) {
         group.visible = true
         group.position.set(origin.x, origin.y + style.label, origin.z)
         text.textContent = effect.label
