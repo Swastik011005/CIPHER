@@ -75,6 +75,58 @@
   letter-spacing: 0.08em;
 }
 
+.dev-label__tag[data-tone='ok'] {
+  background: rgba(52, 211, 153, 0.14);
+  color: var(--ok);
+}
+
+.dev-label__tag[data-tone='warn'] {
+  background: rgba(251, 191, 36, 0.14);
+  color: var(--warn);
+}
+
+.dev-label__tag[data-tone='sensor'] {
+  background: rgba(167, 139, 250, 0.16);
+  color: var(--sensor);
+}
+
+.dev-label__tag[data-tone='info'] {
+  background: rgba(96, 165, 250, 0.14);
+  color: var(--info);
+}
+
+/* Short text that rides with a visual effect (rule id, "would block", alert severity). */
+.fx-label {
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: rgba(8, 18, 38, 0.88);
+  border: 1px solid var(--border-strong);
+  font: 600 11px/16px var(--font-mono);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  color: var(--text-1);
+}
+
+.fx-label[data-tone='danger'] {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.fx-label[data-tone='warn'] {
+  border-color: var(--warn);
+  color: var(--warn);
+}
+
+.fx-label[data-tone='ok'] {
+  border-color: var(--ok);
+  color: var(--ok);
+}
+
+.fx-label[data-tone='sensor'] {
+  border-color: var(--sensor);
+  color: var(--sensor);
+}
+
 .dev-label[data-state='selected'] {
   border-color: var(--accent);
   background: rgba(23, 48, 95, 0.96);

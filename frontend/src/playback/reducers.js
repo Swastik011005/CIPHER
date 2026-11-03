@@ -28,7 +28,16 @@ const LOG_LIMIT = 60
  * @property {{link: string, from: string, to: string, t: number, tArrive: number, vlan: number|null}[]} hops
  * @property {{type: 'delivered'|'dropped', node: string, reason: string|null, t: number}|null} end
  * @property {boolean} flagged   A sensor on the packet's own path judged it suspicious or malicious.
+ * @property {{kind: 'allowed'|'flagged'|'blocked', t: number}|null} verdict  What an enforcement point decided, and when.
+ * @property {{seq: number, t: number, type: string, node: string, tone: string, text: string}[]} trail  Decisions made about it.
  */
+
+/** Verdict strength: a packet never goes back to a weaker verdict. */
+const VERDICT_RANK = { allowed: 1, flagged: 2, blocked: 3 }
+
+/** Counters kept for every device, shown in the device inspector. */
+const NODE_KEYS = ['received', 'sent', 'delivered', 'dropped', 'permits', 'denies', 'inspected', 'flagged', 'alerts', 'actions', 'mirrorsIn', 'mirrorsOut']
+
 
 export function initialState() {
   return {
@@ -48,6 +57,8 @@ export function initialState() {
     alerts: [],
     blocks: {},
     packets: {},
+    nodes: {},
+    ruleHits: {},
     log: [],
     finalStats: null,
     cursor: 0,
@@ -91,6 +102,19 @@ export function describeEvent(e) {
 /** Events worth showing in the ticker (hops and routine inspections would flood it). */
 const TICKER_TYPES = new Set(['alert.raised', 'ips.action', 'block.added', 'block.expired', 'packet.dropped', 'policy.decision', 'run.meta', 'run.end'])
 
+/** Copy of `nodes` with one counter of one device increased (and its last-activity time set). */
+function bumpNode(nodes, id, key, t) {
+  const current = nodes[id] ?? Object.fromEntries([...NODE_KEYS.map((k) => [k, 0]), ['lastT', 0]])
+  return { ...nodes, [id]: { ...current, [key]: current[key] + 1, lastT: t } }
+}
+
+/** Copy of `packet` with a stronger verdict and/or a new trail entry. */
+function annotate(packet, e, { verdict = null, node, tone, text }) {
+  const next = { ...packet, trail: [...packet.trail, { seq: e.seq, t: e.t, type: e.type, node, tone, text }] }
+  if (verdict && (!packet.verdict || VERDICT_RANK[verdict] > VERDICT_RANK[packet.verdict.kind])) next.verdict = { kind: verdict, t: e.t }
+  return next
+}
+
 /**
  * Apply one event. Returns a new state.
  * @param {ReturnType<typeof initialState>} state
@@ -115,9 +139,15 @@ export function applyEvent(state, e) {
         flags: e.flags,
         mirrorOf: e.mirror_of,
         createdAt: e.t,
+        sport: e.sport,
+        ttl: e.ttl,
+        len: e.len,
+        app: e.app,
         hops: [],
         end: null,
         flagged: false,
+        verdict: null,
+        trail: [],
       }
       next.packets = { ...state.packets, [e.pid]: record }
       next.counts = { ...state.counts }
@@ -129,17 +159,54 @@ export function applyEvent(state, e) {
     case 'packet.hop': {
       const packet = state.packets[e.pid]
       if (!packet) break
-      const hop = { link: e.link, from: e.from, to: e.to, t: e.t, tArrive: e.t_arrive, vlan: e.vlan }
+      const hop = { link: e.link, from: e.from, to: e.to, t: e.t, tArrive: e.t_arrive, vlan: e.vlan, ttl: e.ttl }
       next.packets = { ...state.packets, [e.pid]: { ...packet, hops: [...packet.hops, hop] } }
+      const mirror = packet.mirrorOf != null
+      next.nodes = bumpNode(bumpNode(state.nodes, e.from, mirror ? 'mirrorsOut' : 'sent', e.t), e.to, mirror ? 'mirrorsIn' : 'received', e.t)
       break
     }
 
-    case 'inspect.result':
-    case 'ips.action': {
-      const flags =
-        e.type === 'inspect.result' ? e.classification !== 'normal' : e.action !== 'allow' && !e.applied
+    case 'inspect.result': {
       const packet = state.packets[e.pid]
-      if (flags && packet && !packet.flagged) next.packets = { ...state.packets, [e.pid]: { ...packet, flagged: true } }
+      if (!packet) break
+      const flagged = e.classification !== 'normal'
+      const copy = packet.mirrorOf != null
+      const text = flagged ? `${e.node} classified it ${e.classification} (${e.rules.join(', ')})` : `${e.node} inspected it: normal`
+      const tone = flagged ? (e.classification === 'malicious' ? 'danger' : 'warn') : 'ok'
+      // A verdict on a SPAN copy belongs to the sensor, never to the original packet's colour.
+      const verdict = copy ? null : flagged ? 'flagged' : 'allowed'
+      let updated = annotate(packet, e, { verdict, node: e.node, tone, text })
+      if (flagged && !packet.flagged) updated = { ...updated, flagged: true }
+      next.packets = { ...state.packets, [e.pid]: updated }
+      next.nodes = bumpNode(state.nodes, e.node, 'inspected', e.t)
+      if (flagged) next.nodes = bumpNode(next.nodes, e.node, 'flagged', e.t)
+      break
+    }
+
+    case 'ips.action': {
+      const packet = state.packets[e.pid]
+      if (!packet) break
+      const wouldAct = e.action !== 'allow'
+      const text = wouldAct
+        ? `${e.applied ? 'IPS-1 applied' : 'IPS-1 would apply (Monitor mode)'} ${e.action}${e.rule ? ` · ${e.rule}` : ''}`
+        : 'IPS-1 allowed it'
+      const tone = wouldAct ? (e.applied ? 'danger' : 'warn') : 'ok'
+      let updated = annotate(packet, e, { verdict: wouldAct ? (e.applied ? 'blocked' : 'flagged') : null, node: 'IPS-1', tone, text })
+      if (wouldAct && !e.applied && !packet.flagged) updated = { ...updated, flagged: true }
+      next.packets = { ...state.packets, [e.pid]: updated }
+      next.nodes = bumpNode(state.nodes, 'IPS-1', 'actions', e.t)
+      break
+    }
+
+    case 'policy.decision': {
+      const packet = state.packets[e.pid]
+      const permit = e.action === 'permit'
+      next.nodes = bumpNode(state.nodes, e.node, permit ? 'permits' : 'denies', e.t)
+      const previous = state.ruleHits[e.rule_id]
+      next.ruleHits = { ...state.ruleHits, [e.rule_id]: { ruleId: e.rule_id, node: e.node, policy: e.policy, action: e.action, count: (previous?.count ?? 0) + 1 } }
+      if (!packet) break
+      const text = `${e.node} ${permit ? 'permitted' : 'denied'} it · ${e.rule_id}${e.via_conntrack ? ' (return traffic)' : ''}`
+      next.packets = { ...state.packets, [e.pid]: annotate(packet, e, { verdict: permit ? null : 'blocked', node: e.node, tone: permit ? 'ok' : 'danger', text }) }
       break
     }
 
@@ -153,7 +220,10 @@ export function applyEvent(state, e) {
         reason: e.reason ?? null,
         t: e.t,
       }
-      next.packets = { ...state.packets, [e.pid]: { ...packet, end } }
+      let ended = { ...packet, end }
+      if (end.type === 'dropped' && packet.verdict?.kind !== 'blocked') ended = { ...ended, verdict: { kind: 'blocked', t: e.t } }
+      next.packets = { ...state.packets, [e.pid]: ended }
+      next.nodes = bumpNode(state.nodes, e.node, end.type, e.t)
       if (packet.mirrorOf == null) {
         next.counts = { ...state.counts }
         if (end.type === 'delivered') next.counts[packet.flagged ? 'delivered_flagged' : 'delivered_clean'] += 1
@@ -164,6 +234,7 @@ export function applyEvent(state, e) {
 
     case 'alert.raised':
       next.alerts = [...state.alerts, e]
+      next.nodes = bumpNode(state.nodes, e.sensor, 'alerts', e.t)
       next.counts = { ...state.counts, alerts: state.counts.alerts + 1 }
       if (!state.incidentIds.includes(e.incident_id)) {
         next.incidentIds = [...state.incidentIds, e.incident_id]

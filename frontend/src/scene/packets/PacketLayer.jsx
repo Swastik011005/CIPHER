@@ -1,15 +1,18 @@
-import { useFrame } from '@react-three/fiber'
+import { useFrame, useThree } from '@react-three/fiber'
 import { useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 
 import { session } from '../../playback/session.js'
+import { useStore } from '../../state/store.js'
 import { buildLinkPaths, packetPosition } from '../links/linkPaths.js'
 import { PALETTE } from '../palette.js'
+import { packetColorAt } from './packetColor.js'
 
 const CAPACITY = 400
-const DROP_MARKER_S = 0.8 // a dropped packet stays visible, red, where it died
+/** A dropped packet stays visible, red, where it died for this long, then its shatter effect takes over. */
+export const DROP_MARKER_S = 0.18
 
-/** Verdict colours (HDR so they glow). Neutral until the IPS has looked at the packet. */
+/** Verdict colours (HDR so they glow). Neutral until an enforcement point has decided. */
 const COLORS = {
   neutral: new THREE.Color('#cfe8ff').multiplyScalar(1.5),
   allowed: new THREE.Color(PALETTE.ok).multiplyScalar(1.8),
@@ -25,23 +28,35 @@ const SHAPES = {
 }
 const MATERIAL = new THREE.MeshBasicMaterial({ toneMapped: false })
 const UP = new THREE.Vector3(0, 1, 0)
+const PICK_SPHERE = new THREE.Sphere(new THREE.Vector3(0, 0, 0), 80) // covers the whole plate; instances move every frame
 
-function colorFor(packet, dropped) {
-  if (dropped) return COLORS.dropped
-  if (packet.mirrorOf != null) return COLORS.mirror
-  if (packet.flagged) return COLORS.flagged
-  return packet.hops.some((h) => h.from === 'IPS-1') ? COLORS.allowed : COLORS.neutral
+const SELECT_RING = new THREE.Mesh(
+  new THREE.TorusGeometry(0.3, 0.025, 8, 28),
+  new THREE.MeshBasicMaterial({ color: new THREE.Color(PALETTE.accent).multiplyScalar(2.6), toneMapped: false, depthWrite: false }),
+)
+
+const blend = new THREE.Color()
+
+function colorFor(packet, t, out) {
+  const { key, from, u } = packetColorAt(packet, t)
+  return u >= 1 ? out.copy(COLORS[key]) : out.copy(COLORS[from]).lerp(COLORS[key], u)
 }
 
 /**
  * Draws every packet of the loaded trace at its position for the player's current time.
  * One instanced mesh per protocol shape (TCP capsule, UDP sphere, ICMP octahedron). Positions
- * are computed from the trace in the frame loop and never go through React state.
+ * are computed from the trace in the frame loop and never go through React state. Clicking a
+ * packet selects it for the packet inspector.
  * @param {{topology: any}} props
  */
 export function PacketLayer({ topology }) {
   const paths = useMemo(() => buildLinkPaths(topology), [topology])
   const meshes = useRef({})
+  /** Packet id drawn at each instance index, per protocol shape: how a click finds its packet. */
+  const pidAt = useRef({ tcp: [], udp: [], icmp: [] })
+  const marker = useRef(null)
+  const selVec = useMemo(() => new THREE.Vector3(), [])
+  const gl = useThree((s) => s.gl)
   const scratch = useMemo(
     () => ({ p: new THREE.Vector3(), tangent: new THREE.Vector3(), q: new THREE.Quaternion(), m: new THREE.Matrix4(), s: new THREE.Vector3(1, 1, 1) }),
     [],
@@ -54,25 +69,34 @@ export function PacketLayer({ topology }) {
   useFrame(() => {
     const player = session.player
     const used = { tcp: 0, udp: 0, icmp: 0 }
+    const selectedPid = useStore.getState().selection.packetId
+    let selectedAt = null
 
     if (player) {
       const t = player.time
       for (const packet of Object.values(player.state.packets)) {
         const end = packet.end
         const dropped = end?.type === 'dropped'
-        if (end && (!dropped || t - end.t > DROP_MARKER_S)) continue // delivered packets are gone; old drops fade out
+        if (end && (!dropped || t - end.t > DROP_MARKER_S)) {
+          // Delivered packets are gone; dropped ones hand over to their shatter effect. A selected
+          // packet keeps its marker where it ended so the inspector still has something to point at.
+          if (packet.pid === selectedPid && packetPosition(paths, packet.hops, t, scratch.p, scratch.tangent)) selectedAt = selVec.copy(scratch.p)
+          continue
+        }
         const mesh = meshes.current[packet.proto]
         if (!mesh || used[packet.proto] >= CAPACITY) continue
         if (!packetPosition(paths, packet.hops, t, scratch.p, scratch.tangent)) continue
 
-        const scale = packet.mirrorOf != null ? 0.7 : 1
+        const scale = packet.mirrorOf != null ? 0.7 : packet.pid === selectedPid ? 1.5 : 1
         scratch.s.setScalar(scale)
         if (packet.proto === 'tcp') scratch.q.setFromUnitVectors(UP, scratch.tangent)
         else scratch.q.identity()
         scratch.m.compose(scratch.p, scratch.q, scratch.s)
         const index = used[packet.proto]++
         mesh.setMatrixAt(index, scratch.m)
-        mesh.setColorAt(index, colorFor(packet, dropped))
+        mesh.setColorAt(index, colorFor(packet, t, blend))
+        pidAt.current[packet.proto][index] = packet.pid
+        if (packet.pid === selectedPid) selectedAt = selVec.copy(scratch.p)
       }
     }
 
@@ -81,6 +105,31 @@ export function PacketLayer({ topology }) {
       mesh.instanceMatrix.needsUpdate = true
       if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true
     }
+
+    const ring = marker.current
+    if (ring) {
+      ring.visible = selectedAt !== null
+      if (selectedAt) {
+        ring.position.copy(selectedAt)
+        ring.rotation.x = Math.PI / 2
+      }
+    }
+  })
+
+  const pickHandlers = (proto) => ({
+    onClick: (event) => {
+      const pid = pidAt.current[proto][event.instanceId]
+      if (pid === undefined) return
+      event.stopPropagation()
+      useStore.getState().selectPacket(pid)
+    },
+    onPointerOver: (event) => {
+      event.stopPropagation()
+      gl.domElement.style.cursor = 'pointer'
+    },
+    onPointerOut: () => {
+      gl.domElement.style.cursor = ''
+    },
   })
 
   return (
@@ -89,12 +138,16 @@ export function PacketLayer({ topology }) {
         <instancedMesh
           key={proto}
           ref={(mesh) => {
-            if (mesh) meshes.current[proto] = mesh
+            if (!mesh) return
+            mesh.boundingSphere = PICK_SPHERE
+            meshes.current[proto] = mesh
           }}
           args={[geometry, MATERIAL, CAPACITY]}
           frustumCulled={false}
+          {...pickHandlers(proto)}
         />
       ))}
+      <primitive object={SELECT_RING} ref={marker} visible={false} />
     </group>
   )
 }

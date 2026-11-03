@@ -69,6 +69,8 @@ export const ringMaterials = {
   idle: new THREE.MeshBasicMaterial({ color: '#2a5bc0', transparent: true, opacity: 0.75, toneMapped: false, depthWrite: false }),
   hover: new THREE.MeshBasicMaterial({ color: new THREE.Color(PALETTE.accent).multiplyScalar(1.4), toneMapped: false, depthWrite: false }),
   selected: new THREE.MeshBasicMaterial({ color: new THREE.Color(PALETTE.accent).multiplyScalar(2.4), toneMapped: false, depthWrite: false }),
+  /** A sensor or enforcement point has alerts or denials to show. */
+  alert: new THREE.MeshBasicMaterial({ color: new THREE.Color(PALETTE.sensor).multiplyScalar(2.0), transparent: true, opacity: 0.9, toneMapped: false, depthWrite: false }),
   /** The IPS is currently blocking this device's address. */
   blocked: new THREE.MeshBasicMaterial({ color: new THREE.Color(PALETTE.danger).multiplyScalar(2.2), toneMapped: false, depthWrite: false }),
 }

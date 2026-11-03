@@ -1,4 +1,5 @@
 import { DeviceNode } from './devices/DeviceNode.jsx'
+import { EffectsLayer } from './effects/EffectsLayer.jsx'
 import { BasePlates, PerimeterWall, RackFrame, ServerPartition, ZoneSlabs } from './environment/Environment.jsx'
 import { NODE_LAYOUT } from './layout.js'
 import { NetworkLinks } from './links/NetworkLinks.jsx'
@@ -23,6 +24,7 @@ export function NetworkWorld({ topology }) {
         ))}
       <NetworkLinks topology={topology} />
       <PacketLayer topology={topology} />
+      <EffectsLayer topology={topology} />
     </group>
   )
 }
