@@ -1,18 +1,21 @@
 import { Edges, Html } from '@react-three/drei'
 import { useFrame, useThree } from '@react-three/fiber'
-import { memo, useRef } from 'react'
-import { MathUtils } from 'three'
+import { memo, useMemo, useRef } from 'react'
+import { Color, MathUtils, MeshBasicMaterial } from 'three'
 
 import { deviceTags, parseTagsKey, ringStateFor, tagsKey } from '../../playback/deviceStatus.js'
+import { session } from '../../playback/session.js'
 import { labelAddress, primaryAddress } from '../deviceInfo.js'
 import { box, ring } from '../geometries.js'
 import { NODE_LAYOUT, SLAB_TOP } from '../layout.js'
 import { ringMaterials } from '../materials/materials.js'
 import { useStore } from '../../state/store.js'
+import { activityAt } from './activity.js'
 import { MODELS } from './models/index.js'
 import { DEVICE_SPECS, hitBoxesFor, modelKeyFor } from './specs.js'
 
 const LIFT = 0.07
+const LED_COLOR = new Color('#38d6e6').multiplyScalar(2.4)
 
 function labelShown(mode, selected, hovered) {
   if (mode === 'all') return true
@@ -40,11 +43,23 @@ export const DeviceNode = memo(function DeviceNode({ node }) {
   const gl = useThree((s) => s.gl)
 
   const liftRef = useRef(null)
+  const ringRef = useRef(null)
+  const ledRef = useRef(null)
+  // A small activity LED: lit while the device is handling packets, from the trace at the playhead.
+  const ledMaterial = useMemo(() => new MeshBasicMaterial({ color: LED_COLOR, transparent: true, toneMapped: false, depthWrite: false }), [])
   useFrame((_, delta) => {
     const group = liftRef.current
-    if (!group) return
-    const target = selected || hovered ? LIFT : 0
-    if (Math.abs(group.position.y - target) > 1e-4) group.position.y = MathUtils.damp(group.position.y, target, 14, delta)
+    if (group) {
+      const target = selected || hovered ? LIFT : 0
+      if (Math.abs(group.position.y - target) > 1e-4) group.position.y = MathUtils.damp(group.position.y, target, 14, delta)
+    }
+    const player = session.player
+    const activity = player ? activityAt(player.state.nodes[node.id], player.time) : 0
+    if (ringRef.current) ringRef.current.scale.setScalar(1 + 0.14 * activity) // the floor ring swells while busy
+    if (ledRef.current) {
+      ledRef.current.visible = activity > 0.02
+      ledMaterial.opacity = activity
+    }
   })
 
   const state = ringStateFor(tags, selected, hovered)
@@ -76,6 +91,7 @@ export const DeviceNode = memo(function DeviceNode({ node }) {
 
       {spec.ring ? (
         <mesh
+          ref={ringRef}
           geometry={ring(spec.ring, spec.ring + 0.07)}
           material={ringMaterials[state]}
           position={[0, 0.014 - (layout.y ?? 0), 0]}
@@ -89,6 +105,10 @@ export const DeviceNode = memo(function DeviceNode({ node }) {
           position={[0, 0.012, spec.half[1] + 0.004]}
         />
       )}
+
+      <mesh ref={ledRef} position={[spec.half[0] * 0.55, spec.height + 0.1, spec.half[1] * 0.4]} material={ledMaterial} visible={false}>
+        <sphereGeometry args={[0.07, 12, 8]} />
+      </mesh>
 
       {hitBoxes.map(({ size, center }, i) => (
         <mesh key={i} position={center} onPointerOver={onOver} onPointerOut={onOut} onClick={onClick}>
