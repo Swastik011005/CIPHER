@@ -1,5 +1,7 @@
-import { Lock, X } from 'lucide-react'
+import { Copy, FileText, Lock, X } from 'lucide-react'
 import { useState } from 'react'
+
+import { api } from '../../api/client.js'
 
 import { useStore } from '../../state/store.js'
 import { Button, Card, Chip } from '../../ui/index.js'
@@ -116,6 +118,56 @@ function RestrictedAddresses({ restricted, busy, onChange }) {
   )
 }
 
+/** The policies in force as Cisco IOS access lists, for study and for the Packet Tracer lab. Read from the backend. */
+function IosExport({ rulesHash }) {
+  const [state, setState] = useState({ status: 'idle', text: '', error: null, copied: false })
+
+  const load = async () => {
+    setState({ status: 'loading', text: '', error: null, copied: false })
+    try {
+      const data = await api.exportCisco()
+      setState({ status: 'ready', text: data.text, error: null, copied: false })
+    } catch (error) {
+      setState({ status: 'error', text: '', error: error.message, copied: false })
+    }
+  }
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(state.text)
+      setState((s) => ({ ...s, copied: true }))
+    } catch {
+      setState((s) => ({ ...s, error: 'The browser did not allow copying. Select the text and copy it by hand.' }))
+    }
+  }
+
+  return (
+    <Card
+      eyebrow="Export"
+      title="Cisco IOS configuration"
+      actions={
+        <Button size="small" icon={<FileText size={14} />} onClick={load} disabled={state.status === 'loading'}>
+          {state.status === 'ready' ? 'Refresh' : 'Show IOS config'}
+        </Button>
+      }
+    >
+      <p className="muted">
+        The same rules as IOS named extended access lists, one per policy, with each rule&apos;s simulation id in a remark. Rules in force: <span className="mono">{rulesHash}</span>.
+      </p>
+      {state.status === 'error' && <p className="field__error">{state.error}</p>}
+      {state.status === 'ready' && (
+        <>
+          <pre className="code-block" aria-label="Cisco IOS configuration">
+            {state.text}
+          </pre>
+          <Button size="small" icon={<Copy size={14} />} onClick={copy}>
+            {state.copied ? 'Copied' : 'Copy'}
+          </Button>
+        </>
+      )}
+    </Card>
+  )
+}
+
 export function FirewallTab({ rules, busy, onRestricted }) {
   const ruleHits = useStore((s) => s.playback.state?.ruleHits)
   const loaded = useStore((s) => Boolean(s.playback.state?.meta))
@@ -126,6 +178,7 @@ export function FirewallTab({ rules, busy, onRestricted }) {
       {rules.policies.map((policy) => (
         <PolicyTable key={policy.name} policy={policy} restricted={rules.restricted_ips.addresses} ruleHits={ruleHits} />
       ))}
+      <IosExport rulesHash={rules.rules_hash} />
     </div>
   )
 }

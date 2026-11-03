@@ -145,6 +145,10 @@ export function createApiClient({ baseUrl = import.meta.env?.VITE_API_BASE ?? '/
     putRestrictedIps(addresses, options) {
       return request('/rules/restricted-ips', { method: 'PUT', body: { addresses }, ...options })
     },
+    /** The policies in force as Cisco IOS configuration text. */
+    exportCisco(options) {
+      return request('/rules/export/cisco', options)
+    },
     resetRules(options) {
       return request('/rules/reset', { method: 'POST', ...options })
     },
