@@ -114,6 +114,10 @@ try {
   const flow = { type: 'tcp_session', id: 'X1', src: 'EXT-USR', dst: 'APP-SRV', dport: 443, start: 2, request_bytes: 100 }
   const denied = (await api('POST', '/sim/run', { scenario_id: 'S1', custom_flows: [flow] })).body.events.filter((e) => e.type === 'policy.decision' && e.action === 'deny')
   record('FW1 then denies that address with OUTSIDE-IN:10', denied.length === 1 && denied[0].rule_id === 'OUTSIDE-IN:10', denied.map((d) => d.rule_id).join())
+  await clickText('button', 'Show IOS config')
+  await waitText('ip access-list extended STAFF-IN')
+  const ios = await ev(`document.querySelector('pre.code-block').innerText`)
+  record('the IOS export shows the live policies, including the restricted address just added', ios.includes('remark STAFF-IN:10') && ios.includes('deny ip host 203.0.113.25 any') && ios.includes('ip access-list extended OUTSIDE-IN'))
   await browser.screenshot(join(out, `${width}x${height}-rules-firewall.png`))
   await ev(`document.querySelector('button[aria-label="Remove 203.0.113.25"]').click()`)
   await waitFor(async () => !(await text()).includes('Remove 203.0.113.25') || (await api('GET', '/rules')).body.restricted_ips.addresses.every((a) => a !== '203.0.113.25'), 'the address to be removed')
