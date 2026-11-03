@@ -1,19 +1,29 @@
 # Dependencies and build output
 node_modules/
 .venv/
+venv/
 __pycache__/
 *.pyc
 dist/
+build/
 .pytest_cache/
 .vite/
+coverage/
+htmlcov/
+.coverage
 
 # Local runtime data and secrets
 backend/data/
 .env
+.env.*
+!.env.example
+!.env.*.example
+*.local
 *.log
 
-# Editor / OS
+# Editor, OS and tool state
 .vscode/
 .idea/
+.claude/
 .DS_Store
 Thumbs.db
