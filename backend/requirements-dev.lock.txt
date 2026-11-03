@@ -19,6 +19,7 @@ pydantic==2.14.2
 pydantic_core==2.50.2
 Pygments==2.21.0
 pytest==9.2.0
+PyYAML==6.0.3
 scapy==2.8.0
 starlette==1.10.0
 typing-inspection==0.4.4

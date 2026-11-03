@@ -2,4 +2,5 @@
 -r requirements.txt
 pytest==9.2.0
 httpx==0.28.1  # Starlette's TestClient
+pyyaml==6.0.3  # reads render.yaml and the CI workflow in the guard tests
 scapy==2.8.0   # used by one test, which checks that synthetic packets can be built; the server does not import it

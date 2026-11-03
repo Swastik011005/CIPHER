@@ -72,8 +72,8 @@ cd frontend && npm ci && npm run build
 cd backend  && .venv\Scripts\python app.py        # http://127.0.0.1:8000, API docs at /docs
 ```
 
-The backend binds to a loopback address only and refuses anything else, on purpose. After setup the app makes no request to
-any other host.
+By default the backend binds to a loopback address only and refuses anything else, on purpose (a public deployment must opt in
+explicitly, see Hosting). After setup the app makes no request to any other host.
 
 ## Tests
 
@@ -87,6 +87,15 @@ Continuous integration (`.github/workflows/ci.yml`) runs the same steps on every
 The release record for v1.0 (937 backend tests, 277 frontend tests, 93 of 93 scenario checks, production build, browser
 rehearsal) is in `docs/STAGE7_PROGRESS.md`, together with what was **not** verified. Notably, the 55 fps target on a discrete
 GPU was never measured, and a second laptop was never tested. See `docs/LIMITATIONS.md` for the full, unsoftened list.
+
+## Hosting
+
+The repository is prepared for a free [Render](https://render.com) deployment: a static site for the front end and a Python web
+service for the API (`render.yaml`). **Nothing is deployed yet**, and the configuration has been tested only locally, including a
+simulation of the two-origin layout. A public deployment is locked down by default: the backend stays loopback-only unless
+`NETSEC_ENV=production` and an explicit public-bind flag are both set, the rules are read-only (they are shared by every
+visitor), API docs are off, requests are size-limited and rate-limited, and only the front end's origin may call the API.
+See [docs/DEPLOYMENT_RENDER.md](docs/DEPLOYMENT_RENDER.md) for the architecture, every setting, and what was and was not verified.
 
 ## Repository layout
 
@@ -102,8 +111,9 @@ GPU was never measured, and a second laptop was never tested. See `docs/LIMITATI
 
 `v1.0` is the first complete release of the simulation. Further work happens on the `develop` branch:
 
-1. Cross-platform setup and continuous integration (in progress on `develop`).
-2. Deployment readiness (explicit production configuration, secure CORS, read-only shared rules).
+1. Cross-platform setup and continuous integration (done on `develop`).
+2. Deployment readiness (explicit production configuration, secure CORS, read-only shared rules, Render Blueprint): prepared and
+   tested locally, not deployed.
 3. 3D interactivity: stronger selection feedback, double-click focus, cable inspection.
 4. A pop-out viewer for inspecting a single device model.
 5. An optional, decorative campus-expansion preview.

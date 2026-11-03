@@ -5,6 +5,8 @@
     python scripts/tasks.py verify [--only backend|scenarios|frontend|build ...]
     python scripts/tasks.py demo [--no-browser]
     python scripts/tasks.py dev
+    python scripts/tasks.py split-check [--skip-rehearsal]
+    python scripts/tasks.py check-deployed --api <url>/api [--site <url>] [--spoof-test]
 
 Standard library only, so it runs before any dependency is installed. The Windows `scripts\\*.cmd` files call it.
 """
@@ -233,6 +235,20 @@ def cmd_dev(_args: argparse.Namespace) -> int:
         stop(backend)
 
 
+def cmd_split_check(args: argparse.Namespace) -> int:
+    python = venv_python()
+    if not python.exists() or not tool("npm") or not (FRONTEND / "node_modules").exists():
+        return fail("Run `python scripts/tasks.py setup` first (needs the backend .venv and the frontend dependencies).")
+    return run([python, ROOT / "scripts" / "check_split_origin.py", *args.extra])
+
+
+def cmd_check_deployed(args: argparse.Namespace) -> int:
+    python = venv_python()
+    if not python.exists():
+        return fail("Run `python scripts/tasks.py setup` first (the checks need the backend .venv for PyYAML).")
+    return run([python, ROOT / "scripts" / "check_deployed.py", *args.extra])
+
+
 def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = parser.add_subparsers(dest="command", required=True)
@@ -250,6 +266,14 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     p.add_argument("--no-browser", action="store_true", help="do not open a browser window")
     p.set_defaults(func=cmd_demo)
     sub.add_parser("dev", help="backend plus the Vite dev server with hot reload").set_defaults(func=cmd_dev)
+
+    p = sub.add_parser("split-check", help="local simulation of the Render split: front end and API on two origins, in real Chrome")
+    p.add_argument("extra", nargs=argparse.REMAINDER, help="passed to scripts/check_split_origin.py (--skip-rehearsal, --api-port, ...)")
+    p.set_defaults(func=cmd_split_check)
+
+    p = sub.add_parser("check-deployed", help="HTTP checks against a deployed API and site (after deploying)")
+    p.add_argument("extra", nargs=argparse.REMAINDER, help="passed to scripts/check_deployed.py (--api, --site, --spoof-test)")
+    p.set_defaults(func=cmd_check_deployed)
 
     args = parser.parse_args(argv)
     return args.func(args)

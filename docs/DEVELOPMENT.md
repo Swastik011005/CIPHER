@@ -14,6 +14,8 @@ The branch and approval rules are in [CONTRIBUTING.md](../CONTRIBUTING.md).
 | `python scripts/tasks.py verify` | Backend tests, scenario checks, frontend tests, production build. Runs every step, prints a summary, exits non-zero if any failed. `--only backend scenarios frontend build` picks steps. |
 | `python scripts/tasks.py demo` | Demo mode: one process serves the API and `frontend/dist` at http://127.0.0.1:8000/simulation and opens the browser. |
 | `python scripts/tasks.py dev` | Backend on :8000 and the Vite dev server on :5173 in one terminal (Ctrl+C stops both). |
+| `python scripts/tasks.py split-check` | Local simulation of the Render layout: front end and API on two origins, with Render's headers, in real Chrome. `--skip-rehearsal` skips the 34-step rehearsal. See `docs/DEPLOYMENT_RENDER.md`. |
+| `python scripts/tasks.py check-deployed --api <url> --site <url>` | The same HTTP checks against a deployed API and site. `--spoof-test` also probes the rate limit. |
 
 On Windows, `scripts\setup.cmd`, `verify.cmd`, `start-demo.cmd` and `start-dev.cmd` call the same commands.
 The interpreter inside the virtual environment is `backend/.venv/Scripts/python.exe` on Windows and
@@ -27,13 +29,33 @@ The interpreter inside the virtual environment is `backend/.venv/Scripts/python.
 | File | Contents |
 |---|---|
 | `backend/requirements.txt` | Runtime pins: `fastapi`, `uvicorn`, `pydantic` |
-| `backend/requirements-dev.txt` | `-r requirements.txt` plus the test tools: `pytest`, `httpx` (Starlette's test client), `scapy` (one test) |
+| `backend/requirements-dev.txt` | `-r requirements.txt` plus the test tools: `pytest`, `httpx` (Starlette's test client), `pyyaml` (reads `render.yaml` and the CI workflow in tests), `scapy` (one test) |
 | `backend/requirements.lock.txt` | Fully resolved runtime set (14 packages) |
-| `backend/requirements-dev.lock.txt` | Fully resolved development set (24 packages) |
+| `backend/requirements-dev.lock.txt` | Fully resolved development set (25 packages) |
 | `frontend/package.json`, `package-lock.json` | Frontend, exact versions |
 
 The lock files were produced with `pip freeze` in clean Python 3.13 environments on Windows. A test checks that they agree with
 the direct pins, and another that no server code imports a development-only package.
+
+## Configuration: development and production
+
+Settings are environment variables (or `KEY=VALUE` lines in `backend/.env`; real variables win). With none set the backend is the
+local-only development server. `backend/.env.example` is the development template and `backend/.env.production.example` the
+production one; `frontend/.env.example` and `frontend/.env.production.example` do the same for the front end. Every setting is
+validated at start-up and an unsafe combination stops the server with a message.
+
+| Variable | Development default | Production default (`NETSEC_ENV=production`) |
+|---|---|---|
+| `NETSEC_HOST` | `127.0.0.1`; any other host is refused | same; a non-loopback IP needs `NETSEC_ALLOW_PUBLIC_BIND=true` as well |
+| `NETSEC_PORT` / `PORT` | 8000; `PORT` is ignored | `NETSEC_PORT`, else the platform's `PORT`, else 8000 |
+| `NETSEC_CORS_ORIGINS` | the Vite dev server origins | none; exact `https` origins only, no wildcard |
+| `NETSEC_RULES_READ_ONLY` | off (rules editable) | **on** |
+| `NETSEC_ENABLE_DOCS` | on | **off** |
+| `NETSEC_RATE_LIMIT` (`_RUN_PER_MIN`, `_VALIDATE_PER_MIN`, `_API_PER_MIN`) | off | **on**: 20, 3 and 240 a minute per client |
+| `NETSEC_MAX_BODY_BYTES` | 65536 | 65536 |
+| `NETSEC_SERVE_FRONTEND` | on (serves `frontend/dist` if built) | on; the Render API service sets it off |
+| `NETSEC_TRUST_PROXY`, `NETSEC_TRUSTED_PROXY_HOPS`, `NETSEC_CLIENT_IP_HEADER` | off | off (see `docs/DEPLOYMENT_RENDER.md`, section 6) |
+| `VITE_API_BASE` (front end, read when it is built) | `/api` | the full API URL, e.g. `https://netsec-3d-api.onrender.com/api` |
 
 ## Continuous integration
 
@@ -42,7 +64,7 @@ the direct pins, and another that no server code imports a development-only pack
 | Job | Runs on | Checks |
 |---|---|---|
 | Backend tests and scenario checks | Ubuntu and Windows, Python 3.13 | `pytest`, then `scripts/run_scenario_checks.py` |
-| Server starts with the runtime dependencies only | Ubuntu, Python 3.13 | Installs `requirements.txt` only, builds the application, confirms no test tool is installed |
+| Server starts with the runtime dependencies only | Ubuntu, Python 3.13 | Installs `requirements.txt` only, builds the application, confirms no test tool is installed, then starts it in production mode and probes it (health 200, `/docs` 404, a rule edit 403, CORS header) |
 | Frontend tests and production build | Ubuntu, Node 24 | `npm ci`, `vitest run`, `npm run build` |
 
 **The workflow has not yet run on GitHub** (the repository is not published). It was validated locally: the YAML parses, and

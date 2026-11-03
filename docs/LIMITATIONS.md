@@ -50,4 +50,4 @@ These were measured on the **Intel UHD integrated GPU**. The acceptance target "
 - The app has no automated accessibility audit beyond the checks that exist in the frontend tests.
 
 ## 5. Security of the app itself
-The backend only binds to loopback addresses and refuses anything else. There is no authentication because nothing leaves the machine; do not expose the port. The Rules API accepts edits from any local process.
+By default the backend binds only to loopback addresses and refuses anything else. There is no authentication, by design. A public deployment must opt in explicitly (`NETSEC_ENV=production` plus `NETSEC_ALLOW_PUBLIC_BIND=true`) and then runs with read-only rules, rate limits and a request size limit (`docs/DEPLOYMENT_RENDER.md`). In a local run the Rules API still accepts edits from any local process. The rule store and the rate limiter are in memory in one process, so a deployment must be a single instance; per-visitor rules would need a redesign (sketched in the deployment guide, not built).
