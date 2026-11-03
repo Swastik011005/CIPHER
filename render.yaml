@@ -1,0 +1,116 @@
+# Render Blueprint for NetSec 3D: a static front end and a FastAPI back end, both on Render's free plan.
+# Full instructions, the security decisions and the checks to run after creating it: docs/DEPLOYMENT_RENDER.md.
+#
+# Nothing here creates anything by itself. A Blueprint takes effect only when its owner connects this repository in the
+# Render dashboard (New > Blueprint). Rules written under `routes` and `headers` apply only to a static site that was
+# created from a Blueprint.
+#
+# The two service names decide the public addresses, https://<name>.onrender.com, if the names are free. If Render gives
+# a service a different address, change the three values marked ADDRESS below to match, then redeploy both services.
+
+services:
+  # ---------------------------------------------------------------- back end: https://netsec-3d-api.onrender.com
+  - type: web
+    name: netsec-3d-api
+    runtime: python
+    plan: free
+    rootDir: backend
+    branch: main
+    # Deploy only after the repository's CI checks pass. Use `off` for manual deploys, `commit` to skip the checks.
+    autoDeployTrigger: checksPass
+    # The fully resolved runtime set (no test tools). Fall back to requirements.txt if a pin ever cannot be installed.
+    buildCommand: pip install -r requirements.lock.txt
+    startCommand: python app.py
+    # Answers 200 with a small JSON body; never rate limited. Render treats 2xx and 3xx as healthy.
+    healthCheckPath: /api/health
+    envVars:
+      # New Render services default to a newer Python than the one this project was developed and tested on.
+      - key: PYTHON_VERSION
+        value: 3.13.7
+      # Production, bound publicly on purpose. Both are required: the server refuses a public address without them.
+      # Render supplies PORT (10000); the server reads it in production, so no port is set here.
+      - key: NETSEC_ENV
+        value: production
+      - key: NETSEC_HOST
+        value: 0.0.0.0
+      - key: NETSEC_ALLOW_PUBLIC_BIND
+        value: "true"
+      # This service is the API only: it never serves a front end, even if a build of one is present.
+      - key: NETSEC_SERVE_FRONTEND
+        value: "false"
+      # ADDRESS: the exact address of the front end below. The only browser origin allowed to call the API.
+      - key: NETSEC_CORS_ORIGINS
+        value: https://netsec-3d.onrender.com
+      # Safe starting point: rate limits count the proxy's address, so visitors share one allowance. To count each visitor
+      # separately, verify what Render's proxy sends and then follow docs/DEPLOYMENT_RENDER.md before changing this.
+      - key: NETSEC_TRUST_PROXY
+        value: "false"
+      # These are already the production defaults; they are written out so the deployed state is visible in one place.
+      - key: NETSEC_RULES_READ_ONLY
+        value: "true"
+      - key: NETSEC_ENABLE_DOCS
+        value: "false"
+      - key: NETSEC_RATE_LIMIT
+        value: "true"
+      - key: NETSEC_RATE_LIMIT_RUN_PER_MIN
+        value: "20"
+      - key: NETSEC_RATE_LIMIT_VALIDATE_PER_MIN
+        value: "3"
+      - key: NETSEC_RATE_LIMIT_API_PER_MIN
+        value: "240"
+      - key: NETSEC_MAX_BODY_BYTES
+        value: "65536"
+      - key: NETSEC_LOG_LEVEL
+        value: info
+
+  # --------------------------------------------------------------- front end: https://netsec-3d.onrender.com
+  - type: web
+    name: netsec-3d
+    runtime: static
+    rootDir: frontend
+    branch: main
+    autoDeployTrigger: checksPass
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    envVars:
+      # The front end was developed and tested on Node 24; Vite 8 needs 20.19 or newer.
+      - key: NODE_VERSION
+        value: 24.15.0
+      # ADDRESS: the full URL of the API, with /api. Vite writes it into the bundle at build time, so it is public.
+      - key: VITE_API_BASE
+        value: https://netsec-3d-api.onrender.com/api
+    # Client-side routes (/simulation, /rules, ...) have no file of their own: serve the app for them. Real files win.
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    headers:
+      # Hashed file names never change, so they can be cached for a year.
+      - path: /assets/*
+        name: Cache-Control
+        value: public, max-age=31536000, immutable
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
+      - path: /*
+        name: Referrer-Policy
+        value: no-referrer
+      - path: /*
+        name: Permissions-Policy
+        value: camera=(), microphone=(), geolocation=(), payment=(), usb=()
+      - path: /*
+        name: Strict-Transport-Security
+        value: max-age=31536000
+      # Only this site's own files may run or load, and the page may talk only to itself and to the API (ADDRESS: connect-src).
+      # blob: (script-src and worker-src) is for the web worker that lays out the 3D zone captions (drei Text / troika builds it
+      # from a blob URL; without it the 3D world never renders). It allows only scripts this page itself created.
+      # style-src 'unsafe-inline' is for inline style attributes. There is no inline or eval script permission.
+      - path: /*
+        name: Content-Security-Policy
+        value: >-
+          default-src 'self'; script-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:;
+          font-src 'self' data:; connect-src 'self' https://netsec-3d-api.onrender.com; worker-src 'self' blob:;
+          object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'

@@ -393,3 +393,20 @@ fieldset.field {
     grid-template-columns: 1fr;
   }
 }
+
+/* Read-only (a public deployment): the settings stay visible but are plainly inactive. */
+.rules-lock {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.rules-lock[data-locked='true'] .detector {
+  opacity: 0.72;
+}
+
+.rules-lock[data-locked='true'] input,
+.rules-lock[data-locked='true'] .switch {
+  cursor: not-allowed;
+}

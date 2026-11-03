@@ -56,7 +56,22 @@ jobs:
         working-directory: backend
         run: |
           python -c "from netsec.api.app_factory import create_app; app = create_app(); print('application built:', app.title)"
-          python -c "import importlib.util as u, sys; bad = [m for m in ('pytest', 'httpx', 'scapy') if u.find_spec(m)]; sys.exit('unexpected test tools installed: %s' % bad if bad else 0)"
+          python -c "import importlib.util as u, sys; bad = [m for m in ('pytest', 'httpx', 'scapy', 'yaml') if u.find_spec(m)]; sys.exit('unexpected test tools installed: %s' % bad if bad else 0)"
+
+      - name: Start in production mode and probe it
+        working-directory: backend
+        env:
+          NETSEC_ENV: production
+          NETSEC_CORS_ORIGINS: https://netsec-3d.onrender.com
+          NETSEC_LOG_LEVEL: warning
+          PORT: "18080"
+        run: |
+          python app.py &
+          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:18080/api/health >/dev/null 2>&1 && break; sleep 1; done
+          curl -fsS http://127.0.0.1:18080/api/health | grep -q '"status":"ok"'
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:18080/docs)" = 404
+          test "$(curl -s -o /dev/null -w '%{http_code}' -X PUT -H 'Content-Type: application/json' -d '{}' http://127.0.0.1:18080/api/rules/detectors)" = 403
+          curl -s -D - -o /dev/null -H 'Origin: https://netsec-3d.onrender.com' http://127.0.0.1:18080/api/health | grep -qi 'access-control-allow-origin: https://netsec-3d.onrender.com'
 
   frontend:
     name: Frontend tests and production build

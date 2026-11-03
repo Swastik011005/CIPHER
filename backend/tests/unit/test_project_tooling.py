@@ -11,7 +11,8 @@ import pytest
 
 REPO = Path(__file__).resolve().parents[3]
 BACKEND = REPO / "backend"
-DEV_ONLY_PACKAGES = {"pytest", "httpx", "scapy"}
+DEV_ONLY_PACKAGES = {"pytest", "httpx", "scapy", "pyyaml"}  # package names
+DEV_ONLY_IMPORTS = {"pytest", "httpx", "scapy", "yaml"}  # what they are imported as
 
 
 def _load_tasks():
@@ -82,5 +83,5 @@ def test_server_code_never_imports_development_only_packages() -> None:
     for path in [BACKEND / "app.py", *sorted((BACKEND / "netsec").rglob("*.py"))]:
         for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
             names = [a.name for a in node.names] if isinstance(node, ast.Import) else [node.module or ""] if isinstance(node, ast.ImportFrom) else []
-            offenders += [f"{path.relative_to(REPO)} imports {n}" for n in names if n.split(".")[0] in DEV_ONLY_PACKAGES]
+            offenders += [f"{path.relative_to(REPO)} imports {n}" for n in names if n.split(".")[0] in DEV_ONLY_IMPORTS]
     assert not offenders, offenders

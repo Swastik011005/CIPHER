@@ -2,7 +2,7 @@ import { Box, Eye, Shield, ShieldCheck } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 import { useStore } from '../state/store.js'
-import { Banner, Card, Chip, KpiTile, Spinner } from '../ui/index.js'
+import { Banner, Card, Chip, EngineHint, KpiTile, Spinner } from '../ui/index.js'
 import './pages.css'
 
 const LAYERS = [
@@ -56,7 +56,7 @@ export function OverviewDashboard() {
 
       {topology.status === 'error' && !data && (
         <Banner tone="danger" title="Cannot load the topology">
-          {topology.error}. Start the backend with <code>python app.py</code>.
+          {topology.error}. <EngineHint local={<>Start the backend with <code>python app.py</code>.</>} />
         </Banner>
       )}
 

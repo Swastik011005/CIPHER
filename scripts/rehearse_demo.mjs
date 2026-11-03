@@ -3,7 +3,10 @@
  * the presenter is told to expect at each step. It uses the app exactly as the presenter does (real clicks for
  * navigation, forms and buttons; the app's own player controls to move the timeline) and writes a screenshot per step.
  *
- *   node scripts/rehearse_demo.mjs [--base http://127.0.0.1:8000] [--out docs/demo]
+ *   node scripts/rehearse_demo.mjs [--base http://127.0.0.1:8000] [--out docs/demo] [--api /api]
+ *
+ * `--api` is the API base the page uses; give the full URL (for example http://127.0.0.1:8300/api) when the front end is
+ * served from a different origin than the API (see scripts/check_split_origin.py).
  *
  * Default target is demo mode (one process: backend serving frontend/dist). Needs the backend running with the
  * frontend built. It also fails if the page asks for anything outside 127.0.0.1 (the demo must work offline) or logs
@@ -19,6 +22,8 @@ const args = Object.fromEntries(
 )
 const base = args.base ?? 'http://127.0.0.1:8000'
 const out = args.out ?? 'docs/demo'
+// Where the page's API lives. `/api` on the page's own origin unless the front end is hosted apart from the API.
+const apiBase = (args.api ?? '/api').replace(/\/+$/, '')
 mkdirSync(out, { recursive: true })
 
 const steps = []
@@ -32,7 +37,7 @@ const check = (name, condition, detail) => record(name, Boolean(condition), deta
 const browser = await openBrowser({ width: 1440, height: 900, port: 9888 })
 const ev = (code) => browser.evaluate(code)
 const api = (method, path, body) =>
-  ev(`fetch('/api${path}', { method: '${method}', headers: {'Content-Type':'application/json'}, ${body ? `body: JSON.stringify(${JSON.stringify(body)}),` : ''} }).then(async (r) => ({ status: r.status, body: await r.json() }))`)
+  ev(`fetch('${apiBase}${path}', { method: '${method}', headers: {'Content-Type':'application/json'}, ${body ? `body: JSON.stringify(${JSON.stringify(body)}),` : ''} }).then(async (r) => ({ status: r.status, body: await r.json() }))`)
 const text = () => ev('document.body.innerText')
 const waitText = (needle, ms = 20000) => waitFor(async () => (await text()).includes(needle), `text "${needle}"`, ms)
 const clickText = (selector, label) =>

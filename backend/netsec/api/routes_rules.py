@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, ConfigDict, Field
 
 from netsec.analysis.ios_export import export_cisco
@@ -56,11 +56,27 @@ DETECTOR_INFO: dict[str, dict[str, str]] = {
 }
 
 
+READ_ONLY_MESSAGE = (
+    "Rules are read-only on this server. The rules are shared by every visitor, so one visitor's edit would change "
+    "every other visitor's runs. Run NetSec 3D locally to edit them."
+)
+
+
 def _store(request: Request) -> RuleStore:
     return request.app.state.rules
 
 
-def rules_view(store: RuleStore) -> dict[str, Any]:
+def _read_only(request: Request) -> bool:
+    return bool(request.app.state.rules_read_only)
+
+
+def require_writable(request: Request) -> None:
+    """Dependency of every endpoint that changes the shared rules: refuses (403) when the server is read-only."""
+    if _read_only(request):
+        raise HTTPException(status_code=403, detail=READ_ONLY_MESSAGE)
+
+
+def rules_view(store: RuleStore, read_only: bool = False) -> dict[str, Any]:
     """Everything the Rules page needs, in one response."""
     rules: RuleSet = store.current
     detectors = {}
@@ -77,6 +93,8 @@ def rules_view(store: RuleStore) -> dict[str, Any]:
         }
     firewall_files = [f for f in rules.policies if any(p.node == "FW1" for p in f.policies)]
     return {
+        "read_only": read_only,
+        "read_only_reason": READ_ONLY_MESSAGE if read_only else None,
         "revision": store.revision,
         "customised": store.customised,
         "rules_hash": rules.digest(),
@@ -108,27 +126,27 @@ class RestrictedEdit(BaseModel):
 
 @router.get("/rules")
 def get_rules(request: Request) -> dict[str, Any]:
-    return rules_view(_store(request))
+    return rules_view(_store(request), _read_only(request))
 
 
-@router.put("/rules/detectors")
+@router.put("/rules/detectors", dependencies=[Depends(require_writable)])
 def put_detectors(body: DetectorEdit, request: Request) -> dict[str, Any]:
     store = _store(request)
     try:
         changed = store.update_detectors(body.changes)
     except RuleError as exc:
         raise HTTPException(status_code=422, detail=exc.problems) from exc
-    return {**rules_view(store), "changed": changed}
+    return {**rules_view(store, _read_only(request)), "changed": changed}
 
 
-@router.put("/rules/restricted-ips")
+@router.put("/rules/restricted-ips", dependencies=[Depends(require_writable)])
 def put_restricted(body: RestrictedEdit, request: Request) -> dict[str, Any]:
     store = _store(request)
     try:
         now = store.set_restricted_ips(body.addresses)
     except RuleError as exc:
         raise HTTPException(status_code=422, detail=exc.problems) from exc
-    return {**rules_view(store), "changed": [{"restricted_ips": now}]}
+    return {**rules_view(store, _read_only(request)), "changed": [{"restricted_ips": now}]}
 
 
 @router.get("/rules/export/cisco")
@@ -137,8 +155,8 @@ def export_ios(request: Request) -> dict[str, Any]:
     return export_cisco(_store(request).current)
 
 
-@router.post("/rules/reset")
+@router.post("/rules/reset", dependencies=[Depends(require_writable)])
 def reset_rules(request: Request) -> dict[str, Any]:
     store = _store(request)
     changed = store.reset()
-    return {**rules_view(store), "changed": [{"reset": True}] if changed else []}
+    return {**rules_view(store, _read_only(request)), "changed": [{"reset": True}] if changed else []}

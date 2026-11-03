@@ -1,14 +1,14 @@
-import { RotateCcw } from 'lucide-react'
+import { Lock, RotateCcw } from 'lucide-react'
 import { useState } from 'react'
 
 import { DetectionTab } from '../features/rules/DetectionTab.jsx'
 import { FirewallTab } from '../features/rules/FirewallTab.jsx'
 import { PreventionTab } from '../features/rules/PreventionTab.jsx'
 import { ScenariosTab } from '../features/rules/ScenariosTab.jsx'
-import { rulesStatus } from '../features/rules/rulesLogic.js'
+import { readOnlyNotice, rulesStatus } from '../features/rules/rulesLogic.js'
 import { useRules } from '../features/rules/useRules.js'
 import '../features/rules/rules.css'
-import { Banner, Button, Card, Chip, Segmented, Spinner } from '../ui/index.js'
+import { Banner, Button, Card, Chip, EngineHint, Segmented, Spinner } from '../ui/index.js'
 import './pages.css'
 
 const TABS = [
@@ -26,6 +26,7 @@ export function RulesScenarios() {
   const rules = useRules()
   const [tab, setTab] = useState('detection')
   const status = rulesStatus(rules.rules)
+  const locked = readOnlyNotice(rules.rules)
 
   return (
     <div className="page rules-page">
@@ -34,16 +35,29 @@ export function RulesScenarios() {
         {rules.rules && (
           <div className="rules-status" data-customised={status.customised}>
             <Chip tone={status.customised ? 'warn' : 'ok'}>{status.customised ? 'Custom rules' : 'Shipped rules'}</Chip>
+            {locked && (
+              <Chip tone="sensor" title={locked.title}>
+                <Lock size={12} aria-hidden="true" /> Read-only
+              </Chip>
+            )}
             <span className="muted">{status.text}</span>
             <span className="muted mono" title="Digest of every rule; it is part of each run's config hash">
               rules {rules.rules.rules_hash}
             </span>
-            <Button size="small" icon={<RotateCcw size={14} />} disabled={!status.customised || rules.busy} onClick={rules.reset}>
-              Reset to shipped
-            </Button>
+            {!locked && (
+              <Button size="small" icon={<RotateCcw size={14} />} disabled={!status.customised || rules.busy} onClick={rules.reset}>
+                Reset to shipped
+              </Button>
+            )}
           </div>
         )}
       </div>
+
+      {locked && (
+        <Banner tone="info" icon={<Lock size={20} aria-hidden="true" />} title={locked.title}>
+          {locked.text}
+        </Banner>
+      )}
 
       {rules.feedback && (
         <Banner
@@ -74,12 +88,13 @@ export function RulesScenarios() {
       )}
       {rules.status === 'error' && (
         <Banner tone="danger" title="Cannot load the rules" action={<Button size="small" onClick={rules.reload}>Retry</Button>}>
-          {rules.error}. The rules live in the backend, so start it with <code>python app.py</code> in the backend folder.
+          {rules.error}.{' '}
+          <EngineHint local={<>The rules live in the backend, so start it with <code>python app.py</code> in the backend folder.</>} />
         </Banner>
       )}
 
-      {rules.rules && tab === 'firewall' && <FirewallTab rules={rules.rules} busy={rules.busy} onRestricted={rules.setRestrictedIps} />}
-      {rules.rules && tab === 'detection' && <DetectionTab rules={rules.rules} busy={rules.busy} onApply={rules.applyDetectors} />}
+      {rules.rules && tab === 'firewall' && <FirewallTab rules={rules.rules} busy={rules.busy} readOnly={Boolean(locked)} onRestricted={rules.setRestrictedIps} />}
+      {rules.rules && tab === 'detection' && <DetectionTab rules={rules.rules} busy={rules.busy} readOnly={Boolean(locked)} onApply={rules.applyDetectors} />}
       {rules.rules && tab === 'prevention' && <PreventionTab rules={rules.rules} detectors={rules.rules.detectors} />}
       {tab === 'scenarios' && <ScenariosTab customised={status.customised} />}
     </div>
