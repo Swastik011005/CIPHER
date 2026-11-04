@@ -1,0 +1,932 @@
+{
+ "zones": [
+  {
+   "id": "staff",
+   "name": "Staff and Academic",
+   "network": "Staff LAN, VLAN 10 (10.0.10.0/24)",
+   "devices": [
+    "PC-1",
+    "PC-2",
+    "LAPTOP-1",
+    "ACC-SW2"
+   ],
+   "accent": "#4da3ff",
+   "purpose": "Staff offices and labs. Three workstations reach the network through the access switch ACC-SW2."
+  },
+  {
+   "id": "admin",
+   "name": "Administration",
+   "network": "Admin LAN, VLAN 20 (10.0.20.0/24)",
+   "devices": [
+    "ADMIN-PC"
+   ],
+   "accent": "#7aa2ff",
+   "purpose": "University administration. ADMIN-PC is the one host allowed to reach the database."
+  },
+  {
+   "id": "datacentre",
+   "name": "Data Centre",
+   "network": "Servers, VLAN 30 (10.0.30.0/24)",
+   "devices": [
+    "APP-SRV",
+    "DB-SRV",
+    "SRV-SW3"
+   ],
+   "accent": "#38d6e6",
+   "purpose": "The application and database servers and their top-of-rack switch."
+  },
+  {
+   "id": "soc",
+   "name": "Security Operations",
+   "network": "Security, VLAN 99 (10.0.99.0/24)",
+   "devices": [
+    "IDS-1",
+    "IPS-1",
+    "SEC-LOG"
+   ],
+   "accent": "#a78bfa",
+   "purpose": "The passive IDS, the syslog console, and the inline IPS that guards the data centre door."
+  },
+  {
+   "id": "core",
+   "name": "Core Network Hub",
+   "network": "Layer 3 core: SVIs for VLANs 10, 20, 30, 99",
+   "devices": [
+    "CORE-SW1"
+   ],
+   "accent": "#2fb6a8",
+   "purpose": "The core switch: routes between VLANs, applies the Staff ACL and mirrors traffic to IDS-1."
+  },
+  {
+   "id": "gate",
+   "name": "Main Gate and Edge",
+   "network": "Perimeter, 10.255.0.0/30 and 10.255.1.0/30",
+   "devices": [
+    "R1-EDGE",
+    "FW1"
+   ],
+   "accent": "#2fb6a8",
+   "purpose": "The edge router and the stateful firewall in the gate: the only way in from the Internet."
+  },
+  {
+   "id": "offcampus",
+   "name": "Public Internet (off campus)",
+   "network": "Outside, 203.0.113.0/24",
+   "devices": [
+    "INET",
+    "EXT-USR",
+    "EXT-ATK"
+   ],
+   "accent": "#8aa0c8",
+   "purpose": "Everything beyond the campus: a legitimate user, a simulated attacker and the abstract Internet."
+  }
+ ],
+ "structures": [
+  {
+   "id": "staff",
+   "zone": "staff",
+   "name": "Staff and Academic pavilion",
+   "rect": {
+    "x0": 6.4,
+    "z0": -12.2,
+    "x1": 15.8,
+    "z1": -5.3
+   },
+   "platform": {
+    "x0": 6.15,
+    "z0": -12.45,
+    "x1": 16.05,
+    "z1": -5.05
+   },
+   "height": 3,
+   "glassSides": [
+    "N",
+    "W"
+   ],
+   "openSides": [
+    "S",
+    "E"
+   ]
+  },
+  {
+   "id": "admin",
+   "zone": "admin",
+   "name": "Administration pavilion",
+   "rect": {
+    "x0": 17,
+    "z0": -10.6,
+    "x1": 20,
+    "z1": -5.4
+   },
+   "platform": {
+    "x0": 16.75,
+    "z0": -10.85,
+    "x1": 20.25,
+    "z1": -5.15
+   },
+   "height": 3,
+   "glassSides": [
+    "N",
+    "W"
+   ],
+   "openSides": [
+    "S",
+    "E"
+   ]
+  },
+  {
+   "id": "datacentre",
+   "zone": "datacentre",
+   "name": "Data Centre pavilion",
+   "rect": {
+    "x0": 12.3,
+    "z0": 4.9,
+    "x1": 16.7,
+    "z1": 9
+   },
+   "platform": {
+    "x0": 12.05,
+    "z0": 4.65,
+    "x1": 16.95,
+    "z1": 9.25
+   },
+   "height": 3,
+   "glassSides": [
+    "N",
+    "W"
+   ],
+   "openSides": [
+    "S",
+    "E"
+   ]
+  },
+  {
+   "id": "soc",
+   "zone": "soc",
+   "name": "Operations pavilion",
+   "rect": {
+    "x0": -3.2,
+    "z0": 7.6,
+    "x1": 3.68,
+    "z1": 11
+   },
+   "platform": {
+    "x0": -3.3200000000000003,
+    "z0": 7.4799999999999995,
+    "x1": 3.8000000000000003,
+    "z1": 11.12
+   },
+   "height": 3,
+   "glassSides": [
+    "N",
+    "W"
+   ],
+   "openSides": [
+    "S",
+    "E"
+   ]
+  },
+  {
+   "id": "ips-gate",
+   "zone": "soc",
+   "name": "Inline security gate pavilion (IPS-1)",
+   "rect": {
+    "x0": 8.3,
+    "z0": 4.4,
+    "x1": 10.1,
+    "z1": 7.6
+   },
+   "platform": {
+    "x0": 8.05,
+    "z0": 4.15,
+    "x1": 10.35,
+    "z1": 7.85
+   },
+   "height": 3,
+   "glassSides": [
+    "N",
+    "W"
+   ],
+   "openSides": [
+    "S",
+    "E"
+   ]
+  },
+  {
+   "id": "edge",
+   "zone": "gate",
+   "name": "Edge router pavilion (R1-EDGE)",
+   "rect": {
+    "x0": -11.6,
+    "z0": -1.3,
+    "x1": -9.4,
+    "z1": 1.3
+   },
+   "platform": {
+    "x0": -11.799999999999999,
+    "z0": -1.5,
+    "x1": -9.200000000000001,
+    "z1": 1.5
+   },
+   "height": 2.2,
+   "glassSides": [
+    "N",
+    "W"
+   ],
+   "openSides": [
+    "S",
+    "E"
+   ]
+  }
+ ],
+ "canopy": {
+  "id": "core",
+  "zone": "core",
+  "name": "Core hub",
+  "center": [
+   0,
+   0
+  ],
+  "platformRadius": 3.6,
+  "columnRadius": 2.9,
+  "columns": 8,
+  "phase": 22.5,
+  "h": 3
+ },
+ "openPlatforms": [
+  {
+   "id": "gate-court",
+   "zone": "gate",
+   "rect": {
+    "x0": -12,
+    "z0": -2.4,
+    "x1": -6.4,
+    "z1": 2.4
+   }
+  },
+  {
+   "id": "island",
+   "zone": "offcampus",
+   "rect": {
+    "x0": -21.200000000000003,
+    "z0": -7,
+    "x1": -15.000000000000002,
+    "z1": 7
+   }
+  }
+ ],
+ "posts": [
+  {
+   "s": "staff",
+   "x": 6.4,
+   "z": -12.2,
+   "h": 3
+  },
+  {
+   "s": "staff",
+   "x": 15.8,
+   "z": -12.2,
+   "h": 3
+  },
+  {
+   "s": "staff",
+   "x": 6.4,
+   "z": -5.3,
+   "h": 3
+  },
+  {
+   "s": "staff",
+   "x": 9.533,
+   "z": -12.2,
+   "h": 3
+  },
+  {
+   "s": "staff",
+   "x": 12.667,
+   "z": -12.2,
+   "h": 3
+  },
+  {
+   "s": "staff",
+   "x": 6.4,
+   "z": -9.9,
+   "h": 3
+  },
+  {
+   "s": "admin",
+   "x": 17,
+   "z": -10.6,
+   "h": 3
+  },
+  {
+   "s": "admin",
+   "x": 20,
+   "z": -10.6,
+   "h": 3
+  },
+  {
+   "s": "admin",
+   "x": 17,
+   "z": -5.4,
+   "h": 3
+  },
+  {
+   "s": "datacentre",
+   "x": 12.3,
+   "z": 4.9,
+   "h": 3
+  },
+  {
+   "s": "datacentre",
+   "x": 16.7,
+   "z": 4.9,
+   "h": 3
+  },
+  {
+   "s": "datacentre",
+   "x": 12.3,
+   "z": 9,
+   "h": 3
+  },
+  {
+   "s": "datacentre",
+   "x": 14.5,
+   "z": 4.9,
+   "h": 3
+  },
+  {
+   "s": "soc",
+   "x": -3.2,
+   "z": 7.6,
+   "h": 3
+  },
+  {
+   "s": "soc",
+   "x": 3.68,
+   "z": 7.6,
+   "h": 3
+  },
+  {
+   "s": "soc",
+   "x": -3.2,
+   "z": 11,
+   "h": 3
+  },
+  {
+   "s": "soc",
+   "x": -3.2,
+   "z": 9.3,
+   "h": 3
+  },
+  {
+   "s": "ips-gate",
+   "x": 8.3,
+   "z": 4.4,
+   "h": 3
+  },
+  {
+   "s": "ips-gate",
+   "x": 10.1,
+   "z": 4.4,
+   "h": 3
+  },
+  {
+   "s": "ips-gate",
+   "x": 8.3,
+   "z": 7.6,
+   "h": 3
+  },
+  {
+   "s": "edge",
+   "x": -11.6,
+   "z": -1.3,
+   "h": 2.2
+  },
+  {
+   "s": "edge",
+   "x": -9.4,
+   "z": -1.3,
+   "h": 2.2
+  },
+  {
+   "s": "edge",
+   "x": -11.6,
+   "z": 1.3,
+   "h": 2.2
+  },
+  {
+   "s": "staff",
+   "x": 6.4,
+   "z": -8.5,
+   "h": 3
+  },
+  {
+   "s": "staff",
+   "x": 6.4,
+   "z": -7.5,
+   "h": 3
+  },
+  {
+   "s": "admin",
+   "x": 17,
+   "z": -8.45,
+   "h": 3
+  },
+  {
+   "s": "admin",
+   "x": 17,
+   "z": -7.45,
+   "h": 3
+  },
+  {
+   "s": "datacentre",
+   "x": 12.3,
+   "z": 5.5,
+   "h": 3
+  },
+  {
+   "s": "datacentre",
+   "x": 12.3,
+   "z": 6.5,
+   "h": 3
+  },
+  {
+   "s": "soc",
+   "x": -2.75,
+   "z": 7.6,
+   "h": 3
+  },
+  {
+   "s": "soc",
+   "x": -1.25,
+   "z": 7.6,
+   "h": 3
+  },
+  {
+   "s": "soc",
+   "x": 2,
+   "z": 7.6,
+   "h": 3
+  },
+  {
+   "s": "soc",
+   "x": 3,
+   "z": 7.6,
+   "h": 3
+  },
+  {
+   "s": "ips-gate",
+   "x": 8.3,
+   "z": 5.5,
+   "h": 3
+  },
+  {
+   "s": "ips-gate",
+   "x": 8.3,
+   "z": 6.5,
+   "h": 3
+  },
+  {
+   "s": "edge",
+   "x": -11.6,
+   "z": -0.5,
+   "h": 2.2
+  },
+  {
+   "s": "edge",
+   "x": -11.6,
+   "z": 0.5,
+   "h": 2.2
+  },
+  {
+   "s": "core",
+   "x": 2.679,
+   "z": 1.11,
+   "h": 3
+  },
+  {
+   "s": "core",
+   "x": 1.11,
+   "z": 2.679,
+   "h": 3
+  },
+  {
+   "s": "core",
+   "x": -1.11,
+   "z": 2.679,
+   "h": 3
+  },
+  {
+   "s": "core",
+   "x": -2.679,
+   "z": 1.11,
+   "h": 3
+  },
+  {
+   "s": "core",
+   "x": -2.679,
+   "z": -1.11,
+   "h": 3
+  },
+  {
+   "s": "core",
+   "x": -1.11,
+   "z": -2.679,
+   "h": 3
+  },
+  {
+   "s": "core",
+   "x": 1.11,
+   "z": -2.679,
+   "h": 3
+  },
+  {
+   "s": "core",
+   "x": 2.679,
+   "z": -1.11,
+   "h": 3
+  }
+ ],
+ "oldSlabs": {
+  "OUTSIDE": {
+   "cx": -18.1,
+   "cz": 0,
+   "sx": 6.2,
+   "sz": 14
+  },
+  "PERIMETER": {
+   "cx": -9.5,
+   "cz": 0,
+   "sx": 5.5,
+   "sz": 18
+  },
+  "CORE": {
+   "cx": 0,
+   "cz": 0,
+   "sx": 6,
+   "sz": 6
+  },
+  "STAFF": {
+   "cx": 10.5,
+   "cz": -8.5,
+   "sx": 9,
+   "sz": 9
+  },
+  "ADMIN": {
+   "cx": 18.2,
+   "cz": -8.5,
+   "sx": 4.6,
+   "sz": 9
+  },
+  "SECOPS": {
+   "cx": 0,
+   "cz": 9.5,
+   "sx": 10,
+   "sz": 7
+  },
+  "SERVERS": {
+   "cx": 14,
+   "cz": 7,
+   "sx": 12,
+   "sz": 10
+  }
+ },
+ "perimeterWall": {
+  "x": -7.2,
+  "zFrom": -8.4,
+  "zTo": 8.4,
+  "gateHalf": 1.75
+ },
+ "canopyColumns": [
+  [
+   2.6792506442827313,
+   1.1097819538587603
+  ],
+  [
+   1.1097819538587606,
+   2.6792506442827313
+  ],
+  [
+   -1.10978195385876,
+   2.6792506442827313
+  ],
+  [
+   -2.6792506442827313,
+   1.1097819538587606
+  ],
+  [
+   -2.679250644282732,
+   -1.1097819538587588
+  ],
+  [
+   -1.1097819538587594,
+   -2.6792506442827317
+  ],
+  [
+   1.109781953858761,
+   -2.6792506442827313
+  ],
+  [
+   2.6792506442827317,
+   -1.1097819538587597
+  ]
+ ],
+ "openings": [
+  {
+   "structure": "staff",
+   "edge": "W",
+   "u0": -8.5,
+   "u1": -7.5,
+   "x": 6.4,
+   "z": -8,
+   "links": [
+    "L06"
+   ]
+  },
+  {
+   "structure": "admin",
+   "edge": "W",
+   "u0": -8.45,
+   "u1": -7.45,
+   "x": 17,
+   "z": -7.95,
+   "links": [
+    "L10"
+   ]
+  },
+  {
+   "structure": "datacentre",
+   "edge": "W",
+   "u0": 5.5,
+   "u1": 6.5,
+   "x": 12.3,
+   "z": 6,
+   "links": [
+    "L15"
+   ]
+  },
+  {
+   "structure": "soc",
+   "edge": "N",
+   "u0": -2.75,
+   "u1": -1.25,
+   "x": -2,
+   "z": 7.6,
+   "links": [
+    "L11",
+    "L12"
+   ]
+  },
+  {
+   "structure": "soc",
+   "edge": "N",
+   "u0": 2,
+   "u1": 3,
+   "x": 2.5,
+   "z": 7.6,
+   "links": [
+    "L13"
+   ]
+  },
+  {
+   "structure": "ips-gate",
+   "edge": "W",
+   "u0": 5.5,
+   "u1": 6.5,
+   "x": 8.3,
+   "z": 6,
+   "links": [
+    "L14"
+   ]
+  },
+  {
+   "structure": "edge",
+   "edge": "W",
+   "u0": -0.5,
+   "u1": 0.5,
+   "x": -11.6,
+   "z": 0,
+   "links": [
+    "L03"
+   ]
+  }
+ ],
+ "presetSightlines": {
+  "views": 41,
+  "panes": [
+   40,
+   1,
+   0
+  ],
+  "leastVisiblePercent": 83
+ },
+ "orbitSweep": {
+  "views": 1152,
+  "panes": [
+   1003,
+   149,
+   0
+  ],
+  "meanVisiblePercent": 95.9,
+  "viewsBelowHalf": 0,
+  "byDevice": {}
+ },
+ "budget": {
+  "platforms": 9,
+  "framePosts": 45,
+  "ringBeams": 13,
+  "glassPanes": 19,
+  "structures": 7
+ },
+ "deviceVisibility": [
+  {
+   "id": "EXT-USR",
+   "zone": "Public Internet (off campus)",
+   "presetViews": 2,
+   "presetLeastVisible": 100,
+   "orbitMeanVisible": 100
+  },
+  {
+   "id": "EXT-ATK",
+   "zone": "Public Internet (off campus)",
+   "presetViews": 2,
+   "presetLeastVisible": 100,
+   "orbitMeanVisible": 100
+  },
+  {
+   "id": "R1-EDGE",
+   "zone": "Main Gate and Edge",
+   "presetViews": 2,
+   "presetLeastVisible": 100,
+   "orbitMeanVisible": 91
+  },
+  {
+   "id": "FW1",
+   "zone": "Main Gate and Edge",
+   "presetViews": 4,
+   "presetLeastVisible": 100,
+   "orbitMeanVisible": 100
+  },
+  {
+   "id": "CORE-SW1",
+   "zone": "Core Network Hub",
+   "presetViews": 4,
+   "presetLeastVisible": 89,
+   "orbitMeanVisible": 99
+  },
+  {
+   "id": "ACC-SW2",
+   "zone": "Staff and Academic",
+   "presetViews": 2,
+   "presetLeastVisible": 100,
+   "orbitMeanVisible": 92
+  },
+  {
+   "id": "PC-1",
+   "zone": "Staff and Academic",
+   "presetViews": 2,
+   "presetLeastVisible": 100,
+   "orbitMeanVisible": 95
+  },
+  {
+   "id": "PC-2",
+   "zone": "Staff and Academic",
+   "presetViews": 2,
+   "presetLeastVisible": 83,
+   "orbitMeanVisible": 96
+  },
+  {
+   "id": "LAPTOP-1",
+   "zone": "Staff and Academic",
+   "presetViews": 2,
+   "presetLeastVisible": 100,
+   "orbitMeanVisible": 100
+  },
+  {
+   "id": "ADMIN-PC",
+   "zone": "Administration",
+   "presetViews": 2,
+   "presetLeastVisible": 100,
+   "orbitMeanVisible": 94
+  },
+  {
+   "id": "IDS-1",
+   "zone": "Security Operations",
+   "presetViews": 3,
+   "presetLeastVisible": 100,
+   "orbitMeanVisible": 92
+  },
+  {
+   "id": "SEC-LOG",
+   "zone": "Security Operations",
+   "presetViews": 4,
+   "presetLeastVisible": 100,
+   "orbitMeanVisible": 97
+  },
+  {
+   "id": "IPS-1",
+   "zone": "Security Operations",
+   "presetViews": 4,
+   "presetLeastVisible": 83,
+   "orbitMeanVisible": 91
+  },
+  {
+   "id": "SRV-SW3",
+   "zone": "Data Centre",
+   "presetViews": 2,
+   "presetLeastVisible": 100,
+   "orbitMeanVisible": 97
+  },
+  {
+   "id": "APP-SRV",
+   "zone": "Data Centre",
+   "presetViews": 2,
+   "presetLeastVisible": 100,
+   "orbitMeanVisible": 96
+  },
+  {
+   "id": "DB-SRV",
+   "zone": "Data Centre",
+   "presetViews": 2,
+   "presetLeastVisible": 100,
+   "orbitMeanVisible": 95
+  }
+ ],
+ "checks": [
+  {
+   "name": "the four required zones hold exactly the devices in the brief (Staff, Administration, Data Centre, Security Operations incl. IPS-1)",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "every one of the 17 topology nodes is in exactly one campus zone; no device is invented",
+   "ok": true,
+   "detail": "17 of 17"
+  },
+  {
+   "name": "no device or cable moves: platforms top out at the height the zone slabs already have",
+   "ok": true,
+   "detail": "platform top 0.3"
+  },
+  {
+   "name": "every structure is single-level (3.0 high or less) and compact (largest footprint under 70 square units)",
+   "ok": true,
+   "detail": "largest 65 sq units"
+  },
+  {
+   "name": "the campus plate is unchanged (nothing needs more room)",
+   "ok": true,
+   "detail": "35.2 x 30.0"
+  },
+  {
+   "name": "every device stands inside the frame of its own structure with 0.2 clearance and 0.5 headroom, and no other structure touches a device",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "no two platforms overlap",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "platforms keep clear space between them for cables and packets (at least 0.6 between any two)",
+   "ok": true,
+   "detail": "closest rectangular pair staff/admin 0.70, core hub 2.80"
+  },
+  {
+   "name": "every cable that meets a glass side passes through a planned opening (found automatically)",
+   "ok": true,
+   "detail": "7 openings: staff-W[L06] 1.0 wide, admin-W[L10] 1.0 wide, datacentre-W[L15] 1.0 wide, soc-N[L11+L12] 1.5 wide, soc-N[L13] 1.0 wide, ips-gate-W[L14] 1.0 wide, edge-W[L03] 1.0 wide"
+  },
+  {
+   "name": "no frame post stands within 0.27 of a cable (posts frame the openings, they never sit on a cable)",
+   "ok": true,
+   "detail": "closest 0.32"
+  },
+  {
+   "name": "no frame post stands within 0.15 of a device",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "at every camera preset each device it is aimed at is at least 80% visible (only thin frame members can stand in the way; there is no roof or solid wall)",
+   "ok": true,
+   "detail": "41 views, least visible 83% (staff:PC-2 83% by beam admin W, core:CORE-SW1 89% by post core@1.1,2.7, servers:IPS-1 83% by beam datacentre W, secops:CORE-SW1 89% by post core@1.1,2.7)"
+  },
+  {
+   "name": "at the presets, no device is seen through more than one glass pane",
+   "ok": true,
+   "detail": "0 panes: 40, 1 pane: 1, 2+: 0 of 41 views"
+  },
+  {
+   "name": "in a full orbit no device is ever seen through more than one glass pane (a line from the camera enters a pavilion once)",
+   "ok": true,
+   "detail": "1152 views: 0 panes 87.1%, 1 pane 12.9%, 2+ 0%"
+  },
+  {
+   "name": "in a full orbit a device is on average at least 95% visible",
+   "ok": true,
+   "detail": "mean 95.9%; views with less than half the device visible: 0 of 1152 {}"
+  }
+ ]
+}

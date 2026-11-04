@@ -1,0 +1,74 @@
+{
+ "before-overview": {
+  "fps": 16,
+  "meshes": 232,
+  "triangles": 80512,
+  "geometries": 163,
+  "textures": 54,
+  "pixelRatio": 1.24,
+  "sampledAt": 1793751330917
+ },
+ "before-staff": {
+  "fps": 23,
+  "meshes": 232,
+  "triangles": 80512,
+  "geometries": 163,
+  "textures": 54,
+  "pixelRatio": 1.16,
+  "sampledAt": 1793751334018
+ },
+ "before-servers": {
+  "fps": 24,
+  "meshes": 232,
+  "triangles": 80512,
+  "geometries": 163,
+  "textures": 54,
+  "pixelRatio": 1.16,
+  "sampledAt": 1793751337071
+ },
+ "before-secops": {
+  "fps": 28,
+  "meshes": 232,
+  "triangles": 80512,
+  "geometries": 163,
+  "textures": 54,
+  "pixelRatio": 1.07,
+  "sampledAt": 1793751340134
+ },
+ "after-overview": {
+  "fps": 38,
+  "meshes": 369,
+  "triangles": 78616,
+  "geometries": 329,
+  "textures": 62,
+  "pixelRatio": 1,
+  "sampledAt": 1793751344221
+ },
+ "after-staff": {
+  "fps": 34,
+  "meshes": 369,
+  "triangles": 78616,
+  "geometries": 329,
+  "textures": 62,
+  "pixelRatio": 1,
+  "sampledAt": 1793751347250
+ },
+ "after-servers": {
+  "fps": 31,
+  "meshes": 369,
+  "triangles": 78616,
+  "geometries": 329,
+  "textures": 62,
+  "pixelRatio": 1,
+  "sampledAt": 1793751351280
+ },
+ "after-secops": {
+  "fps": 31,
+  "meshes": 369,
+  "triangles": 78616,
+  "geometries": 329,
+  "textures": 62,
+  "pixelRatio": 1,
+  "sampledAt": 1793751354364
+ }
+}
