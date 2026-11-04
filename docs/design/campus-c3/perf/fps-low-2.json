@@ -1,0 +1,33 @@
+{
+  "browser": "chrome",
+  "gpu": "ANGLE (Intel, Intel(R) UHD Graphics (0x0000A78B) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+  "window": {
+    "innerWidth": 1888,
+    "innerHeight": 890,
+    "devicePixelRatio": 1,
+    "visibility": "visible",
+    "focused": true
+  },
+  "quality": "low",
+  "scenario": "S4",
+  "ipsMode": "enforce",
+  "traceHash": "d832a063",
+  "simTimeAdvanced": 10,
+  "wallSeconds": 10,
+  "frames": 540,
+  "fps": 54.1,
+  "worst1PercentFrameMs": 33.4,
+  "maxFrameMs": 34.3,
+  "drawCalls": 202,
+  "triangles": 80396,
+  "pixelRatio": 1,
+  "sceneFpsCounter": 55,
+  "peakPacketsOnScreen": 180,
+  "playbackAtEnd": {
+    "playing": true,
+    "time": 24.531499999999994,
+    "finished": false,
+    "speed": 1,
+    "t0": 14.533099999999992
+  }
+}

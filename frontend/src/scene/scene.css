@@ -146,3 +146,13 @@
 .dev-label[data-detail='compact'] .dev-label__addr {
   display: none;
 }
+
+/* A selected campus zone: its devices keep full strength and the labels of the others recede (they stay readable). */
+.dev-label[data-zone='out'] {
+  opacity: 0.55;
+}
+
+.dev-label[data-zone='in'],
+.dev-label[data-state='related'] {
+  border-color: var(--accent);
+}

@@ -14,6 +14,7 @@ import {
   distanceScaleForAspect,
   presetPosition,
 } from './layout.js'
+import { zoneFocus } from './campus/campusLayout.js'
 import { DEVICE_SPECS, modelKeyFor } from './devices/specs.js'
 
 const FOCUS_DISTANCE = 15
@@ -63,6 +64,25 @@ export function CameraRig() {
       return
     }
 
+    if (request.kind === 'zone') {
+      // Fly to a campus zone: keep the way round the user is looking from, look down at a pleasant angle, and frame the whole zone.
+      const view = zoneFocus(request.id)
+      if (!view) return
+      c.getTarget(scratchTarget)
+      c.getPosition(scratchPosition)
+      const azimuth = Math.atan2(scratchPosition.x - scratchTarget.x, scratchPosition.z - scratchTarget.z)
+      const elevation = (36 * Math.PI) / 180
+      const d = view.distance * fitRef.current
+      c.setLookAt(
+        view.target[0] + d * Math.sin(azimuth) * Math.cos(elevation),
+        view.target[1] + d * Math.sin(elevation),
+        view.target[2] + d * Math.cos(azimuth) * Math.cos(elevation),
+        ...view.target,
+        true,
+      )
+      return
+    }
+
     const node = topology?.nodes.find((n) => n.id === request.id)
     const layout = node && NODE_LAYOUT[request.id]
     if (!layout) return
@@ -86,7 +106,7 @@ export function CameraRig() {
     <CameraControls
       ref={controls}
       makeDefault
-      smoothTime={0.3}
+      smoothTime={0.45}
       draggingSmoothTime={0.12}
       dollyToCursor
       minDistance={CAMERA_LIMITS.minDistance}

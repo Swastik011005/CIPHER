@@ -1,0 +1,7 @@
+high run 1: 22.7 fps (worst 1% frame 83.2 ms), 202 draw calls, 80396 triangles, pixel ratio 1
+low run 1: 55 fps (worst 1% frame 33.4 ms), 202 draw calls, 80396 triangles, pixel ratio 1
+high run 2: 22.6 fps (worst 1% frame 100.2 ms), 202 draw calls, 80396 triangles, pixel ratio 1
+low run 2: 54.1 fps (worst 1% frame 33.4 ms), 202 draw calls, 80396 triangles, pixel ratio 1
+high: 212 meshes, 81860 triangles, 186 geometries, 59 textures, JS heap 27.4 MB
+low: 215 meshes, 82940 triangles, 186 geometries, 29 textures, JS heap 33 MB
+transferred 973 KB in 22 requests

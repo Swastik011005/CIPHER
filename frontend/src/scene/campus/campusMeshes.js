@@ -1,7 +1,7 @@
 import * as THREE from 'three'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 
-import { BALUSTRADE, CAMPUS_ZONES, GATE_COURT, ISLAND, PLATFORM_TOP, PLINTH_TOP, SIGNS, campusGeometry, signSubtitle } from './campusLayout.js'
+import { BALUSTRADE, CAMPUS_ZONES, GATE_COURT, ISLAND, PLATFORM_TOP, PLINTH_TOP, SIGNS, campusGeometry, devicePads, signSubtitle, zoneVolumes } from './campusLayout.js'
 import { campusMaterials } from './campusMaterials.js'
 
 /**
@@ -21,6 +21,7 @@ const plane = (w, h, x, y, z, rotY = 0) => {
 
 const SIGN_TILT = 0.55
 const SIGN_YAW = Math.PI / 4 // towards the default camera, which looks from the south-east
+const SIGN_SCALE = 1.2
 const ATLAS_W = 1024
 const ROW_H = 256
 const ATLAS_ROWS = 8 // seven signs, rounded up to a power of two
@@ -29,19 +30,19 @@ const ATLAS_ROWS = 8 // seven signs, rounded up to a power of two
 function drawSign(g, row, title, subtitle, accent) {
   const y0 = row * ROW_H
   g.clearRect(0, y0, ATLAS_W, ROW_H)
-  g.fillStyle = '#13306e'
+  g.fillStyle = '#0a1c44'
   g.fillRect(0, y0, ATLAS_W, ROW_H)
   g.fillStyle = accent
-  g.fillRect(0, y0, ATLAS_W, 14)
+  g.fillRect(0, y0, ATLAS_W, 18)
   g.textAlign = 'center'
   g.textBaseline = 'middle'
   g.fillStyle = '#ffffff'
-  g.font = '700 84px Inter, "Segoe UI", Arial, sans-serif'
-  g.fillText(title.toUpperCase(), ATLAS_W / 2, y0 + (subtitle ? 104 : 140), ATLAS_W - 60)
+  g.font = '800 96px Inter, "Segoe UI", Arial, sans-serif'
+  g.fillText(title.toUpperCase(), ATLAS_W / 2, y0 + (subtitle ? 108 : 140), ATLAS_W - 40)
   if (subtitle) {
-    g.fillStyle = '#cfe0ff'
-    g.font = '500 46px "JetBrains Mono", Consolas, monospace'
-    g.fillText(subtitle, ATLAS_W / 2, y0 + 192, ATLAS_W - 60)
+    g.fillStyle = '#eaf2ff'
+    g.font = '600 52px "JetBrains Mono", Consolas, monospace'
+    g.fillText(subtitle, ATLAS_W / 2, y0 + 196, ATLAS_W - 40)
   }
 }
 
@@ -57,7 +58,7 @@ function signAtlas(rows) {
   texture.colorSpace = THREE.SRGBColorSpace
   texture.anisotropy = 8
   if (document.fonts?.load) {
-    Promise.all([document.fonts.load('700 84px Inter'), document.fonts.load('500 46px "JetBrains Mono"')])
+    Promise.all([document.fonts.load('800 96px Inter'), document.fonts.load('600 52px "JetBrains Mono"')])
       .then(() => {
         draw()
         texture.needsUpdate = true
@@ -79,7 +80,8 @@ function paint(geometry, color) {
 /**
  * @param {{nodes: any[], links: any[], zones: any[], subnets: any[]}} topology
  * @returns {{parts: {key: string, geometry: THREE.BufferGeometry, material: THREE.Material, cast: boolean, receive: boolean, order: number}[],
- *            signs: {geometry: THREE.BufferGeometry, material: THREE.Material, texture: THREE.Texture}, dispose: () => void}}
+ *            signs: {geometry: THREE.BufferGeometry, material: THREE.Material, texture: THREE.Texture},
+ *            zoneGeometry: Record<string, {floor: THREE.BufferGeometry, outline: THREE.BufferGeometry}>, dispose: () => void}}
  */
 export function buildCampus(topology) {
   const campus = campusGeometry(topology)
@@ -153,13 +155,42 @@ export function buildCampus(topology) {
     for (let z = a; z <= b + 0.01; z += 2.8) put('gate', 'frame', box(0.07, h, 0.07, BALUSTRADE.x, h / 2, z))
   }
 
+  // Darker mounting pads under the devices, and a soft contact shadow on them: the clay devices read against a darker ground,
+  // in Low as well as High. Both are flat and merged: one draw call each.
+  for (const pad of devicePads(topology)) {
+    put('staff', 'pad', box(pad.w, 0.012, pad.d, pad.x, PLATFORM_TOP + 0.006, pad.z))
+    put('staff', 'blob', new THREE.PlaneGeometry(pad.w + 0.7, pad.d + 0.7).rotateX(-Math.PI / 2).translate(pad.x, PLATFORM_TOP + 0.013, pad.z))
+  }
+
+  // Per-zone highlight geometry for hover, selection and dimming: a floor outline of each pavilion and its volume's edges.
+  const zones = {}
+  const FLOOR_Y = PLATFORM_TOP + 0.02
+  for (const v of zoneVolumes()) {
+    const z = (zones[v.zone] ??= { floors: [], edges: [] })
+    if (v.shape === 'box') {
+      const w = v.x1 - v.x0
+      const d = v.z1 - v.z0
+      z.floors.push(new THREE.PlaneGeometry(w, d).rotateX(-Math.PI / 2).translate((v.x0 + v.x1) / 2, FLOOR_Y, (v.z0 + v.z1) / 2))
+      z.edges.push(new THREE.EdgesGeometry(new THREE.BoxGeometry(w, v.h, d)).translate((v.x0 + v.x1) / 2, v.h / 2, (v.z0 + v.z1) / 2))
+    } else {
+      z.floors.push(new THREE.CircleGeometry(v.radius, 64).rotateX(-Math.PI / 2).translate(v.cx, FLOOR_Y, v.cz))
+      z.edges.push(new THREE.EdgesGeometry(new THREE.CylinderGeometry(v.radius, v.radius, v.h, 64), 30).translate(v.cx, v.h / 2, v.cz))
+    }
+  }
+  const zoneGeometry = {}
+  for (const [id, z] of Object.entries(zones)) {
+    zoneGeometry[id] = { floor: mergeGeometries(z.floors, false), outline: mergeGeometries(z.edges, false) }
+    for (const g of [...z.floors, ...z.edges]) g.dispose()
+  }
+
   // raised signs: a tilted plaque on two small legs, facing the default camera; its text is a quad sampling one atlas row
   const rows = SIGNS.map((sign) => {
     const zone = CAMPUS_ZONES.find((z) => z.id === sign.zone)
     return { title: zone.name, subtitle: signSubtitle(topology, zone), accent: zone.accent }
   })
   const faces = []
-  SIGNS.forEach((sign, i) => {
+  SIGNS.forEach((raw, i) => {
+    const sign = { ...raw, w: raw.w * SIGN_SCALE } // a little larger than first drawn: readable from the default camera
     const hb = sign.w / 4
     const place = (g) => g.rotateY(SIGN_YAW).translate(sign.x, 0, sign.z)
     const lift = Math.cos(SIGN_TILT) * (hb / 2) + 0.2
@@ -184,14 +215,20 @@ export function buildCampus(topology) {
     const geometry = mergeGeometries(geometries, false)
     for (const g of geometries) g.dispose()
     const solid = kind === 'top' || kind === 'plinth'
-    parts.push({ key: kind, geometry, material: campusMaterials[kind], cast: solid, receive: solid, order: kind === 'glass' ? 2 : 0 })
+    const order = kind === 'glass' ? 2 : kind === 'blob' ? 1 : 0
+    parts.push({ key: kind, geometry, material: campusMaterials[kind], cast: solid, receive: solid || kind === 'pad', order })
   }
 
   return {
     parts,
     signs,
+    zoneGeometry,
     dispose() {
       for (const p of parts) p.geometry.dispose()
+      for (const g of Object.values(zoneGeometry)) {
+        g.floor.dispose()
+        g.outline.dispose()
+      }
       signs.geometry.dispose()
       signs.texture.dispose()
       signs.material.dispose()

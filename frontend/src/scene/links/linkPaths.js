@@ -33,14 +33,8 @@ export function buildLinkPaths(topology) {
  * @returns {boolean} false when the packet has no position yet.
  */
 export function packetPosition(paths, hops, t, out, tangent) {
-  if (hops.length === 0) return false
-  let hop = hops[hops.length - 1]
-  for (const h of hops) {
-    if (t < h.tArrive) {
-      hop = h
-      break
-    }
-  }
+  const hop = currentHop(hops, t)
+  if (!hop) return false
   const path = paths.get(hop.link)
   if (!path) return false
   const forward = hop.from === path.aNode
@@ -51,4 +45,17 @@ export function packetPosition(paths, hops, t, out, tangent) {
   if (!forward) tangent.negate()
   out.y += PACKET_LIFT
   return true
+}
+
+/**
+ * The hop a packet is on at time `t` (the last hop once it has arrived), or null before it has any.
+ * @param {{link: string, from: string, t: number, tArrive: number}[]} hops
+ * @param {number} t
+ */
+export function currentHop(hops, t) {
+  if (hops.length === 0) return null
+  for (const h of hops) {
+    if (t < h.tArrive) return h
+  }
+  return hops[hops.length - 1]
 }

@@ -4,7 +4,8 @@ import * as THREE from 'three'
 
 import { session } from '../../playback/session.js'
 import { useStore } from '../../state/store.js'
-import { buildLinkPaths, packetPosition } from '../links/linkPaths.js'
+import { linkSeverity, noteLinkSeverity, severityOf } from '../links/linkActivity.js'
+import { buildLinkPaths, currentHop, packetPosition } from '../links/linkPaths.js'
 import { PALETTE } from '../palette.js'
 import { PACKET_CAPACITY as CAPACITY } from './capacity.js'
 import { packetColorAt } from './packetColor.js'
@@ -13,17 +14,18 @@ export const DROP_MARKER_S = 0.18
 
 /** Verdict colours (HDR so they glow). Neutral until an enforcement point has decided. */
 const COLORS = {
-  neutral: new THREE.Color('#cfe8ff').multiplyScalar(1.5),
+  neutral: new THREE.Color('#e4f2ff').multiplyScalar(1.7),
   allowed: new THREE.Color(PALETTE.ok).multiplyScalar(1.8),
   flagged: new THREE.Color(PALETTE.warn).multiplyScalar(2.0),
   dropped: new THREE.Color(PALETTE.danger).multiplyScalar(2.4),
   mirror: new THREE.Color(PALETTE.sensor).multiplyScalar(1.8),
 }
 
+/** Packets are drawn larger than the cables they travel on (a cable is 0.04 thick), so they read as the thing that moves. */
 const SHAPES = {
-  tcp: new THREE.CapsuleGeometry(0.075, 0.2, 4, 10),
-  udp: new THREE.SphereGeometry(0.11, 14, 10),
-  icmp: new THREE.OctahedronGeometry(0.14),
+  tcp: new THREE.CapsuleGeometry(0.105, 0.28, 4, 10),
+  udp: new THREE.SphereGeometry(0.15, 14, 10),
+  icmp: new THREE.OctahedronGeometry(0.19),
 }
 const MATERIAL = new THREE.MeshBasicMaterial({ toneMapped: false })
 const UP = new THREE.Vector3(0, 1, 0)
@@ -72,6 +74,7 @@ export function PacketLayer({ topology }) {
     if (DEBUG) window.__netsecPackets = {}
     const selectedPid = useStore.getState().selection.packetId
     let selectedAt = null
+    linkSeverity.clear()
 
     if (player) {
       const t = player.time
@@ -89,6 +92,11 @@ export function PacketLayer({ topology }) {
         if (!packetPosition(paths, packet.hops, t, scratch.p, scratch.tangent)) continue
 
         const scale = packet.mirrorOf != null ? 0.7 : packet.pid === selectedPid ? 1.5 : 1
+        if (packet.mirrorOf == null) {
+          // cables carrying flagged or blocked traffic are tinted amber or red (see links/NetworkLinks.jsx)
+          const level = severityOf(packetColorAt(packet, t).key)
+          if (level > 0) noteLinkSeverity(currentHop(packet.hops, t).link, level)
+        }
         scratch.s.setScalar(scale)
         if (packet.proto === 'tcp') scratch.q.setFromUnitVectors(UP, scratch.tangent)
         else scratch.q.identity()
@@ -146,6 +154,7 @@ export function PacketLayer({ topology }) {
           }}
           args={[geometry, MATERIAL, CAPACITY]}
           frustumCulled={false}
+          userData={{ pick: 'packet' }}
           {...pickHandlers(proto)}
         />
       ))}

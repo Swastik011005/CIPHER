@@ -1,20 +1,24 @@
 import { Edges, Html } from '@react-three/drei'
 import { useFrame, useThree } from '@react-three/fiber'
+import { Select } from '@react-three/postprocessing'
 import { memo, useMemo, useRef } from 'react'
 import { Color, MathUtils, MeshBasicMaterial } from 'three'
 
 import { deviceTags, parseTagsKey, ringStateFor, tagsKey } from '../../playback/deviceStatus.js'
 import { session } from '../../playback/session.js'
+import { ZONE_OF_DEVICE } from '../campus/campusLayout.js'
 import { labelAddress, primaryAddress } from '../deviceInfo.js'
 import { box, ring } from '../geometries.js'
 import { NODE_LAYOUT, SLAB_TOP } from '../layout.js'
 import { ringMaterials } from '../materials/materials.js'
+import { isTopPick } from '../picking.js'
 import { useStore } from '../../state/store.js'
 import { activityAt } from './activity.js'
 import { MODELS } from './models/index.js'
 import { DEVICE_SPECS, hitBoxesFor, modelKeyFor } from './specs.js'
 
 const LIFT = 0.07
+const HIT_MATERIAL = new MeshBasicMaterial({ visible: false }) // pickable, never drawn: no draw call
 const LED_COLOR = new Color('#38d6e6').multiplyScalar(2.4)
 
 function labelShown(mode, selected, hovered) {
@@ -38,6 +42,14 @@ export const DeviceNode = memo(function DeviceNode({ node }) {
   const hovered = useStore((s) => s.selection.hoveredId === node.id)
   const showLabel = useStore((s) => labelShown(s.settings.labels, selected, hovered))
   const detail = useStore((s) => (selected || hovered ? 'full' : s.labelDetail))
+  const high = useStore((s) => s.settings.quality === 'high')
+  // A selected campus zone highlights its devices and dims the rest; a selected cable highlights its two ends.
+  const zoneState = useStore((s) => (s.zone.selectedId === null ? null : ZONE_OF_DEVICE[node.id] === s.zone.selectedId ? 'in' : 'out'))
+  const cableEnd = useStore((s) => {
+    const id = s.cable.selectedId
+    const link = id === null ? null : s.topology.data?.links.find((l) => l.id === id)
+    return Boolean(link && (link.a.node === node.id || link.b.node === node.id))
+  })
   const address = primaryAddress(node)?.split('/')[0] ?? null
   const tags = parseTagsKey(useStore((s) => tagsKey(deviceTags(node, address, s.playback.state))))
   const gl = useThree((s) => s.gl)
@@ -65,15 +77,18 @@ export const DeviceNode = memo(function DeviceNode({ node }) {
     }
   })
 
-  const state = ringStateFor(tags, selected, hovered)
+  let state = ringStateFor(tags, selected, hovered)
+  if (state === 'idle' && (zoneState === 'in' || cableEnd)) state = 'related'
   const [x, z] = layout.position
   const baseY = SLAB_TOP + (layout.y ?? 0)
   const labelOffset = layout.labelOffset ?? [0, 0, 0]
   const hitBoxes = hitBoxesFor(key)
 
   const onOver = (event) => {
+    if (!isTopPick(event, 'device')) return
     event.stopPropagation()
     useStore.getState().hover(node.id)
+    useStore.getState().hoverZone(null)
     gl.domElement.style.cursor = 'pointer'
   }
   const onOut = () => {
@@ -82,14 +97,25 @@ export const DeviceNode = memo(function DeviceNode({ node }) {
     gl.domElement.style.cursor = ''
   }
   const onClick = (event) => {
+    if (!isTopPick(event, 'device')) return
     event.stopPropagation()
     useStore.getState().select(node.id)
+  }
+  // Double-clicking a device opens the 3D viewer. A double-click on a pavilion's own volume focuses the zone instead,
+  // and the two never overlap: a device on the ray always wins (see picking.js).
+  const onDoubleClick = (event) => {
+    if (!isTopPick(event, 'device')) return
+    event.stopPropagation()
+    useStore.getState().openInspector(node.id)
   }
 
   return (
     <group position={[x, baseY, z]} rotation-y={layout.rotationY ?? 0}>
       <group ref={liftRef}>
-        <Model node={node} />
+        {/* While selected (High) the postprocessing outline traces the model's own silhouette; Low keeps the box frame. */}
+        <Select enabled={selected && high}>
+          <Model node={node} />
+        </Select>
       </group>
 
       {spec.ring ? (
@@ -114,10 +140,9 @@ export const DeviceNode = memo(function DeviceNode({ node }) {
       </mesh>
 
       {hitBoxes.map(({ size, center }, i) => (
-        <mesh key={i} position={center} onPointerOver={onOver} onPointerOut={onOut} onClick={onClick}>
+        <mesh key={i} position={center} material={HIT_MATERIAL} userData={{ pick: 'device', device: node.id }} onPointerMove={onOver} onPointerOut={onOut} onClick={onClick} onDoubleClick={onDoubleClick}>
           <boxGeometry args={size} />
-          <meshBasicMaterial transparent opacity={0} depthWrite={false} />
-          {(hovered || selected) && <Edges color={selected ? '#9fd0ff' : '#4da3ff'} />}
+          {(hovered || (selected && !high)) && <Edges color={selected ? '#9fd0ff' : '#4da3ff'} />}
         </mesh>
       ))}
 
@@ -129,7 +154,7 @@ export const DeviceNode = memo(function DeviceNode({ node }) {
           zIndexRange={[16, 0]}
           style={{ pointerEvents: 'none' }}
         >
-          <div className="dev-label" data-state={state} data-detail={detail}>
+          <div className="dev-label" data-state={state} data-detail={detail} data-zone={zoneState ?? undefined}>
             <div className="dev-label__name">
               <span className="dev-label__dot" />
               {node.label}

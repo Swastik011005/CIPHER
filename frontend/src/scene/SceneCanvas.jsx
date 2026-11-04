@@ -1,5 +1,6 @@
 import { PerformanceMonitor } from '@react-three/drei'
 import { Canvas, useThree } from '@react-three/fiber'
+import { Selection } from '@react-three/postprocessing'
 import { useEffect, useState } from 'react'
 import * as THREE from 'three'
 
@@ -51,17 +52,19 @@ export default function SceneCanvas() {
       frameloop="always"
       camera={{ fov: 30, near: 0.5, far: 400, position: presetPosition(OVERVIEW) }}
       gl={{ antialias: false, powerPreference: 'high-performance', toneMapping: THREE.NoToneMapping }}
-      onPointerMissed={() => useStore.getState().clearSelection()}
+      onPointerMissed={() => useStore.getState().clearEverything()}
     >
       {/* Lower the pixel ratio if the frame rate sags; raise it again when there is headroom. */}
-      <PerformanceMonitor onChange={({ factor }) => setDpr(Math.round(Math.min(1.75, Math.max(1, 0.9 + 0.85 * factor)) * 100) / 100)} />
-      <FrameloopController />
-      <Lighting shadows={high} />
-      <CameraRig />
-      <LabelDetail />
-      {topology && <NetworkWorld topology={topology} />}
-      <PostFX quality={quality} />
-      <SceneStats />
+      <Selection>
+        <PerformanceMonitor onChange={({ factor }) => setDpr(Math.round(Math.min(1.75, Math.max(1, 0.9 + 0.85 * factor)) * 100) / 100)} />
+        <FrameloopController />
+        <Lighting shadows={high} />
+        <CameraRig />
+        <LabelDetail />
+        {topology && <NetworkWorld topology={topology} />}
+        <PostFX quality={quality} />
+        <SceneStats />
+      </Selection>
     </Canvas>
   )
 }

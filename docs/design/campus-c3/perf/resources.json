@@ -1,0 +1,26 @@
+{
+ "high": {
+  "fps": 19,
+  "meshes": 212,
+  "triangles": 81860,
+  "geometries": 186,
+  "textures": 59,
+  "pixelRatio": 1.24,
+  "sampledAt": 1793782837249,
+  "usedJSHeapMB": 27.4,
+  "totalJSHeapMB": 56.2
+ },
+ "low": {
+  "fps": 47,
+  "meshes": 215,
+  "triangles": 82940,
+  "geometries": 186,
+  "textures": 29,
+  "pixelRatio": 1,
+  "sampledAt": 1793782843314,
+  "usedJSHeapMB": 33,
+  "totalJSHeapMB": 81.9
+ },
+ "transferKB": 973,
+ "resources": 22
+}

@@ -1,4 +1,4 @@
-import { Crosshair, X } from 'lucide-react'
+import { Box, Crosshair, X } from 'lucide-react'
 import { useMemo } from 'react'
 
 import { deviceInspector } from '../../playback/inspectors.js'
@@ -100,6 +100,8 @@ function LiveSection({ live, node }) {
 export function DevicePanel({ node, topology }) {
   const select = useStore((s) => s.select)
   const requestFocus = useStore((s) => s.requestFocus)
+  const openInspector = useStore((s) => s.openInspector)
+  const selectCable = useStore((s) => s.selectCable)
   const zone = topology.zones.find((z) => z.id === node.zone)
   const interfaces = describeInterfaces(node, topology)
   const neighbours = neighboursOf(node, topology)
@@ -117,6 +119,9 @@ export function DevicePanel({ node, topology }) {
         <div className="panel-actions">
           <Button size="small" icon={<Crosshair size={14} />} onClick={() => requestFocus(node.id)} title="Move the camera to this device (F)">
             Focus
+          </Button>
+          <Button size="small" icon={<Box size={14} />} onClick={() => openInspector(node.id)} title="Open the device in the 3D viewer (key I, or double-click the device)">
+            Inspect
           </Button>
           <Button size="small" variant="ghost" icon={<X size={14} />} onClick={() => select(null)} aria-label="Clear selection" title="Clear selection (Esc)" />
         </div>
@@ -178,7 +183,7 @@ export function DevicePanel({ node, topology }) {
       <h3 className="panel-heading">Connected to</h3>
       <ul className="neighbours">
         {neighbours.map((n) => (
-          <li key={n.linkId}>
+          <li key={n.linkId} className="neighbour-row">
             <button type="button" className="neighbour" onClick={() => select(n.peer.id)}>
               <span className="neighbour__name">{n.peer.label}</span>
               <span className="neighbour__meta mono">
@@ -186,6 +191,9 @@ export function DevicePanel({ node, topology }) {
               </span>
               <span className="neighbour__kind">{n.label}</span>
             </button>
+            <Button size="small" variant="ghost" onClick={() => selectCable(n.linkId)} title={`Show the cable ${n.linkId} in the scene and in the panel`}>
+              Cable {n.linkId}
+            </Button>
           </li>
         ))}
       </ul>

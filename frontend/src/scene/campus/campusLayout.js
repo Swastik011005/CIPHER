@@ -10,7 +10,7 @@
  * no roof; an L-shaped steel frame with no post at the south-east corner. Units are about one metre; x east, z south, y up.
  */
 import { DEVICE_SPECS, modelKeyFor } from '../devices/specs.js'
-import { LINK_LAYOUT, NODE_LAYOUT, PERIMETER_WALL, SLAB_TOP, ZONE_LAYOUT } from '../layout.js'
+import { LINK_LAYOUT, NODE_LAYOUT, PERIMETER_WALL, RACK, SLAB_TOP, ZONE_LAYOUT } from '../layout.js'
 import { buildCablePoints } from '../links/cablePoints.js'
 
 /** Top of every platform: the height the zone slabs always had, so devices and cables stay exactly where they were. */
@@ -192,4 +192,69 @@ export function signSubtitle(topology, campusZone) {
   const zone = topology.zones.find((z) => z.id === campusZone.topologyZone)
   const subnet = zone?.vlan ? topology.subnets.find((s) => s.vlan === zone.vlan) : null
   return subnet ? `VLAN ${zone.vlan} · ${subnet.cidr}` : null
+}
+
+// -- C3 / C2.1: interaction data and device pads ----------------------------------------------------------------------------
+
+/** What each campus zone is for, in the words of the security design. Shown in the zone panel. */
+export const ZONE_PURPOSE = Object.freeze({
+  staff: 'Staff and academic computers on VLAN 10. They reach the campus servers through the core switch, where the STAFF-IN ACL denies direct access to the database port and to the Security VLAN.',
+  admin: 'The administration workstation on VLAN 20. Its traffic to the database port passes the core ACL, but IPS-1 still inspects it and rejects the restricted port (scenario S3, case d).',
+  datacentre: 'The application and database servers behind a top-of-rack switch on VLAN 30. Everything entering the server VLAN passes the inline IPS-1.',
+  soc: 'The security team: IDS-1 passively watches a SPAN copy of the traffic entering the core, IPS-1 is the inline enforcement point in front of the servers, and SEC-LOG collects the syslog. IPS-1 keeps its place beside the Data Centre; its cable and position are unchanged.',
+  core: 'The core Layer 3 switch: inter-VLAN routing, the STAFF-IN ACL and the SPAN source that feeds IDS-1.',
+  gate: 'The campus edge: the router to the Internet and the stateful firewall FW1, which enforces its policy whatever the IPS mode.',
+  offcampus: 'Outside the campus: the abstract Internet segment, a normal external user and the simulated attacker. All traffic is synthetic.',
+})
+
+/** The campus zone of each device. Every one of the 17 nodes is in exactly one zone. */
+export const ZONE_OF_DEVICE = Object.freeze(Object.fromEntries(CAMPUS_ZONES.flatMap((z) => z.devices.map((d) => [d, z.id]))))
+
+export const campusZone = (id) => CAMPUS_ZONES.find((z) => z.id === id) ?? null
+
+/**
+ * The invisible volumes that make a pavilion pickable: one per platform, as a box (or a cylinder for the round core) from the
+ * ground up to the top of the frame. `zone` is the campus zone it belongs to. Several volumes may belong to one zone (Security
+ * Operations has the operations pavilion and the IPS-1 gate pavilion).
+ * @returns {({zone: string, shape: 'box', x0: number, z0: number, x1: number, z1: number, h: number} | {zone: string, shape: 'cylinder', cx: number, cz: number, radius: number, h: number})[]}
+ */
+export function zoneVolumes() {
+  const boxes = STRUCTURES.filter((s) => !s.onCourt).map((s) => ({ zone: s.zone, shape: 'box', ...platformOf(s), h: PLATFORM_TOP + s.h }))
+  const c = CORE_PAVILION
+  return [
+    ...boxes,
+    { zone: c.zone, shape: 'cylinder', cx: c.center[0], cz: c.center[1], radius: c.platformRadius, h: PLATFORM_TOP + c.h },
+    { zone: GATE_COURT.zone, shape: 'box', ...GATE_COURT.platform, h: 3.0 },
+    { zone: ISLAND.zone, shape: 'box', ...ISLAND.platform, h: 1.2 },
+  ]
+}
+
+/** Camera target and distance that frame a zone: the middle of its volumes, far enough back to see them all. */
+export function zoneFocus(zoneId) {
+  const vs = zoneVolumes().filter((v) => v.zone === zoneId)
+  if (vs.length === 0) return null
+  const bounds = vs.map((v) => (v.shape === 'box' ? v : { x0: v.cx - v.radius, x1: v.cx + v.radius, z0: v.cz - v.radius, z1: v.cz + v.radius }))
+  const x0 = Math.min(...bounds.map((b) => b.x0))
+  const x1 = Math.max(...bounds.map((b) => b.x1))
+  const z0 = Math.min(...bounds.map((b) => b.z0))
+  const z1 = Math.max(...bounds.map((b) => b.z1))
+  const extent = Math.hypot(x1 - x0, z1 - z0)
+  return { target: [(x0 + x1) / 2, 0.9, (z0 + z1) / 2], distance: Math.min(Math.max(extent * 1.35 + 6, 17), 36) }
+}
+
+/**
+ * Darker mounting pads: one under every device that stands on a platform (the three rack units share the rack's pad), a little
+ * larger than the footprint. They give the pale clay devices a darker ground to read against and carry a soft contact shadow.
+ * @returns {{x: number, z: number, w: number, d: number}[]}
+ */
+export function devicePads(topology) {
+  const pads = []
+  for (const node of topology.nodes) {
+    const lay = NODE_LAYOUT[node.id]
+    if (!lay || (lay.y ?? 0) > 0) continue // the rack units are covered by the rack's pad
+    const spec = DEVICE_SPECS[modelKeyFor(node, lay)]
+    pads.push({ id: node.id, x: lay.position[0], z: lay.position[1], w: spec.half[0] * 2 + 0.7, d: spec.half[1] * 2 + 0.7 })
+  }
+  pads.push({ id: 'RACK', x: RACK.position[0], z: RACK.position[1], w: RACK.size[0] + 0.7, d: RACK.size[2] + 0.7 })
+  return pads
 }

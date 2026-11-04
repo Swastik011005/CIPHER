@@ -94,6 +94,11 @@ export async function openBrowser({ browser = 'chrome', width = 1920, height = 1
       events
         .filter((e) => (e.method === 'Runtime.exceptionThrown') || (e.method === 'Runtime.consoleAPICalled' && e.params.type === 'error') || (e.method === 'Log.entryAdded' && e.params.entry.level === 'error'))
         .map((e) => e.params.exceptionDetails?.exception?.description ?? e.params.args?.map((a) => a.value ?? a.description).join(' ') ?? e.params.entry?.text),
+    /** Console warnings and errors with their text, seen so far (a warning such as "Too many active WebGL contexts" is only a warning). */
+    warnings: () =>
+      events
+        .filter((e) => (e.method === 'Runtime.consoleAPICalled' && ['warning', 'error'].includes(e.params.type)) || (e.method === 'Log.entryAdded' && ['warning', 'error'].includes(e.params.entry.level)))
+        .map((e) => e.params.args?.map((a) => a.value ?? a.description).join(' ') ?? e.params.entry?.text ?? ''),
     async evaluate(expression) {
       const r = await send('Runtime.evaluate', { expression, awaitPromise: true, returnByValue: true })
       if (r.exceptionDetails) throw new Error(r.exceptionDetails.exception?.description ?? r.exceptionDetails.text)

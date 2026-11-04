@@ -13,6 +13,8 @@ export const campusMaterials = {
   top: standard('#dde6f3', 0.85),
   /** The lower step under each platform. */
   plinth: standard('#aebdd6', 0.85),
+  /** The darker mounting pad under each device: a blue-grey the pale clay stands out from. */
+  pad: standard('#9fb0cc', 0.9),
   /** Slim steel posts and beams. */
   frame: standard('#dde6f2', 0.35, 0.5),
   /**
@@ -27,3 +29,20 @@ export const campusMaterials = {
  * bloom threshold) as a vertex colour. Unlit.
  */
 campusMaterials.lights = new THREE.MeshBasicMaterial({ vertexColors: true, toneMapped: false })
+
+/** Soft round contact shadow under a device: black, fading to nothing at the edge. One shared texture. */
+function blobTexture() {
+  const size = 64
+  const canvas = document.createElement('canvas')
+  canvas.width = size
+  canvas.height = size
+  const g = canvas.getContext('2d')
+  const gradient = g.createRadialGradient(size / 2, size / 2, 2, size / 2, size / 2, size / 2)
+  gradient.addColorStop(0, 'rgba(10,22,52,0.55)')
+  gradient.addColorStop(0.55, 'rgba(10,22,52,0.28)')
+  gradient.addColorStop(1, 'rgba(10,22,52,0)')
+  g.fillStyle = gradient
+  g.fillRect(0, 0, size, size)
+  return new THREE.CanvasTexture(canvas)
+}
+campusMaterials.blob = new THREE.MeshBasicMaterial({ map: blobTexture(), transparent: true, depthWrite: false, toneMapped: false })

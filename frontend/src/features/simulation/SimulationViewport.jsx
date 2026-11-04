@@ -1,7 +1,7 @@
-import { RotateCcw, ServerCrash, SlidersHorizontal } from 'lucide-react'
+import { Home, RotateCcw, ServerCrash, SlidersHorizontal } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
-import { CAMERA_PRESETS } from '../../scene/layout.js'
+import { CAMERA_PRESETS, DEFAULT_PRESET_ID } from '../../scene/layout.js'
 import { useStore } from '../../state/store.js'
 import { Banner, Button, EngineHint, Segmented, Spinner } from '../../ui/index.js'
 import { PlaybackBar } from './PlaybackBar.jsx'
@@ -25,12 +25,15 @@ function CameraPresetBar() {
   const active = useStore((s) => s.activePreset)
   const requestPreset = useStore((s) => s.requestPreset)
   return (
-    <Segmented
-      label="Camera presets"
-      value={active}
-      onChange={requestPreset}
-      options={CAMERA_PRESETS.map((p, i) => ({ value: p.id, label: p.label, title: `${p.label} (key ${i + 1})` }))}
-    />
+    <div className="viewport__presets">
+      <Segmented
+        label="Camera presets"
+        value={active}
+        onChange={requestPreset}
+        options={CAMERA_PRESETS.map((p, i) => ({ value: p.id, label: p.label, title: `${p.label} (key ${i + 1})` }))}
+      />
+      <Button size="small" variant="ghost" icon={<Home size={14} aria-hidden="true" />} onClick={() => requestPreset('overview')} aria-label="Reset the view to the overview" title="Reset the view to the overview (key R)" />
+    </div>
   )
 }
 
@@ -85,15 +88,18 @@ function DebugStats() {
   )
 }
 
-/** Keyboard shortcuts for the scene: 1-6 presets, F focus selection, Esc deselect. */
+/** Keyboard shortcuts for the scene: 1-6 presets, R reset, F focus selection, I inspect the selected device, Esc deselect. */
 function useSceneShortcuts() {
   useEffect(() => {
     const onKey = (event) => {
       if (event.target instanceof HTMLElement && /^(INPUT|TEXTAREA|SELECT)$/.test(event.target.tagName)) return
       if (event.metaKey || event.ctrlKey || event.altKey) return
       const store = useStore.getState()
-      if (event.key === 'Escape') store.clearSelection()
+      if (store.inspectorId !== null) return // the device viewer is open: it handles its own keys and the campus camera stays put
+      if (event.key === 'Escape') store.clearEverything()
       else if (event.key.toLowerCase() === 'f' && store.selection.selectedId) store.requestFocus(store.selection.selectedId)
+      else if (event.key.toLowerCase() === 'i' && store.selection.selectedId) store.openInspector(store.selection.selectedId)
+      else if (event.key.toLowerCase() === 'r' || event.key === 'Home' || event.key === '0') store.requestPreset(DEFAULT_PRESET_ID)
       else if (/^[1-6]$/.test(event.key)) store.requestPreset(CAMERA_PRESETS[Number(event.key) - 1].id)
     }
     window.addEventListener('keydown', onKey)
@@ -134,7 +140,7 @@ export function SimulationViewport({ layoutIssues }) {
         <PlaybackBar />
       </div>
       <div className="viewport__hint">
-        DRAG TO ROTATE · RIGHT-DRAG TO PAN · SCROLL TO ZOOM · CLICK A DEVICE · KEYS 1-6 PRESETS · ESC DESELECT
+        DRAG TO ROTATE · RIGHT-DRAG TO PAN · SCROLL TO ZOOM · CLICK A BUILDING, DEVICE OR CABLE · DOUBLE-CLICK A BUILDING TO FOCUS, A DEVICE TO INSPECT · R RESET · ESC DESELECT
       </div>
       {debug && <DebugStats />}
 

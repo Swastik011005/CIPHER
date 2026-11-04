@@ -15,7 +15,7 @@ export function countScene(scene) {
   let meshes = 0
   let triangles = 0
   scene.traverse((object) => {
-    if (!object.isMesh || !object.visible) return
+    if (!object.isMesh || !object.visible || object.material?.visible === false) return // pick volumes are never drawn
     const geometry = object.geometry
     const vertices = geometry.index ? geometry.index.count : geometry.attributes.position.count
     meshes += 1
@@ -48,6 +48,8 @@ export function SceneStats() {
         const r = canvas.getBoundingClientRect()
         return { x: r.left + ((v.x + 1) / 2) * r.width, y: r.top + ((1 - v.y) / 2) * r.height }
       },
+      /** Where the campus camera is, so a check can see that it moved, or did not. */
+      cameraPosition: () => camera.position.toArray(),
     }
     return () => {
       delete window.__netsecProbe

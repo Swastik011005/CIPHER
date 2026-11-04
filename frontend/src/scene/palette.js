@@ -36,11 +36,12 @@ export const PALETTE = Object.freeze({
   sensor: '#a78bfa',
 
   cable: Object.freeze({
-    // Lighter than on the old navy slabs: the cables must stand out from the steel-blue ground.
-    ethernet: '#d9e8ff',
-    access: '#d9e8ff',
-    trunk: '#f2f7ff',
-    mgmt: '#93a9d8',
+    // C2.1: cyan and teal. They stand out from the steel-blue ground by hue as well as brightness, and stay apart from the packet
+    // colours (neutral white-blue, green, amber, red, violet). Amber and red appear on a cable only while it carries such traffic.
+    ethernet: '#22b9d4',
+    access: '#22b9d4',
+    trunk: '#4fd8ee',
+    mgmt: '#6fa3b3',
     span: '#c4b5fd',
   }),
 })

@@ -8,8 +8,13 @@ import { initialConnection, onHealthFailure, onHealthSuccess } from './connectio
  * Global application state (Zustand).
  *
  * Slices: connection (backend health), topology (authoritative network from the API),
- * selection (hover/selection in the 3D scene), camera (preset/focus requests),
+ * selection (device and packet hover/selection in the 3D scene), zone (campus zone hover/selection),
+ * cable (cable hover/selection), inspector (the device viewer), camera (preset/focus requests),
  * settings (view options). Scene components read slices through narrow selectors.
+ *
+ * Zone, device and cable selection are separate on purpose. A zone is presentation (a campus building) and is
+ * independent of the device selection: choosing a zone never clears a selected device and vice versa. A selected
+ * cable, a selected device and a selected packet exclude each other, as a device and a packet always did.
  */
 
 /** @typedef {'idle' | 'loading' | 'ready' | 'error'} LoadStatus */
@@ -146,23 +151,70 @@ export const useStore = create((set, get) => ({
 
   // -- selection ----------------------------------------------------------------------
   selection: { selectedId: null, hoveredId: null, packetId: null },
-  /** Select a device (or clear with null). Selecting a device clears any selected packet. */
-  select: (id) => set((s) => ({ selection: { ...s.selection, selectedId: id, packetId: id === null ? s.selection.packetId : null } })),
-  /** Select a packet by id (or clear with null). Selecting a packet clears any selected device. */
-  selectPacket: (pid) => set((s) => ({ selection: { ...s.selection, packetId: pid, selectedId: pid === null ? s.selection.selectedId : null } })),
-  /** Clear both selections. */
-  clearSelection: () => set((s) => ({ selection: { ...s.selection, selectedId: null, packetId: null } })),
+  /** Select a device (or clear with null). Selecting a device clears any selected packet and cable. */
+  select: (id) =>
+    set((s) => ({
+      selection: { ...s.selection, selectedId: id, packetId: id === null ? s.selection.packetId : null },
+      cable: id === null || s.cable.selectedId === null ? s.cable : { ...s.cable, selectedId: null },
+    })),
+  /** Select a packet by id (or clear with null). Selecting a packet clears any selected device and cable. */
+  selectPacket: (pid) =>
+    set((s) => ({
+      selection: { ...s.selection, packetId: pid, selectedId: pid === null ? s.selection.selectedId : null },
+      cable: pid === null || s.cable.selectedId === null ? s.cable : { ...s.cable, selectedId: null },
+    })),
+  /** Clear the device, packet and cable selections (not the campus zone). */
+  clearSelection: () =>
+    set((s) => ({
+      selection: { ...s.selection, selectedId: null, packetId: null },
+      cable: s.cable.selectedId === null ? s.cable : { ...s.cable, selectedId: null },
+    })),
+  /** Clear everything that is selected: device, packet, cable and zone. */
+  clearEverything: () =>
+    set((s) => ({
+      selection: { ...s.selection, selectedId: null, packetId: null },
+      cable: { selectedId: null, hoveredId: null },
+      zone: { ...s.zone, selectedId: null },
+    })),
   hover: (id) =>
     set((s) => (s.selection.hoveredId === id ? s : { selection: { ...s.selection, hoveredId: id } })),
 
+  // -- campus zone --------------------------------------------------------------------
+  zone: { selectedId: null, hoveredId: null },
+  /** Select a campus zone (or clear with null). Independent of the device selection. */
+  selectZone: (id) => set((s) => (s.zone.selectedId === id ? s : { zone: { ...s.zone, selectedId: id } })),
+  hoverZone: (id) => set((s) => (s.zone.hoveredId === id ? s : { zone: { ...s.zone, hoveredId: id } })),
+
+  // -- cable ----------------------------------------------------------------------------
+  cable: { selectedId: null, hoveredId: null },
+  /** Select a cable by link id (or clear with null). Selecting a cable clears the device and packet selection. */
+  selectCable: (id) =>
+    set((s) => ({
+      cable: { ...s.cable, selectedId: id },
+      selection: id === null ? s.selection : { ...s.selection, selectedId: null, packetId: null },
+    })),
+  hoverCable: (id) => set((s) => (s.cable.hoveredId === id ? s : { cable: { ...s.cable, hoveredId: id } })),
+
+  // -- device viewer (Stage D) ---------------------------------------------------------
+  /** The device shown in the separate 3D viewer, or null while it is closed. Mounted only while open. */
+  inspectorId: null,
+  openInspector: (id) => {
+    get().select(id)
+    set({ inspectorId: id })
+  },
+  closeInspector: () => set((s) => (s.inspectorId === null ? s : { inspectorId: null })),
+
   // -- camera -------------------------------------------------------------------------
-  /** A pending request for the camera rig: `{kind: 'preset' | 'focus', id, nonce}`. */
+  /** A pending request for the camera rig: `{kind: 'preset' | 'focus' | 'zone', id, nonce}`. */
   cameraRequest: null,
   activePreset: 'overview',
   requestPreset: (id) =>
     set({ cameraRequest: { kind: 'preset', id, nonce: ++cameraNonce }, activePreset: id }),
   requestFocus: (id) =>
     set({ cameraRequest: { kind: 'focus', id, nonce: ++cameraNonce }, activePreset: null }),
+  /** Fly the camera to a campus zone (id from CAMPUS_ZONES). */
+  requestZoneFocus: (id) =>
+    set({ cameraRequest: { kind: 'zone', id, nonce: ++cameraNonce }, activePreset: null }),
   /** Called by the rig when the user moves the camera by hand. */
   clearActivePreset: () => set((s) => (s.activePreset === null ? s : { activePreset: null })),
 
