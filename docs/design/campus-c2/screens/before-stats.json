@@ -1,0 +1,92 @@
+{
+ "overview": {
+  "fps": 17,
+  "meshes": 232,
+  "triangles": 80512,
+  "geometries": 163,
+  "textures": 54,
+  "pixelRatio": 1.24,
+  "sampledAt": 1793757293630
+ },
+ "perimeter": {
+  "fps": 26,
+  "meshes": 232,
+  "triangles": 80512,
+  "geometries": 163,
+  "textures": 54,
+  "pixelRatio": 1.16,
+  "sampledAt": 1793757297704
+ },
+ "staff": {
+  "fps": 30,
+  "meshes": 232,
+  "triangles": 80512,
+  "geometries": 163,
+  "textures": 54,
+  "pixelRatio": 1.07,
+  "sampledAt": 1793757301780
+ },
+ "core": {
+  "fps": 30,
+  "meshes": 232,
+  "triangles": 80512,
+  "geometries": 163,
+  "textures": 54,
+  "pixelRatio": 1,
+  "sampledAt": 1793757304812
+ },
+ "servers": {
+  "fps": 31,
+  "meshes": 233,
+  "triangles": 80518,
+  "geometries": 164,
+  "textures": 54,
+  "pixelRatio": 1,
+  "sampledAt": 1793757308889
+ },
+ "secops": {
+  "fps": 31,
+  "meshes": 232,
+  "triangles": 80512,
+  "geometries": 163,
+  "textures": 54,
+  "pixelRatio": 1,
+  "sampledAt": 1793757312939
+ },
+ "orbit": {
+  "fps": 43,
+  "meshes": 232,
+  "triangles": 80512,
+  "geometries": 163,
+  "textures": 54,
+  "pixelRatio": 1,
+  "sampledAt": 1793757318996
+ },
+ "packets-servers": {
+  "fps": 25,
+  "meshes": 284,
+  "triangles": 125964,
+  "geometries": 174,
+  "textures": 54,
+  "pixelRatio": 1,
+  "sampledAt": 1793757323101
+ },
+ "packets-overview": {
+  "fps": 33,
+  "meshes": 284,
+  "triangles": 125964,
+  "geometries": 174,
+  "textures": 54,
+  "pixelRatio": 1,
+  "sampledAt": 1793757327196
+ },
+ "low-overview": {
+  "fps": 60,
+  "meshes": 284,
+  "triangles": 125964,
+  "geometries": 174,
+  "textures": 28,
+  "pixelRatio": 1,
+  "sampledAt": 1793757329217
+ }
+}

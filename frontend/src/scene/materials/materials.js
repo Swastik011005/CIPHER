@@ -32,7 +32,6 @@ export const materials = {
   ledOff: glow('#2a3b66', 1.0),
 
   // Translucent surfaces
-  glass: standard('#9cc8ff', 0.1, 0, { transparent: true, opacity: 0.13, depthWrite: false }),
   radome: standard('#bda9ff', 0.25, 0, {
     transparent: true,
     opacity: 0.5,
@@ -51,17 +50,8 @@ export const materials = {
 
   cloud: standard('#f1f6ff', 0.9, 0, { flatShading: true }),
   plate: standard(PALETTE.plate, 0.85),
-  plateUnder: standard('#0b1f4a', 0.9),
-  wall: standard(PALETTE.clayMid, 0.8),
-}
-
-const slabCache = new Map()
-
-/** Slab material for a zone. Cached per colour. */
-export function slabMaterial(zoneId) {
-  const color = PALETTE.zones[zoneId] ?? PALETTE.zoneFallback
-  if (!slabCache.has(color)) slabCache.set(color, standard(color, 0.9))
-  return slabCache.get(color)
+  island: standard(PALETTE.island, 0.85),
+  plateUnder: standard('#27406f', 0.9),
 }
 
 /** Floor status ring under each device. Idle until a simulation gives it something to show. */

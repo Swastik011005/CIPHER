@@ -3,8 +3,10 @@
  * clay-white equipment on deep-navy zone slabs, with semantic colours kept for meaning.
  */
 export const PALETTE = Object.freeze({
-  void: '#0a1730',
-  plate: '#13306e',
+  void: '#1d3a6e',
+  /** The continuous steel-blue campus ground, and the slightly darker off-campus island. */
+  plate: '#566e9a',
+  island: '#4c6389',
   plateEdge: '#2a5bc0',
 
   /** Zone slab colours, keyed by zone id from the topology. Outside is desaturated (untrusted). */
@@ -34,10 +36,11 @@ export const PALETTE = Object.freeze({
   sensor: '#a78bfa',
 
   cable: Object.freeze({
-    ethernet: '#6f95e0',
-    access: '#6f95e0',
-    trunk: '#8fb2ff',
-    mgmt: '#4a5f8f',
-    span: '#a78bfa',
+    // Lighter than on the old navy slabs: the cables must stand out from the steel-blue ground.
+    ethernet: '#d9e8ff',
+    access: '#d9e8ff',
+    trunk: '#f2f7ff',
+    mgmt: '#93a9d8',
+    span: '#c4b5fd',
   }),
 })

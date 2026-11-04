@@ -41,6 +41,9 @@ export const DeviceNode = memo(function DeviceNode({ node }) {
   const address = primaryAddress(node)?.split('/')[0] ?? null
   const tags = parseTagsKey(useStore((s) => tagsKey(deviceTags(node, address, s.playback.state))))
   const gl = useThree((s) => s.gl)
+  // drei's Html re-creates its DOM root when R3F connects its event target, but does not render into the new root. The
+  // first label to mount, before that happens, would stay empty. Keying on the connection remounts it afterwards.
+  const eventsConnected = useThree((s) => !!s.events.connected)
 
   const liftRef = useRef(null)
   const ringRef = useRef(null)
@@ -120,6 +123,7 @@ export const DeviceNode = memo(function DeviceNode({ node }) {
 
       {showLabel && (
         <Html
+          key={eventsConnected ? 'connected' : 'pending'}
           position={[labelOffset[0], spec.labelY + labelOffset[1], labelOffset[2]]}
           center
           zIndexRange={[16, 0]}
