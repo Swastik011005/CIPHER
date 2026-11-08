@@ -15,6 +15,10 @@ export const campusMaterials = {
   plinth: standard('#aebdd6', 0.85),
   /** The darker mounting pad under each device: a blue-grey the pale clay stands out from. */
   pad: standard('#9fb0cc', 0.9),
+  /** Car parks. */
+  asphalt: standard('#6a7790', 0.95),
+  /** Cabinets and monitor frames. */
+  cabinet: standard('#3d4c68', 0.55, 0.35),
   /** Grey roads between the zones. */
   road: standard('#7d8aa0', 0.95),
   /** Slim steel posts and beams. */
@@ -48,3 +52,10 @@ function blobTexture() {
   return new THREE.CanvasTexture(canvas)
 }
 campusMaterials.blob = new THREE.MeshBasicMaterial({ map: blobTexture(), transparent: true, depthWrite: false, toneMapped: false })
+
+/** Stall lines, unlit white. */
+campusMaterials.marking = new THREE.MeshBasicMaterial({ color: new THREE.Color('#eef3fb').multiplyScalar(0.85), toneMapped: false })
+/** Monitor wall and station screens: a cool blue glow below the bloom threshold. */
+campusMaterials.screen = new THREE.MeshBasicMaterial({ color: new THREE.Color('#5aa9ff').multiplyScalar(0.9), toneMapped: false })
+/** The parked cars (colour per instance). */
+export const carMaterial = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.5, metalness: 0.25 })

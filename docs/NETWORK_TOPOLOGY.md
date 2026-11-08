@@ -2,7 +2,7 @@
 
 Source of truth: `backend/config/topology.json`, served by `GET /api/topology`.
 
-17 nodes = 16 devices + the abstract Internet segment `INET`; 18 links; 4 VLANs; 7 IP subnets; 7 zones.
+The frozen Rev 3 contract is 17 nodes = 16 devices + the abstract Internet segment `INET`; 18 links; 4 VLANs; 7 IP subnets; 7 zones. The campus extension appends 14 devices and 14 links inside the existing zones and subnets (31 nodes = 30 devices + `INET`; 32 links); the original 17 nodes and 18 links are unchanged (validator check T17, `contracts/topology_original.json`). The extension devices are listed at the end of this file.
 
 | VLAN | Name | Subnet |
 |---|---|---|
@@ -35,3 +35,17 @@ Blind spots that follow from the design: traffic that stays inside one VLAN on o
 DB-SRV) never enters CORE-SW1, so IDS-1 cannot see it, and only traffic through IPS-1 can be prevented.
 
 `python -m netsec.network.validator` prints the 16 validation checks.
+
+## Campus extension (appended to the frozen contract)
+
+| Zone | New device | Address | Role |
+|---|---|---|---|
+| Staff LAN (VLAN 10) | PC-3, PC-4, PC-5, PC-6, PC-7 | 10.0.10.14 to 10.0.10.18 | Computer-lab workstations on ACC-SW2 |
+| Admin (VLAN 20) | ADMIN-PC-2, ADMIN-PC-3, ADMIN-PC-4 | 10.0.20.11 to 10.0.20.13 | Administration workstations on ACC-SW2 |
+| Server room (VLAN 30) | WEB-SRV, DNS-SRV, FILE-SRV | 10.0.30.11, 10.0.30.30, 10.0.30.40 | Web, DNS and file servers on SRV-SW3 |
+| Security Ops (VLAN 99) | SIEM-1 | 10.0.99.21 | SIEM event console (tcp/443, udp/514) |
+| Security Ops (VLAN 99) | EDR-MGMT-1 | 10.0.99.30 | EDR management server (tcp/8443) |
+| Security Ops (VLAN 99) | ZT-POLICY-1 | 10.0.99.31 | Zero Trust policy decision point (tcp/8444) |
+
+New links L19 to L32: ACC-SW2 Fa0/5 to Fa0/9 (PC-3 to PC-7, VLAN 10), Fa0/10 to Fa0/12 (ADMIN-PC-2 to -4, VLAN 20),
+SRV-SW3 Fa0/3 to Fa0/5 (WEB-SRV, DNS-SRV, FILE-SRV, VLAN 30), CORE-SW1 Gi0/8 to Gi0/10 (SIEM-1, EDR-MGMT-1, ZT-POLICY-1, VLAN 99).

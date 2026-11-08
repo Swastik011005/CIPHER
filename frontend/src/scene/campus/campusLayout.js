@@ -18,7 +18,7 @@ export const PLATFORM_TOP = SLAB_TOP
 /** Top of the lower plinth step under each platform. */
 export const PLINTH_TOP = 0.12
 /** Height of a pavilion's frame above its platform. Every structure is single-level. */
-export const STRUCTURE_HEIGHT = 3.0
+export const STRUCTURE_HEIGHT = 4.4
 /** Half the width of a frame post or beam. */
 export const FRAME_HALF = 0.05
 
@@ -49,7 +49,8 @@ export const STRUCTURES = Object.freeze([
   { id: 'datacentre', zone: 'datacentre', r: rect([24, 15, 50, 33]), h: STRUCTURE_HEIGHT, glass: ['N', 'W'], margin: 0.25, holds: ['APP-SRV', 'DB-SRV', 'SRV-SW3', 'WEB-SRV', 'DNS-SRV', 'FILE-SRV'] },
   { id: 'soc', zone: 'soc', r: rect([-18, 16, 13, 32]), h: STRUCTURE_HEIGHT, glass: ['N', 'W'], margin: 0.12, holds: ['IDS-1', 'SEC-LOG', 'SIEM-1', 'EDR-MGMT-1', 'ZT-POLICY-1'] },
   { id: 'ips-gate', zone: 'soc', r: rect([18.4, 16.8, 21.6, 23.2]), h: STRUCTURE_HEIGHT, glass: ['N', 'W'], margin: 0.25, holds: ['IPS-1'] },
-  { id: 'edge', zone: 'gate', r: rect([-34, -3, -28, 3]), h: 2.2, glass: ['N', 'W'], margin: 0.2, holds: ['R1-EDGE'], onCourt: true },
+  { id: 'reception', zone: 'gate', r: rect([-34, 10.5, -25, 17]), h: 3.4, glass: ['N', 'W'], margin: 0.25, holds: [] }, // the visitor reception at the gate: a pavilion with no device
+  { id: 'edge', zone: 'gate', r: rect([-34, -3, -28, 3]), h: 3.2, glass: ['N', 'W'], margin: 0.2, holds: ['R1-EDGE'], onCourt: true },
 ])
 
 /** The round open pavilion over the core switch: a platform, eight columns and a thin ring beam. No roof. */

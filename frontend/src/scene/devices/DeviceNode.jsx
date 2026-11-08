@@ -16,7 +16,7 @@ import { useStore } from '../../state/store.js'
 import { activityAt } from './activity.js'
 import { BAKED_MODELS, bakeStatic } from './bakeStatic.js'
 import { MODELS } from './models/index.js'
-import { DEVICE_SPECS, hitBoxesFor, modelKeyFor } from './specs.js'
+import { DEVICE_SCALE, DEVICE_SPECS, hitBoxesFor, modelKeyFor } from './specs.js'
 
 const LIFT = 0.07
 const HIT_MATERIAL = new MeshBasicMaterial({ visible: false }) // pickable, never drawn: no draw call
@@ -120,7 +120,7 @@ export const DeviceNode = memo(function DeviceNode({ node }) {
       <group ref={liftRef}>
         {/* While selected (High) the postprocessing outline traces the model's own silhouette; Low keeps the box frame. */}
         <Select enabled={selected && high}>
-          <group ref={modelRef}>
+          <group ref={modelRef} scale={DEVICE_SCALE}>
             <Model node={node} />
           </group>
         </Select>

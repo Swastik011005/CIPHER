@@ -35,6 +35,7 @@ export function SceneStats() {
   const camera = useThree((s) => s.camera)
   const canvas = useThree((s) => s.gl.domElement)
   const scene = useThree((s) => s.scene)
+  const controls = useThree((s) => s.controls)
 
   // Debug aid, only with ?debug=1: where a world position is on the page, so an automated check can
   // aim a real mouse click at a packet. Positions of packets come from PacketLayer.
@@ -66,13 +67,21 @@ export function SceneStats() {
         walk(scene, 'other')
         return parts
       },
+      /** Point the campus camera at a spot from the default viewing direction, without animation (for automated checks). */
+      lookAt: (x, y, z, distance = 30) => {
+        if (!controls) return false
+        const az = Math.PI / 4
+        const el = (40 * Math.PI) / 180
+        controls.setLookAt(x + distance * Math.sin(az) * Math.cos(el), y + distance * Math.sin(el), z + distance * Math.cos(az) * Math.cos(el), x, y, z, false)
+        return true
+      },
       /** Where the campus camera is, so a check can see that it moved, or did not. */
       cameraPosition: () => camera.position.toArray(),
     }
     return () => {
       delete window.__netsecProbe
     }
-  }, [camera, canvas, scene])
+  }, [camera, canvas, scene, controls])
 
   useFrame(({ gl, scene }) => {
     const s = state.current

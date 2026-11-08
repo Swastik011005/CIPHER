@@ -20,7 +20,7 @@
  */
 
 /** @type {Record<string, DeviceSpec>} */
-export const DEVICE_SPECS = Object.freeze({
+const BASE_SPECS = Object.freeze({
   desktop: { half: [0.9, 0.55], height: 1.45, portY: 0.35, labelY: 2.0, ring: 1.15, glyph: 'monitor' },
   laptop: { half: [0.75, 0.5], height: 1.15, portY: 0.35, labelY: 1.7, ring: 1.0, glyph: 'laptop' },
   router: { half: [0.65, 0.4], height: 0.95, portY: 0.2, labelY: 1.5, ring: 1.0, glyph: 'router' },
@@ -34,6 +34,31 @@ export const DEVICE_SPECS = Object.freeze({
   'soc-console': { half: [0.95, 0.5], height: 1.35, portY: 0.5, labelY: 1.9, ring: 1.2, glyph: 'log' },
   'internet-cloud': { half: [0.45, 0.45], height: 0.5, portY: 0.3, labelY: 6.3, ring: 0.8, glyph: 'cloud' },
 })
+
+/**
+ * Every device is drawn this much larger than its model was built, so that PCs, switches and servers stay clearly visible at the
+ * default camera distance of the expanded campus (they were small against the platforms). The model component is scaled by this
+ * factor in DeviceNode, and every length below (footprint, height, port height, label height, ring) is scaled with it, so cables,
+ * selection boxes, labels, rings and racks all agree with the bigger model.
+ */
+export const DEVICE_SCALE = 1.5
+
+/** @type {Record<string, DeviceSpec>} */
+export const DEVICE_SPECS = Object.freeze(
+  Object.fromEntries(
+    Object.entries(BASE_SPECS).map(([key, s]) => [
+      key,
+      Object.freeze({
+        ...s,
+        half: /** @type {[number, number]} */ ([s.half[0] * DEVICE_SCALE, s.half[1] * DEVICE_SCALE]),
+        height: s.height * DEVICE_SCALE,
+        portY: s.portY * DEVICE_SCALE,
+        labelY: s.labelY * DEVICE_SCALE,
+        ring: s.ring == null ? null : s.ring * DEVICE_SCALE,
+      }),
+    ]),
+  ),
+)
 
 /**
  * Which model draws a node. Layout can override (the rack-mounted switch uses its own model);
@@ -55,8 +80,8 @@ export function hitBoxesFor(key) {
   const spec = DEVICE_SPECS[key]
   if (key === 'internet-cloud') {
     return [
-      { size: [1.1, 0.7, 1.1], center: [0, 0.3, 0] },
-      { size: [4.4, 2.6, 3.6], center: [-1.9, 5.0, 0] },
+      { size: [1.1 * DEVICE_SCALE, 0.7 * DEVICE_SCALE, 1.1 * DEVICE_SCALE], center: [0, 0.3 * DEVICE_SCALE, 0] },
+      { size: [4.4 * DEVICE_SCALE, 2.6 * DEVICE_SCALE, 3.6 * DEVICE_SCALE], center: [-1.9 * DEVICE_SCALE, 5.0 * DEVICE_SCALE, 0] },
     ]
   }
   const pad = key === 'switch-rack' || key === 'rack-server' ? 0.08 : 0.1

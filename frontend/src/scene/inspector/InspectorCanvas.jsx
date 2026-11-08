@@ -6,6 +6,7 @@ import * as THREE from 'three'
 
 import { campusMaterials } from '../campus/campusMaterials.js'
 import { MODELS } from '../devices/models/index.js'
+import { DEVICE_SCALE } from '../devices/specs.js'
 import { SLAB_TOP } from '../layout.js'
 import { Lighting } from '../Lighting.jsx'
 import { PostFX } from '../PostFX.jsx'
@@ -55,7 +56,7 @@ const Scene = forwardRef(function Scene({ node, quality }, ref) {
     <>
       <Lighting shadows={quality === 'high'} />
       <mesh geometry={floor} material={campusMaterials.top} receiveShadow />
-      <group position={[0, SLAB_TOP, 0]}>
+      <group position={[0, SLAB_TOP, 0]} scale={DEVICE_SCALE}>
         <Model node={node} />
       </group>
       <CameraControls ref={controls} makeDefault smoothTime={0.25} draggingSmoothTime={0.1} minDistance={framing.minDistance} maxDistance={framing.maxDistance} minPolarAngle={(8 * Math.PI) / 180} maxPolarAngle={(88 * Math.PI) / 180} />

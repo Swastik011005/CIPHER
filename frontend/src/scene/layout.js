@@ -9,8 +9,9 @@
  * Units are about one metre. x runs east, z runs south, y is up. Camera looks from +x,+z.
  */
 
-import { DEVICE_SPECS, modelKeyFor } from './devices/specs.js'
+import { DEVICE_SCALE, DEVICE_SPECS, modelKeyFor } from './devices/specs.js'
 
+const S = DEVICE_SCALE // devices are drawn larger (see devices/specs.js): heights inside a rack scale with them
 export const SLAB_THICKNESS = 0.3
 /** Height of the top surface of a zone slab: where devices stand. */
 export const SLAB_TOP = SLAB_THICKNESS
@@ -35,7 +36,7 @@ export const ZONE_LAYOUT = Object.freeze({
 
 /** Base plates the slabs stand on. The Outside island is separated from the campus by an air gap. */
 export const PLATES = Object.freeze([
-  { id: 'campus', center: [10, 2], size: [90, 78], color: 'plate' },
+  { id: 'campus', center: [14, 2], size: [98, 84], color: 'plate' },
   { id: 'island', center: [-50, 0], size: [24, 28], color: 'plate' },
 ])
 
@@ -44,7 +45,7 @@ export const PLATES = Object.freeze([
  * model chosen from the topology form factor, `labelOffset` moves the floating label.
  */
 export const NODE_LAYOUT = Object.freeze({
-  INET: { position: [-48, 0], labelOffset: [-1.9, 0, 0] },
+  INET: { position: [-48, 0], labelOffset: [-1.9 * S, 0 * S, 0 * S] },
   'EXT-USR': { position: [-55, -6] },
   'EXT-ATK': { position: [-55, 6] },
   'R1-EDGE': { position: [-31, 0] },
@@ -66,15 +67,15 @@ export const NODE_LAYOUT = Object.freeze({
   'IDS-1': { position: [-14, 22] },
   'SEC-LOG': { position: [-8, 22] },
   'SIEM-1': { position: [-1, 22] },
-  'EDR-MGMT-1': { position: [8, 22], y: 1.15, labelOffset: [1.9, 0.55, 0.4] },
-  'ZT-POLICY-1': { position: [8, 22], y: 0.65, labelOffset: [0.5, -0.1, 1.9] },
+  'EDR-MGMT-1': { position: [8, 22], y: 1.15 * S, labelOffset: [1.9 * S, 0.55 * S, 0.4 * S] },
+  'ZT-POLICY-1': { position: [8, 22], y: 0.65 * S, labelOffset: [0.5 * S, -0.1 * S, 1.9 * S] },
   'IPS-1': { position: [20, 20] },
-  'SRV-SW3': { position: [28, 24], y: 1.75, model: 'switch-rack', labelOffset: [0, 0.95, 0] },
-  'APP-SRV': { position: [28, 24], y: 1.15, labelOffset: [1.9, 0.55, 0.4] },
-  'DB-SRV': { position: [28, 24], y: 0.65, labelOffset: [0.5, -0.1, 1.9] },
-  'WEB-SRV': { position: [36, 24], y: 1.15, labelOffset: [1.9, 0.55, 0.4] },
-  'DNS-SRV': { position: [36, 24], y: 0.65, labelOffset: [0.5, -0.1, 1.9] },
-  'FILE-SRV': { position: [44, 24], y: 1.15, labelOffset: [1.9, 0.55, 0.4] },
+  'SRV-SW3': { position: [28, 24], y: 1.75 * S, model: 'switch-rack', labelOffset: [0 * S, 0.95 * S, 0 * S] },
+  'APP-SRV': { position: [28, 24], y: 1.15 * S, labelOffset: [1.9 * S, 0.55 * S, 0.4 * S] },
+  'DB-SRV': { position: [28, 24], y: 0.65 * S, labelOffset: [0.5 * S, -0.1 * S, 1.9 * S] },
+  'WEB-SRV': { position: [36, 24], y: 1.15 * S, labelOffset: [1.9 * S, 0.55 * S, 0.4 * S] },
+  'DNS-SRV': { position: [36, 24], y: 0.65 * S, labelOffset: [0.5 * S, -0.1 * S, 1.9 * S] },
+  'FILE-SRV': { position: [44, 24], y: 1.15 * S, labelOffset: [1.9 * S, 0.55 * S, 0.4 * S] },
 })
 
 /** The device model of every node (the topology's form factor, or the layout override). Checked against the topology by the tests. */
@@ -92,10 +93,10 @@ export const NODE_FORM = Object.freeze({
  * `holds` names the nodes that stand in each rack.
  */
 export const RACKS = Object.freeze([
-  { id: 'A', position: [28, 24], size: [1.0, 2.2, 0.9], holds: ['SRV-SW3', 'APP-SRV', 'DB-SRV'] },
-  { id: 'B', position: [36, 24], size: [1.0, 2.2, 0.9], holds: ['WEB-SRV', 'DNS-SRV'] },
-  { id: 'C', position: [44, 24], size: [1.0, 2.2, 0.9], holds: ['FILE-SRV'] },
-  { id: 'D', position: [8, 22], size: [1.0, 2.2, 0.9], holds: ['EDR-MGMT-1', 'ZT-POLICY-1'] },
+  { id: 'A', position: [28, 24], size: [1.0 * S, 2.2 * S, 0.9 * S], holds: ['SRV-SW3', 'APP-SRV', 'DB-SRV'] },
+  { id: 'B', position: [36, 24], size: [1.0 * S, 2.2 * S, 0.9 * S], holds: ['WEB-SRV', 'DNS-SRV'] },
+  { id: 'C', position: [44, 24], size: [1.0 * S, 2.2 * S, 0.9 * S], holds: ['FILE-SRV'] },
+  { id: 'D', position: [8, 22], size: [1.0 * S, 2.2 * S, 0.9 * S], holds: ['EDR-MGMT-1', 'ZT-POLICY-1'] },
 ])
 /** The rack of SRV-SW3, APP-SRV and DB-SRV (kept for code that knew a single rack). */
 export const RACK = RACKS[0]
@@ -197,7 +198,7 @@ export const LINK_LAYOUT = Object.freeze({
 
 /** Camera presets: look at `target` from a given azimuth/elevation (degrees) and distance. */
 export const CAMERA_PRESETS = Object.freeze([
-  { id: 'overview', label: 'Overview', target: [4, 0, 5], azimuth: 45, elevation: 42, distance: 185 },
+  { id: 'overview', label: 'Overview', target: [14, 0, 10], azimuth: 45, elevation: 43, distance: 160 },
   { id: 'perimeter', label: 'Perimeter', target: [-26, 0.6, 0], azimuth: 38, elevation: 36, distance: 42 },
   { id: 'staff', label: 'Staff LAN', target: [24, 0.6, -22], azimuth: 42, elevation: 38, distance: 52 },
   { id: 'core', label: 'Core', target: [2, 0.4, 6], azimuth: 40, elevation: 38, distance: 44 },

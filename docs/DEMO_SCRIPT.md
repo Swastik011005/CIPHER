@@ -28,7 +28,7 @@ event); the **Recent packets** list (click a packet); camera buttons at the top 
 **Say:** "A firewall decides by address and port, so it cannot see behaviour such as a port scan on an allowed service. An IDS watches
 copies of traffic and raises alerts but cannot stop anything because it is not in the path. An IPS sits in the path, so it can drop,
 reject, rate-limit or block. This project simulates all three on a small campus, and shows who is responsible for what."
-**Expect:** hero text "See how traffic is inspected, detected and stopped", three cards Firewall / IDS / IPS, topology numbers 16 devices, 18 links, 4 VLANs, 7 subnets.
+**Expect:** hero text "See how traffic is inspected, detected and stopped", three cards Firewall / IDS / IPS, topology numbers 30 devices (16 original plus the 14-device campus extension), 32 links, 4 VLANs, 7 subnets.
 **If it fails:** the page needs the engine for the topology numbers; check **Engine online** (see Recovery).
 
 ## 2. The 3D network (0:50 to 2:00): Simulation page

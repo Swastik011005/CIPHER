@@ -28,7 +28,7 @@ const nearestCable = (p) => Math.min(...campus.segments.map((s) => distToSeg(p, 
 describe('the logical layout is untouched by the campus', () => {
   it('has the fingerprint recorded for the expanded campus layout: no device, cable route, zone rectangle or plate moved by accident', () => {
     const fingerprint = createHash('sha256').update(JSON.stringify({ nodes: NODE_LAYOUT, links: LINK_LAYOUT, zones: ZONE_LAYOUT, plates: PLATES })).digest('hex')
-    expect(fingerprint).toBe('cae52887cdae2e5d6091bff84d163e4f0c6aceb582230011521d022d610012cf')
+    expect(fingerprint).toBe('8f5fdc8047f4b634b2d09b9f86fce97099f2f2578da64cb22e50e38807ad0e0b')
   })
 
   it('keeps all 17 original nodes and 18 original links inside the 31 nodes and 32 links', () => {

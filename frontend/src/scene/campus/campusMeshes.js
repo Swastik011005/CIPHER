@@ -3,6 +3,7 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 
 import { BALUSTRADE, CAMPUS_ZONES, GATE_COURT, ISLAND, PLATFORM_TOP, PLINTH_TOP, SIGNS, campusGeometry, devicePads, roadRects, signSubtitle, zoneVolumes } from './campusLayout.js'
 import { campusMaterials } from './campusMaterials.js'
+import { CABINETS, ENTRANCE, PARKING, SERVER_CABINETS, SOC_STATIONS, SOC_WALL, WALKWAYS, WALKWAY_HEIGHT, parkingBays, walkwayPosts } from './campusDecor.js'
 
 /**
  * Turns the campus layout into three.js meshes, merged to one mesh per material: every platform top, every plinth, all the
@@ -158,6 +159,62 @@ export function buildCampus(topology) {
   // Grey roads between the zones: flat, on the ground, below the cables (one draw call).
   for (const r of roadRects()) put('gate', 'road', box(r.x1 - r.x0, 0.04, r.z1 - r.z0, (r.x0 + r.x1) / 2, 0.02, (r.z0 + r.z1) / 2))
 
+  // Campus infrastructure (decoration only): car parks, entrance, walkways, cabinets, server cabinets, monitoring wall and stations.
+  const T = PLATFORM_TOP
+  for (const lot of PARKING) {
+    const r = lot.rect
+    put('gate', 'asphalt', box(r.x1 - r.x0, 0.04, r.z1 - r.z0, (r.x0 + r.x1) / 2, 0.02, (r.z0 + r.z1) / 2))
+    for (const bay of parkingBays(lot)) {
+      const line = bay.rotated ? box(bay.d, 0.05, 0.12, bay.x, 0.045, bay.z - bay.w / 2) : box(0.12, 0.05, bay.d, bay.x - bay.w / 2, 0.045, bay.z)
+      put('gate', 'marking', line)
+      if (bay.index === Math.floor((lot.axis === 'x' ? r.x1 - r.x0 : r.z1 - r.z0 - 1) / bay.w) - 1) put('gate', 'marking', bay.rotated ? box(bay.d, 0.05, 0.12, bay.x, 0.045, bay.z + bay.w / 2) : box(0.12, 0.05, bay.d, bay.x + bay.w / 2, 0.045, bay.z))
+    }
+  }
+  {
+    const a = ENTRANCE.arch
+    for (const z of [a.z0, a.z1]) put('gate', 'frame', box(0.4, a.height, 0.4, a.x, a.height / 2, z))
+    put('gate', 'frame', box(0.45, 0.45, a.z1 - a.z0 + 0.4, a.x, a.height, (a.z0 + a.z1) / 2))
+    put('gate', 'lights', box(0.12, 0.7, a.z1 - a.z0 - 0.4, a.x + 0.05, a.height - 0.75, (a.z0 + a.z1) / 2))
+    put('gate', 'marking', box(0.12, 0.14, ENTRANCE.barrier.length, ENTRANCE.barrier.x, 1.1, ENTRANCE.barrier.z + ENTRANCE.barrier.length / 2))
+    put('gate', 'cabinet', box(0.3, 1.1, 0.3, ENTRANCE.barrier.x, 0.55, ENTRANCE.barrier.z))
+    const b = ENTRANCE.booth
+    const [bx, bz, bw, bd] = [(b.x0 + b.x1) / 2, (b.z0 + b.z1) / 2, b.x1 - b.x0, b.z1 - b.z0]
+    put('gate', 'glass', box(bw, 2.5, bd, bx, 1.3, bz))
+    put('gate', 'frame', box(bw + 0.3, 0.12, bd + 0.3, bx, 2.6, bz))
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) put('gate', 'frame', box(0.12, 2.5, 0.12, bx + (sx * bw) / 2, 1.3, bz + (sz * bd) / 2))
+  }
+  for (const [x, z, w, d] of CABINETS) {
+    put('staff', 'cabinet', box(w, 2.1, d, x, 1.05, z))
+    put('staff', 'lights', box(w > d ? 0.5 : 0.04, 1.2, w > d ? 0.04 : 0.5, x + (w > d ? 0 : (w / 2 + 0.01) * (x > 30 ? -1 : 1)), 1.2, z + (w > d ? d / 2 + 0.01 : 0)))
+  }
+  for (const [x, z] of SERVER_CABINETS) {
+    put('datacentre', 'cabinet', box(1.5, 3.3, 1.35, x, T + 1.65, z))
+    for (const dx of [-0.4, 0, 0.4]) put('datacentre', 'lights', box(0.12, 2.4, 0.04, x + dx, T + 1.65, z + 0.69))
+  }
+  {
+    const w = SOC_WALL
+    const span = w.z1 - w.z0
+    put('soc', 'cabinet', box(0.22, 1.9, span, w.x, T + 2.4, (w.z0 + w.z1) / 2))
+    for (let k = 0; k < w.screens; k++) put('soc', 'screen', box(0.06, 1.45, span / w.screens - 0.25, w.x + 0.14, T + 2.4, w.z0 + (span * (k + 0.5)) / w.screens))
+    put('soc', 'cabinet', box(1.0, 0.95, span - 0.6, w.x + 1.7, T + 0.48, (w.z0 + w.z1) / 2))
+    for (const [x, z] of SOC_STATIONS) {
+      put('soc', 'frame', box(3.2, 0.12, 1.5, x, T + 1.0, z))
+      for (const dx of [-1.4, 1.4]) put('soc', 'frame', box(0.1, 1.0, 1.3, x + dx, T + 0.5, z))
+      for (const dx of [-0.85, 0.85]) {
+        put('soc', 'cabinet', box(1.4, 0.95, 0.1, x + dx, T + 1.65, z - 0.45))
+        put('soc', 'screen', box(1.25, 0.8, 0.03, x + dx, T + 1.65, z - 0.4))
+      }
+    }
+  }
+  const posts = walkwayPosts(topology)
+  for (const w of WALKWAYS) {
+    const r = w.rect
+    put('gate', 'glass', box(r.x1 - r.x0, 0.1, r.z1 - r.z0, (r.x0 + r.x1) / 2, WALKWAY_HEIGHT, (r.z0 + r.z1) / 2))
+    for (const z of [r.z0, r.z1]) if (w.axis === 'x') put('gate', 'frame', box(r.x1 - r.x0, 0.12, 0.12, (r.x0 + r.x1) / 2, WALKWAY_HEIGHT - 0.05, z))
+    for (const x of [r.x0, r.x1]) if (w.axis === 'z') put('gate', 'frame', box(0.12, 0.12, r.z1 - r.z0, x, WALKWAY_HEIGHT - 0.05, (r.z0 + r.z1) / 2))
+  }
+  for (const p of posts) put('gate', 'frame', box(0.14, WALKWAY_HEIGHT, 0.14, p.x, WALKWAY_HEIGHT / 2, p.z))
+
   // Darker mounting pads under the devices, and a soft contact shadow on them: the clay devices read against a darker ground,
   // in Low as well as High. Both are flat and merged: one draw call each.
   for (const pad of devicePads(topology)) {
@@ -219,7 +276,7 @@ export function buildCampus(topology) {
     for (const g of geometries) g.dispose()
     const solid = kind === 'top' || kind === 'plinth'
     const order = kind === 'glass' ? 2 : kind === 'blob' ? 1 : 0
-    parts.push({ key: kind, geometry, material: campusMaterials[kind], cast: solid, receive: solid || kind === 'pad' || kind === 'road', order })
+    parts.push({ key: kind, geometry, material: campusMaterials[kind], cast: solid, receive: solid || kind === 'pad' || kind === 'road' || kind === 'asphalt', order })
   }
 
   return {

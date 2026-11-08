@@ -77,13 +77,27 @@ visible Chrome or Edge window; set `NETSEC_BROWSER_PATH` if the browser is insta
 ## What "unchanged behaviour" means here
 
 `python scripts/run_scenario_checks.py` prints one trace hash per scenario run. For visual, tooling or deployment work these
-must not change. The values on the starting point of this project (`develop` at the repository preparation commit) are:
+must not change. The values at the start of this project (`develop` at the repository preparation commit) were:
 
 ```
 S1 monitor 2e87676465e7   S1 enforce 261f62311e3a   S2 monitor 720f81078ac3   S2 enforce ea78e8d23fc9
 S3 monitor fcfa8b6a1610   S3 enforce 896daec4ffc6   S4 monitor 87836d910fe4   S4 enforce d832a0637407
 S5 monitor c9c52eea62fa   S6 enforce e138d470f62a   S7 monitor d1d9fb806b20   S7 enforce 8c652bdb331e
 ```
+
+**The campus extension changed these hashes on purpose, and nothing else.** A trace hash covers `run.meta.config_hash`, and the
+topology is part of that hash. Adding 14 devices and 14 links (and the new optional scenario fields) therefore changes every hash.
+It does not change a single event: `backend/tests/scenarios/test_extension_equivalence.py` replays the original scenarios and
+compares them event by event with the golden traces recorded on the original 17-node topology; they are identical apart from the
+two identifiers inside `run.meta` that are derived from that hash. The values now are:
+
+```
+S1 monitor 57cf6670ce8a   S1 enforce 0faa2b791f6e   S2 monitor 307190852d2a   S2 enforce 44dd9e4738d8
+S3 monitor bf20f361e402   S3 enforce ac6bc5d49145   S4 monitor 3ad9ecd2b964   S4 enforce 3c3d85f3f55b
+S5 monitor 85dc9ea334fa   S6 enforce e1b4b9c05cc5   S7 monitor fabf892d87b9   S7 enforce bc1b9cbdbeb2
+```
+
+Use the new values as the reference for later work, and keep the equivalence test.
 
 ## Reference measurements (Stage A, Windows laptop)
 

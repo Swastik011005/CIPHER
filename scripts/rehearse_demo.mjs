@@ -72,7 +72,7 @@ try {
   await waitFor(() => ev('!!document.querySelector("canvas") && !!window.__netsecStore'), 'the 3D scene', 30000)
   await waitText('Simulated campus')
   const topo = await text()
-  check('2 Topology card: 16 devices, 18 links, 4 VLANs, 7 subnets', /16\s+\+ 1 Internet/.test(topo) && topo.includes('18') && topo.includes('7'))
+  check('2 Topology card: 30 devices (16 original + 14 campus extension), 32 links, 4 VLANs, 7 subnets', /30\s+\+ 1 Internet/.test(topo) && topo.includes('32') && topo.includes('7'))
   await ev(`window.__netsecStore.setState({ autoLowered: true }); window.__netsecStore.getState().setSetting('quality', 'high')`)
   for (const preset of ['perimeter', 'core', 'servers', 'secops', 'overview']) {
     await ev(`window.__netsecStore.getState().requestPreset('${preset}')`)

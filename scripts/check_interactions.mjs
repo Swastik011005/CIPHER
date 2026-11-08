@@ -6,7 +6,7 @@
  *
  * Checks: all 17 devices selectable (also inside the glass pavilions), all 7 campus zones hoverable and selectable, the
  * zone to device highlighting, device and zone selections not conflicting, the layered ground-click deselect, double-click
- * zone focus and the return to the overview, all 18 cables selectable with the right source and destination, and the
+ * zone focus and the return to the overview, all cables selectable with the right source and destination, and the
  * separate 3D device viewer for all 12 model keys (rotate, zoom, reset, close, campus camera and playback undisturbed,
  * no leaked WebGL contexts). Everything is also repeated in Low quality. Screenshots go to --out. Needs the app in demo mode
  * (python scripts/tasks.py demo). It changes nothing in the repository except the screenshots.
@@ -96,6 +96,23 @@ async function findZoneFloor(zone) {
 
 const keyOf = (node) => modelKeyFor(node, NODE_LAYOUT[node.id])
 
+/** Point the campus camera at a spot (the expanded campus does not fit one screen, so every target is brought into view first). */
+const view = async (x, z, d = 26) => {
+  await ev(`window.__netsecProbe.lookAt(${x}, 0.5, ${z}, ${d})`)
+  await sleep(700)
+}
+const zoneCentre = (zone) => {
+  const v = zoneVolumes().filter((vol) => vol.zone === zone)
+  const xs = v.flatMap((b) => (b.shape === 'box' ? [b.x0, b.x1] : [b.cx - b.radius, b.cx + b.radius]))
+  const zs = v.flatMap((b) => (b.shape === 'box' ? [b.z0, b.z1] : [b.cz - b.radius, b.cz + b.radius]))
+  return [(Math.min(...xs) + Math.max(...xs)) / 2, (Math.min(...zs) + Math.max(...zs)) / 2, Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...zs) - Math.min(...zs)) * 1.5 + 8]
+}
+const nodeView = (id) => view(NODE_LAYOUT[id].position[0], NODE_LAYOUT[id].position[1], 22)
+async function pointFor(id) {
+  await nodeView(id)
+  return findDevice(id)
+}
+
 try {
   await browser.navigate(`${base}/simulation?debug=1`)
   await waitFor(() => ev('window.__netsecStore && window.__netsecStore.getState().topology.status === "ready" && window.__netsecScene && window.__netsecScene.meshes > 100 && !!window.__netsecProbe'), 'the scene', 60000)
@@ -117,14 +134,18 @@ try {
     let zoneStolen = 0
     for (const node of nodes) {
       await ev('window.__netsecStore.getState().clearEverything()')
+      await nodeView(node.id)
       const p = await findDevice(node.id)
       devicePoints[node.id] = p
-      if (!p) continue
+      if (!p) {
+        console.log(`  (no pointer position hovers ${node.id})`)
+        continue
+      }
       await click(p.x, p.y)
       if ((await st('selection.selectedId')) === node.id) selectable += 1
       if ((await st('zone.selectedId')) !== null) zoneStolen += 1
     }
-    check(`all 17 devices can be hovered and selected by a real click`, selectable === 17, `${selectable}/17`)
+    check(`all ${nodes.length} devices (17 original + ${nodes.length - 17} extension) can be hovered and selected by a real click`, selectable === nodes.length, `${selectable}/${nodes.length}`)
     check('clicking a device never selects the zone around it', zoneStolen === 0)
 
     // -- zones: hover and click each of the 7
@@ -134,6 +155,7 @@ try {
     let dimmed = 0
     for (const zone of CAMPUS_ZONES) {
       await ev('window.__netsecStore.getState().clearEverything()')
+      await view(...zoneCentre(zone.id))
       const p = await findZoneFloor(zone.id)
       if (!p) {
         console.log(`  (no pickable floor point found for ${zone.id})`)
@@ -160,15 +182,19 @@ try {
 
     // -- zone and device selections do not conflict
     await ev('window.__netsecStore.getState().clearEverything()')
+    await view(...zoneCentre('staff'))
     const staff = await findZoneFloor('staff')
     await click(staff.x, staff.y)
-    await click(devicePoints['PC-1'].x, devicePoints['PC-1'].y)
+    const pc1 = await pointFor('PC-1')
+    await click(pc1.x, pc1.y)
     check('selecting a device keeps the selected zone', (await st('selection.selectedId')) === 'PC-1' && (await st('zone.selectedId')) === 'staff')
-    await click(devicePoints['ADMIN-PC'].x, devicePoints['ADMIN-PC'].y)
+    const adminPc = await pointFor('ADMIN-PC')
+    await click(adminPc.x, adminPc.y)
     check('selecting a device in another zone keeps the zone', (await st('selection.selectedId')) === 'ADMIN-PC' && (await st('zone.selectedId')) === 'staff')
     await shot(`zone-and-device${q}`)
 
     // -- ground clicks: first the zone, then the device
+    await view(-3, -10, 30)
     const ground = await toPage(-3, 0.002, -10)
     await click(ground.x, ground.y)
     check('clicking empty ground deselects the zone and keeps an independently selected device', (await st('zone.selectedId')) === null && (await st('selection.selectedId')) === 'ADMIN-PC')
@@ -178,6 +204,7 @@ try {
     // -- double-click on a zone flies the camera there; R returns to the overview
     await ev('window.__netsecStore.getState().clearEverything(); window.__netsecStore.getState().requestPreset("overview")')
     await sleep(2200)
+    await view(...zoneCentre('datacentre'))
     const dc = await findZoneFloor('datacentre')
     const before = await cameraAt()
     await click(dc.x, dc.y, 2)
@@ -190,7 +217,7 @@ try {
     await sleep(4200)
     check('R returns the camera to the overview', dist(await cameraAt(), overview) < 3, `${dist(await cameraAt(), overview).toFixed(2)} units from the overview position`)
 
-    // -- cables: every one of the 18, with the right ends
+    // -- cables: every one of the 32, with the right ends
     await ev('window.__netsecStore.getState().clearEverything()')
     const samples = await ev('window.__netsecCables')
     let cableOk = 0
@@ -199,6 +226,8 @@ try {
     for (const link of topology.links) {
       await ev('window.__netsecStore.getState().clearEverything()')
       let got = false
+      const first = (samples[link.id] ?? [])[0]
+      if (first) await view(first[0], first[2], 22)
       for (const [x, y, z] of samples[link.id] ?? []) {
         const p = await toPage(x, y, z)
         if (!p) continue
@@ -226,8 +255,8 @@ try {
       if (got && text.includes(`Source: ${a}`) && text.includes(`Destination: ${b}`) && text.includes(link.a.iface) && text.includes(link.b.iface)) endsOk += 1
       if (link.id === 'L14' && got) await shot(`cable-selected${q}`)
     }
-    check('all 18 cables can be selected (by a real click, or from the device panel when the model hides them)', cableOk === 18, `${cableOk}/18; ${18 - missed.length} by a real click${missed.length ? `, ${missed.join(', ')} from the panel` : ''}`)
-    check('the cable panel names the right source and destination (device and interface) for all 18', endsOk === 18, `${endsOk}/18`)
+    check(`all ${topology.links.length} cables can be selected (by a real click, or from the device panel when a model hides them)`, cableOk === topology.links.length, `${cableOk}/${topology.links.length}; ${topology.links.length - missed.length} by a real click${missed.length ? `, ${missed.join(', ')} from the panel` : ''}`)
+    check('the cable panel names the right source and destination (device and interface) for every cable', endsOk === topology.links.length, `${endsOk}/${topology.links.length}`)
     const l7 = (samples.L07 ?? []).map(([x, y, z]) => [x, y, z])
     void l7
     await click(devicePoints['PC-1'].x, devicePoints['PC-1'].y)
@@ -253,7 +282,7 @@ try {
     const geoBefore = (await ev('window.__netsecScene')).geometries
 
     // entry points: double-click a device, the Inspect button, the I key
-    const p = await findDevice('PC-1')
+    const p = await pointFor('PC-1')
     await click(p.x, p.y, 2)
     await sleep(1500)
     check('double-clicking a device opens the viewer', (await st('inspectorId')) === 'PC-1' && (await ev('document.querySelectorAll("canvas").length')) === 2)
