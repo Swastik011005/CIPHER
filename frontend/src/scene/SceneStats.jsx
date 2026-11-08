@@ -34,6 +34,7 @@ export function SceneStats() {
   const state = useRef({ frames: 0, since: performance.now(), samples: [] })
   const camera = useThree((s) => s.camera)
   const canvas = useThree((s) => s.gl.domElement)
+  const scene = useThree((s) => s.scene)
 
   // Debug aid, only with ?debug=1: where a world position is on the page, so an automated check can
   // aim a real mouse click at a packet. Positions of packets come from PacketLayer.
@@ -48,13 +49,30 @@ export function SceneStats() {
         const r = canvas.getBoundingClientRect()
         return { x: r.left + ((v.x + 1) / 2) * r.width, y: r.top + ((1 - v.y) / 2) * r.height }
       },
+      /** Draw calls and triangles of the main pass by part of the scene (campus, links, packets, one entry per device kind), for performance work. */
+      breakdown: () => {
+        const parts = {}
+        const walk = (object, label) => {
+          const here = object.name?.startsWith('device-') ? object.name : object.name === 'campus' ? 'campus' : object.name?.startsWith('link-') ? 'links' : object.name === 'packets' ? 'packets' : object.name === 'zone-highlights' ? 'highlights' : label
+          if (object.isMesh && object.visible && object.material?.visible !== false) {
+            const g = object.geometry
+            const v = g.index ? g.index.count : g.attributes.position.count
+            const entry = (parts[here] ??= { meshes: 0, triangles: 0 })
+            entry.meshes += 1
+            entry.triangles += Math.round((v / 3) * (object.isInstancedMesh ? object.count : 1))
+          }
+          for (const child of object.children) walk(child, here)
+        }
+        walk(scene, 'other')
+        return parts
+      },
       /** Where the campus camera is, so a check can see that it moved, or did not. */
       cameraPosition: () => camera.position.toArray(),
     }
     return () => {
       delete window.__netsecProbe
     }
-  }, [camera, canvas])
+  }, [camera, canvas, scene])
 
   useFrame(({ gl, scene }) => {
     const s = state.current

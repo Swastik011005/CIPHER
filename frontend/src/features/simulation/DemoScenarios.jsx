@@ -10,6 +10,7 @@ const MODES = [
   { value: 'enforce', label: 'Enforce', title: 'IPS-1 applies its prevention actions' },
 ]
 const TONE = { ok: 'ok', danger: 'danger', warn: 'warn', info: 'info' }
+const NONE = Object.freeze([]) // a stable empty list: a selector must not build a new array on every call
 
 /** What the run shows so far, in plain sentences from the trace, and the events the SIEM received. */
 function Outcome({ scenario }) {
@@ -61,7 +62,7 @@ export function DemoScenarios() {
   const runScenario = useStore((s) => s.runScenario)
   const resetSecurity = useStore((s) => s.resetSecurity)
   const online = useStore((s) => s.connection.status) === 'online'
-  const isolated = useStore((s) => s.securityState?.isolated ?? [])
+  const isolated = useStore((s) => s.securityState?.isolated ?? NONE)
   const [selected, setSelected] = useState('P1')
   const [mode, setMode] = useState('enforce')
   const [scripted, setScripted] = useState(false)

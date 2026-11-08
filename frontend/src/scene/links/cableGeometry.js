@@ -44,9 +44,11 @@ export function roundedPath(points, radius = CORNER_RADIUS) {
  * @param {{radius: number, cornerRadius?: number, offset?: [number, number]}} options
  *   `offset` shifts the whole route in plan view [dx, dz], used to draw the two tubes of a trunk.
  */
-export function buildCableGeometry(points, { radius, cornerRadius, offset = [0, 0] }) {
+export function buildCableGeometry(points, { radius, cornerRadius, offset = [0, 0], radial = 6, perUnit = 4 }) {
   const shifted = points.map((p) => /** @type {[number, number, number]} */ ([p[0] + offset[0], p[1], p[2] + offset[1]]))
   const curve = roundedPath(shifted, cornerRadius)
-  const segments = Math.max(12, Math.ceil(curve.getLength() * 8))
-  return { geometry: new THREE.TubeGeometry(curve, segments, radius, 8, false), length: curve.getLength() }
+  // Segments per unit of length (4 by default) and 6 around: the long straight runs of the expanded campus do not need more, and
+  // the rounded corners stay smooth. The invisible pick tube asks for far fewer.
+  const segments = Math.max(8, Math.ceil(curve.getLength() * perUnit))
+  return { geometry: new THREE.TubeGeometry(curve, segments, radius, radial, false), length: curve.getLength() }
 }

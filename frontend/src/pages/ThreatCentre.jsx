@@ -1,5 +1,6 @@
 import { Eye, ShieldCheck, ShieldOff } from 'lucide-react'
 
+import { SiemConsole } from '../features/siem/SiemConsole.jsx'
 import { useStore } from '../state/store.js'
 import { Banner, Card, Chip, EmptyState, KpiTile } from '../ui/index.js'
 import './pages.css'
@@ -26,6 +27,8 @@ const DROP_LABELS = {
   blocked_source: ['Blocked source', 'IPS-1 block table'],
   ttl_expired: ['TTL expired', 'Network'],
   no_route: ['No route', 'Network'],
+  edr_isolated: ['EDR isolation', 'EDR agent on the isolated endpoint'],
+  zt_deny: ['Zero Trust deny', 'ZT-POLICY-1 decision, enforced at CORE-SW1'],
 }
 
 /** Page 4: alerts and prevention actions of the run that is loaded in the simulation. */
@@ -170,6 +173,7 @@ export function ThreatCentre() {
           </div>
         )}
       </Card>
+      <SiemConsole />
     </div>
   )
 }

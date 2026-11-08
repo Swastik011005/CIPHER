@@ -32,7 +32,7 @@ export function Slab({ size, position, rotation, material = 'trim' }) {
   )
 }
 
-export function Cyl({ radius, radiusBottom = radius, height, position, rotation, material = 'clay', segments = 28, shadow = true }) {
+export function Cyl({ radius, radiusBottom = radius, height, position, rotation, material = 'clay', segments = 20, shadow = true }) {
   return (
     <mesh
       geometry={cylinder(radius, radiusBottom, height, segments)}

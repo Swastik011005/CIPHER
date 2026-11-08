@@ -933,3 +933,21 @@
   font-family: var(--font-mono);
   font-size: 12px;
 }
+
+.siem-table tbody tr {
+  cursor: pointer;
+}
+.siem-table tbody tr.is-open,
+.siem-table tbody tr:focus-visible {
+  background: var(--surface-3);
+  outline: none;
+}
+.siem-detail {
+  margin-top: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.siem-incidents button[aria-pressed='true'] {
+  border-color: var(--accent);
+}

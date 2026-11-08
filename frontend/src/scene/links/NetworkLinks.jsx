@@ -63,7 +63,7 @@ const Cable = memo(function Cable({ link, nodesById }) {
     const cornerRadius = route.radius
     const lanes = link.kind === 'trunk' ? [-TRUNK_LANE, TRUNK_LANE] : [0]
     const tubes = lanes.map((lane) => buildCableGeometry(points, { radius, cornerRadius, offset: [lane, lane] }))
-    const pick = buildCableGeometry(points, { radius: PICK_RADIUS, cornerRadius })
+    const pick = buildCableGeometry(points, { radius: PICK_RADIUS, cornerRadius, radial: 4, perUnit: 1 })
     let material
     let alphaMap = null
     let base = null
@@ -90,7 +90,7 @@ const Cable = memo(function Cable({ link, nodesById }) {
   }, [link, nodesById])
 
   // The halo of a selected cable is built only while it is selected.
-  const halo = useMemo(() => (selected ? buildCableGeometry(built.points, { radius: HALO_RADIUS, cornerRadius: built.cornerRadius }) : null), [selected, built])
+  const halo = useMemo(() => (selected ? buildCableGeometry(built.points, { radius: HALO_RADIUS, cornerRadius: built.cornerRadius, radial: 8 }) : null), [selected, built])
 
   useEffect(
     () => () => {

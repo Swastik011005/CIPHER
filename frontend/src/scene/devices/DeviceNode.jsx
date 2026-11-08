@@ -1,7 +1,7 @@
 import { Edges, Html } from '@react-three/drei'
 import { useFrame, useThree } from '@react-three/fiber'
 import { Select } from '@react-three/postprocessing'
-import { memo, useMemo, useRef } from 'react'
+import { memo, useLayoutEffect, useMemo, useRef } from 'react'
 import { Color, MathUtils, MeshBasicMaterial } from 'three'
 
 import { deviceTags, parseTagsKey, ringStateFor, tagsKey } from '../../playback/deviceStatus.js'
@@ -14,11 +14,13 @@ import { ringMaterials } from '../materials/materials.js'
 import { isTopPick } from '../picking.js'
 import { useStore } from '../../state/store.js'
 import { activityAt } from './activity.js'
+import { BAKED_MODELS, bakeStatic } from './bakeStatic.js'
 import { MODELS } from './models/index.js'
 import { DEVICE_SPECS, hitBoxesFor, modelKeyFor } from './specs.js'
 
 const LIFT = 0.07
 const HIT_MATERIAL = new MeshBasicMaterial({ visible: false }) // pickable, never drawn: no draw call
+const ENDPOINT_MODELS = new Set(['desktop', 'laptop', 'rack-server']) // their labels are hidden when the camera is far out
 const LED_COLOR = new Color('#38d6e6').multiplyScalar(2.4)
 
 function labelShown(mode, selected, hovered) {
@@ -40,6 +42,7 @@ export const DeviceNode = memo(function DeviceNode({ node }) {
 
   const selected = useStore((s) => s.selection.selectedId === node.id)
   const hovered = useStore((s) => s.selection.hoveredId === node.id)
+  const hideFar = useStore((s) => s.labelDetail === 'far')
   const showLabel = useStore((s) => labelShown(s.settings.labels, selected, hovered))
   const detail = useStore((s) => (selected || hovered ? 'full' : s.labelDetail))
   const high = useStore((s) => s.settings.quality === 'high')
@@ -58,6 +61,9 @@ export const DeviceNode = memo(function DeviceNode({ node }) {
   const eventsConnected = useThree((s) => !!s.events.connected)
 
   const liftRef = useRef(null)
+  const modelRef = useRef(null)
+  // Merge the opaque meshes of a static model once it has mounted: fewer draw calls, same picture.
+  useLayoutEffect(() => (BAKED_MODELS.has(key) && modelRef.current ? bakeStatic(modelRef.current) : undefined), [key])
   const ringRef = useRef(null)
   const ledRef = useRef(null)
   // A small activity LED: lit while the device is handling packets, from the trace at the playhead.
@@ -110,11 +116,13 @@ export const DeviceNode = memo(function DeviceNode({ node }) {
   }
 
   return (
-    <group position={[x, baseY, z]} rotation-y={layout.rotationY ?? 0}>
+    <group name={`device-${node.id}`} position={[x, baseY, z]} rotation-y={layout.rotationY ?? 0}>
       <group ref={liftRef}>
         {/* While selected (High) the postprocessing outline traces the model's own silhouette; Low keeps the box frame. */}
         <Select enabled={selected && high}>
-          <Model node={node} />
+          <group ref={modelRef}>
+            <Model node={node} />
+          </group>
         </Select>
       </group>
 
@@ -146,7 +154,7 @@ export const DeviceNode = memo(function DeviceNode({ node }) {
         </mesh>
       ))}
 
-      {showLabel && (
+      {showLabel && !(hideFar && ENDPOINT_MODELS.has(key) && !selected && !hovered && tags.length === 0 && zoneState !== 'in') && (
         <Html
           key={eventsConnected ? 'connected' : 'pending'}
           position={[labelOffset[0], spec.labelY + labelOffset[1], labelOffset[2]]}

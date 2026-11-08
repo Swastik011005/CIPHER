@@ -138,12 +138,14 @@
 }
 
 /* Zoomed out: name only, so the overview stays readable. */
-.dev-label[data-detail='compact'] {
+.dev-label[data-detail='compact'],
+.dev-label[data-detail='far'] {
   padding: 2px 8px;
   border-radius: 999px;
 }
 
-.dev-label[data-detail='compact'] .dev-label__addr {
+.dev-label[data-detail='compact'] .dev-label__addr,
+.dev-label[data-detail='far'] .dev-label__addr {
   display: none;
 }
 

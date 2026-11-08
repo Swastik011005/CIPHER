@@ -21,17 +21,19 @@ export function shared(key, make) {
 /** Rounded box. The radius is clamped so thin parts never invert. */
 export function roundedBox(w, h, d, radius = 0.03) {
   const r = Math.max(0.002, Math.min(radius, Math.min(w, h, d) / 2 - 0.001))
-  return shared(`rbox:${w}:${h}:${d}:${r}`, () => new RoundedBoxGeometry(w, h, d, 3, r))
+  // One bevel segment for the small radii of device parts (the corner is a chamfer you cannot tell at this size), two for the larger ones.
+  const segments = r < 0.06 ? 1 : 2
+  return shared(`rbox:${w}:${h}:${d}:${r}`, () => new RoundedBoxGeometry(w, h, d, segments, r))
 }
 
 export const box = (w, h, d) => shared(`box:${w}:${h}:${d}`, () => new THREE.BoxGeometry(w, h, d))
 
 export const plane = (w, h) => shared(`plane:${w}:${h}`, () => new THREE.PlaneGeometry(w, h))
 
-export const cylinder = (rTop, rBottom, h, segments = 28) =>
+export const cylinder = (rTop, rBottom, h, segments = 20) =>
   shared(`cyl:${rTop}:${rBottom}:${h}:${segments}`, () => new THREE.CylinderGeometry(rTop, rBottom, h, segments))
 
-export const sphere = (r, wSeg = 28, hSeg = 18) =>
+export const sphere = (r, wSeg = 20, hSeg = 12) =>
   shared(`sph:${r}:${wSeg}:${hSeg}`, () => new THREE.SphereGeometry(r, wSeg, hSeg))
 
 export const hemisphere = (r) =>
