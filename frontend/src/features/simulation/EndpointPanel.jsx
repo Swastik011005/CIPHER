@@ -87,12 +87,13 @@ function EndpointOverview({ node, topology }) {
 export function EndpointPanel({ node, topology }) {
   const [tab, setTab] = useState('overview')
   useEffect(() => setTab('overview'), [node.id])
+  const endpoint = node.type === 'host'
   const tabs = (
     <>
       <div className="endpoint-tabs">
-        <Segmented label="Endpoint panel" value={tab} onChange={setTab} options={TABS} />
+        <Segmented label={endpoint ? 'Endpoint panel' : 'Device panel'} value={tab} onChange={setTab} options={endpoint ? TABS : TABS.filter((t) => t.value !== 'security')} />
       </div>
-      {tab === 'overview' && <EndpointOverview node={node} topology={topology} />}
+      {tab === 'overview' && endpoint && <EndpointOverview node={node} topology={topology} />}
     </>
   )
   return (

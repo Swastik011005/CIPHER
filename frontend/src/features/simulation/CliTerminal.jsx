@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 
 import { useStore } from '../../state/store.js'
 
+const DEVICE_SUGGESTIONS = ['help', 'show ip interface brief', 'show access-lists', 'show ip route', 'show interfaces', 'show running-config']
 const SUGGESTIONS = ['help', 'ipconfig', 'ping APP-SRV', 'ping SIEM-1', 'tracert APP-SRV', 'telnet DB-SRV 3306', 'curl http://APP-SRV']
 
 /**
@@ -19,7 +20,8 @@ export function CliTerminal({ node }) {
   const [busy, setBusy] = useState(false)
   const [back, setBack] = useState(-1)
   const screen = useRef(null)
-  const prompt = `C:\\${node.id}>`
+  const device = node.type !== 'host' // the router, the core switch and the firewall have a read-only `show` command line
+  const prompt = device ? `${node.id}#` : `C:\\${node.id}>`
 
   useEffect(() => {
     if (screen.current) screen.current.scrollTop = screen.current.scrollHeight
@@ -52,7 +54,7 @@ export function CliTerminal({ node }) {
   return (
     <div className="cli" data-testid="cli">
       <div className="cli__screen" ref={screen} role="log" aria-live="polite" aria-label={`${node.label} command line output`}>
-        <div className="cli__banner">Simulated endpoint command line: {node.label}. Type "help". Synthetic traffic only; nothing runs on this computer.</div>
+        <div className="cli__banner">{device ? `Read-only simulated device command line: ${node.label}. Type "help". Nothing can be changed.` : `Simulated endpoint command line: ${node.label}. Type "help". Synthetic traffic only; nothing runs on this computer.`}</div>
         {history.map((h, i) => (
           <div key={i} className="cli__entry">
             <div className="cli__cmd">
@@ -84,21 +86,23 @@ export function CliTerminal({ node }) {
           spellCheck={false}
           autoComplete="off"
           autoCapitalize="off"
-          placeholder={online ? 'type a command, e.g. ping 10.0.30.10' : 'engine offline'}
+          placeholder={online ? (device ? 'e.g. show access-lists' : 'type a command, e.g. ping 10.0.30.10') : 'engine offline'}
         />
       </form>
       <div className="cli__tools">
         <div className="chip-row">
-          {SUGGESTIONS.map((s) => (
+          {(device ? DEVICE_SUGGESTIONS : SUGGESTIONS).map((s) => (
             <button key={s} type="button" className="chip chip--button mono" disabled={!online || busy} onClick={() => send(s)}>
               {s}
             </button>
           ))}
         </div>
-        <label className="demo-check">
-          <input type="checkbox" checked={animate} onChange={(e) => setAnimate(e.target.checked)} />
-          <span>Replay the packets of a command in the 3D campus</span>
-        </label>
+        {!device && (
+          <label className="demo-check">
+            <input type="checkbox" checked={animate} onChange={(e) => setAnimate(e.target.checked)} />
+            <span>Replay the packets of a command in the 3D campus</span>
+          </label>
+        )}
       </div>
     </div>
   )

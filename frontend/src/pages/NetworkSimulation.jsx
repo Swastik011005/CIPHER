@@ -37,7 +37,7 @@ export function NetworkSimulation() {
         {topology && zoneId !== null && <ZonePanel zoneId={zoneId} topology={topology} />}
         {topology && packetId !== null && <PacketPanel pid={packetId} />}
         {topology && packetId === null && cableId !== null && <CablePanel linkId={cableId} topology={topology} />}
-        {topology && packetId === null && cableId === null && selectedNode && (selectedNode.type === 'host' ? <EndpointPanel node={selectedNode} topology={topology} /> : <DevicePanel node={selectedNode} topology={topology} />)}
+        {topology && packetId === null && cableId === null && selectedNode && (['host', 'router', 'l3switch', 'firewall'].includes(selectedNode.type) ? <EndpointPanel node={selectedNode} topology={topology} /> : <DevicePanel node={selectedNode} topology={topology} />)}
         {topology && packetId === null && cableId === null && !selectedNode && (
           <>
             <PacketList />

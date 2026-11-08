@@ -197,7 +197,7 @@ export const LINK_LAYOUT = Object.freeze({
 
 /** Camera presets: look at `target` from a given azimuth/elevation (degrees) and distance. */
 export const CAMERA_PRESETS = Object.freeze([
-  { id: 'overview', label: 'Overview', target: [4, 0, 2], azimuth: 45, elevation: 42, distance: 168 },
+  { id: 'overview', label: 'Overview', target: [4, 0, 5], azimuth: 45, elevation: 42, distance: 185 },
   { id: 'perimeter', label: 'Perimeter', target: [-26, 0.6, 0], azimuth: 38, elevation: 36, distance: 42 },
   { id: 'staff', label: 'Staff LAN', target: [24, 0.6, -22], azimuth: 42, elevation: 38, distance: 52 },
   { id: 'core', label: 'Core', target: [2, 0.4, 6], azimuth: 40, elevation: 38, distance: 44 },

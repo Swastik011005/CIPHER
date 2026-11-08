@@ -13,6 +13,7 @@ from typing import Any, Literal, Optional
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, ConfigDict, Field
 
+from netsec.cli.device import DEVICE_TYPES, DeviceCli
 from netsec.cli.endpoint import CliError, EndpointCli
 from netsec.security.state import ROLES, TRUST_LEVELS, SecuritySnapshot, SecurityState, StateError
 from netsec.security.zerotrust import ZeroTrustEngine, load_zerotrust, port_key
@@ -216,9 +217,12 @@ class CliRequest(BaseModel):
 def cli_exec(body: CliRequest, request: Request) -> dict[str, Any]:
     """Run one whitelisted endpoint command through the simulation engine and print what really happened."""
     state = request.app.state
-    cli = EndpointCli(state.graph, state.rules.current, state.security.snapshot(), body.ips_mode)
+    node = state.graph.nodes.get(body.node)
     try:
-        result = cli.execute(body.node, body.command)
+        if node is not None and node.type in DEVICE_TYPES:
+            result = DeviceCli(state.graph, state.rules.current, dict(state.security.rule_hits)).execute(body.node, body.command)
+        else:
+            result = EndpointCli(state.graph, state.rules.current, state.security.snapshot(), body.ips_mode).execute(body.node, body.command)
     except CliError as exc:
         return {"lines": [str(exc)], "ok": False, "clear": False, "decision": {}, "run": None}
     run = None
