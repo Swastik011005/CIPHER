@@ -1,0 +1,45 @@
+{
+  "id": "P9",
+  "name": "SIEM event monitoring",
+  "description": "PC-3 sends TCP segments with invalid flags (an XMAS probe). IDS-1 and IPS-1 detect them (D6) and the SIEM shows the events.",
+  "duration": 7,
+  "default_seed": 109,
+  "flows": [
+    {
+      "type": "flag_probe",
+      "id": "P9-xmas",
+      "src": "PC-3",
+      "dst": "APP-SRV",
+      "dport": 443,
+      "flags": [
+        "FIN",
+        "PSH",
+        "URG"
+      ],
+      "start": 0.5,
+      "count": 3,
+      "interval": 0.5
+    }
+  ],
+  "features": {
+    "zero_trust": true,
+    "edr": true,
+    "siem": true
+  },
+  "presentation": {
+    "number": 9,
+    "objective": "Show a controlled security event travelling from the component that produced it into the SIEM and its incident history.",
+    "source": "PC-3",
+    "destination": "APP-SRV",
+    "protocol": "TCP",
+    "port": 443,
+    "security_rule": "Detector D6 (invalid TCP flags), seen by IDS-1 (passive) and IPS-1 (inline).",
+    "explanation": "IDS-1 and IPS-1 each raise a D6 alert from their own view of the traffic; the SIEM receives them from the sensors that produced them, groups them into one incident for PC-3, and keeps it in its history. In Enforce mode IPS-1 also drops the segments; in Monitor mode it only records what it would do.",
+    "expected": [
+      "IDS-1 and IPS-1 each raise a D6 alert",
+      "The SIEM lists the events with source, severity, time and reason",
+      "The events share one incident",
+      "Monitor mode forwards the segments; Enforce mode drops them at IPS-1"
+    ]
+  }
+}

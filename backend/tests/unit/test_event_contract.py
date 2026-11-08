@@ -14,7 +14,7 @@ def _wire_fields(model) -> list[str]:
 
 def test_event_types_match_the_contract(event_contract) -> None:
     assert set(EVENT_TYPES) == set(event_contract["events"])
-    assert len(EVENT_TYPES) == 14
+    assert len(EVENT_TYPES) == 18  # the 14 frozen events plus zt.decision, edr.alert, edr.state, siem.event
 
 
 def test_each_event_model_has_exactly_the_contract_fields(event_contract) -> None:

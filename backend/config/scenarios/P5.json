@@ -1,0 +1,39 @@
+{
+  "id": "P5",
+  "name": "External HTTP access",
+  "description": "EXT-USR browses APP-SRV on HTTP/80 through R1-EDGE and FW1, which publishes that service.",
+  "duration": 25,
+  "default_seed": 105,
+  "flows": [
+    {
+      "type": "tcp_session",
+      "id": "P5-http",
+      "src": "EXT-USR",
+      "dst": "APP-SRV",
+      "dport": 80,
+      "start": 0.5,
+      "request_bytes": 400
+    }
+  ],
+  "features": {
+    "zero_trust": true,
+    "edr": true,
+    "siem": true
+  },
+  "presentation": {
+    "number": 5,
+    "objective": "Show a permitted inbound flow through the perimeter.",
+    "source": "EXT-USR",
+    "destination": "APP-SRV",
+    "protocol": "TCP",
+    "port": 80,
+    "security_rule": "FW1 OUTSIDE-IN rule 30 permits tcp to 10.0.30.10 port 80 (stateful: the reply is allowed back).",
+    "explanation": "The packet crosses R1-EDGE and FW1, which permits published HTTP and tracks the connection, then CORE-SW1 and IPS-1, and APP-SRV answers. The firewall counters rise.",
+    "expected": [
+      "The session crosses R1-EDGE and FW1 and is delivered to APP-SRV",
+      "FW1 OUTSIDE-IN:30 is hit and the reply is allowed by connection tracking",
+      "IDS-1 and IPS-1 raise nothing",
+      "The SIEM receives nothing"
+    ]
+  }
+}

@@ -1,6 +1,6 @@
 {
   "contract": "c0-contracts",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Frozen trace event schema (Rev 3, A11). Every event also carries the base fields seq, t and type. Backend: backend/netsec/sim/events.py. Frontend: frontend/src/protocol/events.js. Both are tested against this file.",
   "base_fields": [
     "seq",
@@ -105,6 +105,51 @@
       "to",
       "alert_id"
     ],
+    "zt.decision": [
+      "pid",
+      "node",
+      "pdp",
+      "user",
+      "role",
+      "device",
+      "trust",
+      "resource",
+      "proto",
+      "port",
+      "decision",
+      "reason",
+      "factors"
+    ],
+    "edr.alert": [
+      "alert_id",
+      "node",
+      "state",
+      "severity",
+      "reason",
+      "manager"
+    ],
+    "edr.state": [
+      "node",
+      "state",
+      "cause",
+      "reason"
+    ],
+    "siem.event": [
+      "event_id",
+      "source",
+      "kind",
+      "severity",
+      "node",
+      "src",
+      "dst",
+      "proto",
+      "dport",
+      "reason",
+      "action",
+      "incident_id",
+      "origin_type",
+      "origin_ref"
+    ],
     "run.end": [
       "stats"
     ]
@@ -161,7 +206,9 @@
       "blocked_source",
       "rate_limited",
       "ttl_expired",
-      "no_route"
+      "no_route",
+      "edr_isolated",
+      "zt_deny"
     ]
   },
   "stats_fields": [
@@ -190,5 +237,6 @@
     "packet.delivered",
     "packet.dropped",
     "run.end"
-  ]
+  ],
+  "campus_extension": "zt.decision, edr.alert, edr.state and siem.event, and the drop reasons edr_isolated and zt_deny, were added by the campus security extension. They are emitted only by scenarios that enable the matching feature, so scenarios S1 to S7 emit exactly the events they always did."
 }

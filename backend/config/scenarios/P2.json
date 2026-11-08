@@ -1,0 +1,40 @@
+{
+  "id": "P2",
+  "name": "Unauthorized Security VLAN access",
+  "description": "PC-1 pings SIEM-1 in the Security VLAN. CORE-SW1 denies it with STAFF-IN rule 20.",
+  "duration": 6,
+  "default_seed": 102,
+  "flows": [
+    {
+      "type": "icmp_echo",
+      "id": "P2-ping",
+      "src": "PC-1",
+      "dst": "SIEM-1",
+      "start": 0.5,
+      "count": 4,
+      "interval": 1.0,
+      "payload_bytes": 32
+    }
+  ],
+  "features": {
+    "zero_trust": true,
+    "edr": true,
+    "siem": true
+  },
+  "presentation": {
+    "number": 2,
+    "objective": "Show that a staff computer cannot reach the Security VLAN.",
+    "source": "PC-1",
+    "destination": "SIEM-1",
+    "protocol": "ICMP",
+    "port": null,
+    "security_rule": "STAFF-IN rule 20: deny ip 10.0.10.0/24 to 10.0.99.0/24 (enforced by CORE-SW1).",
+    "explanation": "The echo request is dropped at CORE-SW1 by the STAFF-IN ACL, so the animation stops there and PC-1 gets no reply. The ACL counter rises. IDS-1 sees the copy of the packet that entered the core, but it is passive and only the ACL blocked it.",
+    "expected": [
+      "Every echo request is dropped at CORE-SW1 by STAFF-IN:20",
+      "PC-1 receives no reply",
+      "The SIEM receives a CORE-SW1 enforcement event",
+      "No firewall or IPS action is involved"
+    ]
+  }
+}

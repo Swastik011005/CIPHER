@@ -15,15 +15,16 @@ def _failed_ids(report) -> set[str]:
 def test_frozen_topology_passes_every_check(graph) -> None:
     report = validate_topology(graph.topology)
     assert report.passed, [c.to_dict() for c in report.failures]
-    assert len(report.checks) == 16
+    assert len(report.checks) == 17  # T01-T16 of the frozen contract plus T17 (original contract unchanged)
 
 
-def test_topology_counts_match_the_frozen_contract(graph) -> None:
+def test_topology_counts_are_the_frozen_contract_plus_the_campus_extension(graph) -> None:
+    """17 original nodes + 14 extension nodes, 18 original links + 14 extension links; VLANs, subnets and zones unchanged."""
     assert graph.summary() == {
-        "nodes": 17,
-        "devices": 16,
+        "nodes": 31,
+        "devices": 30,
         "segments": 1,
-        "links": 18,
+        "links": 32,
         "vlans": 4,
         "subnets": 7,
         "zones": 7,

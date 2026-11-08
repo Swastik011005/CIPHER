@@ -9,7 +9,7 @@ reducers; tests assert the two agree.
     - ``delivered_clean``   delivered and never flagged by a sensor
     - ``delivered_flagged`` delivered after being flagged (for example in Monitor mode)
     - ``blocked``           dropped by policy: fw_deny, acl_deny, ips_drop, ips_reject,
-                            blocked_source, rate_limited
+                            blocked_source, rate_limited, and (campus extension) edr_isolated, zt_deny
     - ``other_drop``        dropped for network reasons: ttl_expired, no_route
 * ``alerts`` counts raw ``alert.raised`` events; ``incidents`` counts distinct incident ids
   (the unit presented to users as a threat).
@@ -20,7 +20,7 @@ from __future__ import annotations
 from netsec.sim.events import RunStats, TraceEvent
 
 BLOCKED_REASONS = frozenset(
-    {"fw_deny", "acl_deny", "ips_drop", "ips_reject", "blocked_source", "rate_limited"}
+    {"fw_deny", "acl_deny", "ips_drop", "ips_reject", "blocked_source", "rate_limited", "edr_isolated", "zt_deny"}
 )
 OTHER_DROP_REASONS = frozenset({"ttl_expired", "no_route"})
 

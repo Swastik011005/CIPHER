@@ -1,0 +1,104 @@
+{
+  "id": "P7",
+  "name": "Compromised endpoint and EDR isolation",
+  "description": "PC-2 is compromised. EDR, IDS-1 and IPS-1 react; the SOC operator isolates it and the other endpoints keep working.",
+  "duration": 32,
+  "default_seed": 107,
+  "flows": [
+    {
+      "type": "tcp_session",
+      "id": "P7-pc1-before",
+      "src": "PC-1",
+      "dst": "APP-SRV",
+      "dport": 443,
+      "start": 0.5,
+      "request_bytes": 520
+    },
+    {
+      "type": "port_scan",
+      "id": "P7-pc2-scan",
+      "src": "PC-2",
+      "dst": "APP-SRV",
+      "ports": [
+        21,
+        22,
+        23,
+        25,
+        53,
+        80,
+        110,
+        135,
+        139,
+        143,
+        443,
+        445,
+        993,
+        3306,
+        3389,
+        5900,
+        8080,
+        8443,
+        9000,
+        9090
+      ],
+      "start": 3.0,
+      "rate": 4
+    },
+    {
+      "type": "icmp_echo",
+      "id": "P7-pc2-after",
+      "src": "PC-2",
+      "dst": "APP-SRV",
+      "start": 12.0,
+      "count": 3,
+      "interval": 1.0,
+      "payload_bytes": 32
+    },
+    {
+      "type": "tcp_session",
+      "id": "P7-pc1-after",
+      "src": "PC-1",
+      "dst": "APP-SRV",
+      "dport": 443,
+      "start": 14.0,
+      "request_bytes": 520
+    }
+  ],
+  "features": {
+    "zero_trust": true,
+    "edr": true,
+    "siem": true
+  },
+  "endpoint_events": [
+    {
+      "t": 1.0,
+      "node": "PC-2",
+      "state": "compromised",
+      "reason": "Simulated beaconing and credential-dumping behaviour (synthetic EDR telemetry)"
+    }
+  ],
+  "operator_actions": [
+    {
+      "t": 9.0,
+      "node": "PC-2",
+      "action": "isolate"
+    }
+  ],
+  "presentation": {
+    "number": 7,
+    "objective": "Show the SOC workflow: detect a compromised endpoint, investigate, contain it, and show that others are unaffected.",
+    "source": "PC-2",
+    "destination": "APP-SRV",
+    "protocol": "TCP",
+    "port": null,
+    "security_rule": "EDR state machine, IDS D1 (port scan), IPS-1 policy for D1, and the EDR isolation policy (only EDR-MGMT-1 stays reachable).",
+    "explanation": "At 1 s the EDR agent on PC-2 reports a compromise to EDR-MGMT-1 and the SIEM opens an incident. From 3 s PC-2 scans APP-SRV: IDS-1 (passive) and IPS-1 (inline) both detect it. At 9 s the operator isolates PC-2 (Isolate Endpoint in its panel, or scripted in the automated run). After that PC-2's traffic is dropped at its own agent, while PC-1 still reaches APP-SRV.",
+    "expected": [
+      "EDR alert for PC-2 at 1 s and PC-2 shown as compromised",
+      "IDS-1 and IPS-1 detect the scan from PC-2 (D1)",
+      "After isolation PC-2's packets are dropped with reason edr_isolated",
+      "PC-1's session after the isolation is delivered",
+      "One SIEM incident connects the EDR, IDS, IPS and isolation events"
+    ]
+  }
+}

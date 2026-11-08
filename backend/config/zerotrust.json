@@ -1,0 +1,40 @@
+{
+  "version": "1.0.0",
+  "description": "Zero Trust policy for the simulated campus. The decision point is ZT-POLICY-1; CORE-SW1 enforces its decision for traffic to a protected resource. Every decision lists the factors it used. Nothing here is a real identity provider.",
+  "pdp": "ZT-POLICY-1",
+  "pep": "CORE-SW1",
+  "default_trust": "trusted",
+  "users": [
+    { "id": "alice", "name": "Alice Mwangi", "role": "staff", "device": "PC-1" },
+    { "id": "bob", "name": "Bob Okafor", "role": "staff", "device": "PC-2" },
+    { "id": "carol", "name": "Carol Singh", "role": "staff", "device": "LAPTOP-1" },
+    { "id": "dev3", "name": "Lab user 3", "role": "staff", "device": "PC-3" },
+    { "id": "dev4", "name": "Lab user 4", "role": "staff", "device": "PC-4" },
+    { "id": "dev5", "name": "Lab user 5", "role": "staff", "device": "PC-5" },
+    { "id": "dev6", "name": "Lab user 6", "role": "staff", "device": "PC-6" },
+    { "id": "dev7", "name": "Lab user 7", "role": "staff", "device": "PC-7" },
+    { "id": "dana", "name": "Dana Whitfield", "role": "admin", "device": "ADMIN-PC" },
+    { "id": "eli", "name": "Eli Park", "role": "admin", "device": "ADMIN-PC-2" },
+    { "id": "farah", "name": "Farah Haddad", "role": "admin", "device": "ADMIN-PC-3" },
+    { "id": "gus", "name": "Gus Romero", "role": "admin", "device": "ADMIN-PC-4" },
+    { "id": "ext-user", "name": "External visitor", "role": "external", "device": "EXT-USR" },
+    { "id": "ext-attacker", "name": "Simulated attacker", "role": "external", "device": "EXT-ATK" }
+  ],
+  "resources": [
+    { "id": "SIEM-1", "node": "SIEM-1", "description": "SIEM event console" },
+    { "id": "EDR-MGMT-1", "node": "EDR-MGMT-1", "description": "EDR management server" },
+    { "id": "ZT-POLICY-1", "node": "ZT-POLICY-1", "description": "Zero Trust policy decision point" },
+    { "id": "SEC-LOG", "node": "SEC-LOG", "description": "Syslog and alert collector" }
+  ],
+  "permissions": [
+    { "role": "admin", "resource": "SIEM-1", "allow": ["tcp/443", "icmp"], "restricted_ok": ["tcp/443"] },
+    { "role": "admin", "resource": "EDR-MGMT-1", "allow": ["tcp/8443", "icmp"], "restricted_ok": [] },
+    { "role": "admin", "resource": "ZT-POLICY-1", "allow": ["tcp/8444", "icmp"], "restricted_ok": [] },
+    { "role": "admin", "resource": "SEC-LOG", "allow": ["icmp"], "restricted_ok": [] }
+  ],
+  "notes": [
+    "Staff and external roles have no permission on any protected resource.",
+    "An administrator gets only the permissions listed for the admin role; there is no wildcard.",
+    "restricted_ok lists the ports a device with 'restricted' trust may still use."
+  ]
+}

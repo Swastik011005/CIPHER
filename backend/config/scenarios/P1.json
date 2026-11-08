@@ -1,0 +1,39 @@
+{
+  "id": "P1",
+  "name": "Normal communication",
+  "description": "PC-1 opens an HTTPS session to APP-SRV. It is permitted everywhere on the way, so nothing is raised.",
+  "duration": 18,
+  "default_seed": 101,
+  "flows": [
+    {
+      "type": "tcp_session",
+      "id": "P1-https",
+      "src": "PC-1",
+      "dst": "APP-SRV",
+      "dport": 443,
+      "start": 0.5,
+      "request_bytes": 520
+    }
+  ],
+  "features": {
+    "zero_trust": true,
+    "edr": true,
+    "siem": true
+  },
+  "presentation": {
+    "number": 1,
+    "objective": "Show that legitimate traffic is allowed and generates no security noise.",
+    "source": "PC-1",
+    "destination": "APP-SRV",
+    "protocol": "TCP",
+    "port": 443,
+    "security_rule": "STAFF-IN rule 100 permits it; IPS-1 inspects it and finds nothing; no detector fires.",
+    "explanation": "The packet crosses ACC-SW2, CORE-SW1 (ACL permit), IPS-1 (clean) and SRV-SW3 and reaches APP-SRV, which answers. IDS-1 sees a SPAN copy and stays quiet, so the SIEM receives nothing.",
+    "expected": [
+      "The session is delivered and APP-SRV answers",
+      "No IDS-1 alert and no IPS-1 action",
+      "The SIEM receives no event",
+      "Nothing is blocked"
+    ]
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "version": "1.0.0",
+  "description": "What the simulated SIEM-1 receives. A component forwards only the kinds listed here, and only when it really produced the event in the run. Simulated telemetry: nothing here is a real log feed.",
+  "collector": "SIEM-1",
+  "incident_window_s": 120,
+  "dedupe_s": 10,
+  "forward": {
+    "FW1": ["policy_deny"],
+    "CORE-SW1": ["policy_deny"],
+    "IDS-1": ["alert"],
+    "IPS-1": ["alert", "action"],
+    "EDR": ["alert", "state"],
+    "ZERO-TRUST": ["deny", "restricted"]
+  },
+  "severity": {
+    "policy_deny": "medium",
+    "edr_isolated": "high",
+    "edr_restored": "low",
+    "zt_deny": "medium",
+    "zt_restricted": "low",
+    "ips_action_applied": "high",
+    "ips_action_monitor": "medium"
+  }
+}

@@ -19,7 +19,7 @@ def test_health_returns_200_and_says_it_is_a_local_simulation(client) -> None:
     body = response.json()
     assert body["status"] == "ok" and body["service"] == "netsec-ids-engine"
     assert body["mode"] == "simulation" and body["real_traffic"] is False
-    assert body["topology"] == {"loaded": True, "valid": True, "nodes": 17, "links": 18}
+    assert body["topology"] == {"loaded": True, "valid": True, "nodes": 31, "links": 32}
     assert body["scenarios_available"] == ["S1", "S2", "S3", "S4", "S5", "S6", "S7"]
     assert body["stage"] == 7 and body["uptime_s"] >= 0
 
@@ -29,7 +29,7 @@ def test_topology_returns_the_authoritative_topology(client, raw_topology) -> No
     assert response.status_code == 200
     body = response.json()
     assert body["summary"] == {
-        "nodes": 17, "devices": 16, "segments": 1, "links": 18, "vlans": 4, "subnets": 7, "zones": 7,
+        "nodes": 31, "devices": 30, "segments": 1, "links": 32, "vlans": 4, "subnets": 7, "zones": 7,
     }
     assert body["validation"]["passed"] is True and body["validation"]["failed_count"] == 0
     assert [n["id"] for n in body["nodes"]] == [n["id"] for n in raw_topology["nodes"]]

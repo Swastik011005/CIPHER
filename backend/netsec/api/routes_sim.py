@@ -8,6 +8,7 @@ from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, ConfigDict, Field
 
 from netsec.analysis.expectations import expectation_text, run_checks
+from netsec.security.state import SecuritySnapshot
 from netsec.sim.controls import ControlSpec
 from netsec.sim.engine import EngineError, run_scenario
 from netsec.traffic.scenarios import FlowSpec
@@ -25,6 +26,10 @@ class RunRequest(BaseModel):
     controls: list[ControlSpec] = Field(default_factory=list, max_length=20)
     #: Extra traffic from the Send traffic form, added to the scenario's own flows.
     custom_flows: list[FlowSpec] = Field(default_factory=list, max_length=5)
+    #: Run the scenario's scripted SOC operator actions (isolate/restore) as well. The automated checks use it; the UI leaves it off so the visitor acts.
+    scripted_operator: bool = False
+    #: Keep the isolation state this run ended with (the operator's decision), so the CLI and later runs see it.
+    commit_state: bool = False
 
 
 @router.get("/scenarios")
@@ -51,9 +56,17 @@ def run(body: RunRequest, request: Request) -> dict[str, Any]:
     state = request.app.state
     scenario = load_scenario(body.scenario_id, state.scenarios_dir)
     try:
-        result = run_scenario(state.graph, scenario, body.seed, body.ips_mode, body.controls, body.custom_flows, state.rules.current)
+        result = run_scenario(
+            state.graph, scenario, body.seed, body.ips_mode, body.controls, body.custom_flows, state.rules.current,
+            security_state=state.security.snapshot(), scripted_operator=body.scripted_operator,
+        )
     except EngineError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
+    if not state.rules_read_only:
+        state.security.record_run(result.events)
+        if body.commit_state and result.final_isolated is not None:
+            snap = state.security.snapshot()
+            state.security.apply(SecuritySnapshot(result.final_isolated, snap.trust, snap.roles, snap.revoked))
     return {
         "run_id": result.run_id,
         "scenario_id": result.scenario_id,
@@ -65,6 +78,7 @@ def run(body: RunRequest, request: Request) -> dict[str, Any]:
         "rules_hash": state.rules.current.digest(),
         "rules_customised": state.rules.customised,
         "summary": result.stats.model_dump(),
+        "final_isolated": list(result.final_isolated) if result.final_isolated is not None else None,
         "events": result.events,
     }
 

@@ -97,7 +97,7 @@ def classify(method: str, path: str) -> Optional[str]:
     path = path.rstrip("/") or "/"
     if method == "OPTIONS" or not path.startswith("/api/") or path == "/api/health":
         return None  # preflights, the front end and the platform's health check are never limited
-    if path == "/api/sim/run":
+    if path in ("/api/sim/run", "/api/cli/exec"):
         return "run"
     if path == "/api/sim/validate":
         return "validate"

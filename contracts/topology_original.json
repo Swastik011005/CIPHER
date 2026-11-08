@@ -1,0 +1,637 @@
+{
+  "note": "The original 17 nodes and 18 links of the frozen Rev 3 contract. The campus extension appends nodes and links and appends ports to ACC-SW2, CORE-SW1 and SRV-SW3; it never changes anything listed here.",
+  "nodes": {
+    "INET": {
+      "type": "segment",
+      "form_factor": "internet-cloud",
+      "zone": "OUTSIDE",
+      "interfaces": {
+        "p1": {
+          "kind": "physical",
+          "ip": null,
+          "prefix": null,
+          "gateway": null,
+          "vlan": null
+        },
+        "p2": {
+          "kind": "physical",
+          "ip": null,
+          "prefix": null,
+          "gateway": null,
+          "vlan": null
+        },
+        "p3": {
+          "kind": "physical",
+          "ip": null,
+          "prefix": null,
+          "gateway": null,
+          "vlan": null
+        }
+      }
+    },
+    "EXT-USR": {
+      "type": "host",
+      "form_factor": "laptop",
+      "zone": "OUTSIDE",
+      "interfaces": {
+        "eth0": {
+          "kind": "physical",
+          "ip": "203.0.113.25",
+          "prefix": 24,
+          "gateway": "203.0.113.1",
+          "vlan": null
+        }
+      }
+    },
+    "EXT-ATK": {
+      "type": "host",
+      "form_factor": "laptop",
+      "zone": "OUTSIDE",
+      "interfaces": {
+        "eth0": {
+          "kind": "physical",
+          "ip": "203.0.113.66",
+          "prefix": 24,
+          "gateway": "203.0.113.1",
+          "vlan": null
+        }
+      }
+    },
+    "R1-EDGE": {
+      "type": "router",
+      "form_factor": "router",
+      "zone": "PERIMETER",
+      "interfaces": {
+        "Gi0/0": {
+          "kind": "physical",
+          "ip": "203.0.113.1",
+          "prefix": 24,
+          "gateway": null,
+          "vlan": null
+        },
+        "Gi0/1": {
+          "kind": "physical",
+          "ip": "10.255.0.1",
+          "prefix": 30,
+          "gateway": null,
+          "vlan": null
+        }
+      }
+    },
+    "FW1": {
+      "type": "firewall",
+      "form_factor": "firewall",
+      "zone": "PERIMETER",
+      "interfaces": {
+        "outside": {
+          "kind": "physical",
+          "ip": "10.255.0.2",
+          "prefix": 30,
+          "gateway": null,
+          "vlan": null
+        },
+        "inside": {
+          "kind": "physical",
+          "ip": "10.255.1.1",
+          "prefix": 30,
+          "gateway": null,
+          "vlan": null
+        }
+      }
+    },
+    "CORE-SW1": {
+      "type": "l3switch",
+      "form_factor": "switch-l3",
+      "zone": "CORE",
+      "interfaces": {
+        "Gi0/1": {
+          "kind": "physical",
+          "ip": "10.255.1.2",
+          "prefix": 30,
+          "gateway": null,
+          "vlan": null
+        },
+        "Gi0/2": {
+          "kind": "physical",
+          "ip": null,
+          "prefix": null,
+          "gateway": null,
+          "vlan": null
+        },
+        "Gi0/3": {
+          "kind": "physical",
+          "ip": null,
+          "prefix": null,
+          "gateway": null,
+          "vlan": null
+        },
+        "Gi0/4": {
+          "kind": "physical",
+          "ip": null,
+          "prefix": null,
+          "gateway": null,
+          "vlan": null
+        },
+        "Gi0/5": {
+          "kind": "physical",
+          "ip": null,
+          "prefix": null,
+          "gateway": null,
+          "vlan": null
+        },
+        "Gi0/6": {
+          "kind": "physical",
+          "ip": null,
+          "prefix": null,
+          "gateway": null,
+          "vlan": null
+        },
+        "Gi0/7": {
+          "kind": "physical",
+          "ip": null,
+          "prefix": null,
+          "gateway": null,
+          "vlan": null
+        },
+        "Vlan10": {
+          "kind": "svi",
+          "ip": "10.0.10.1",
+          "prefix": 24,
+          "gateway": null,
+          "vlan": 10
+        },
+        "Vlan20": {
+          "kind": "svi",
+          "ip": "10.0.20.1",
+          "prefix": 24,
+          "gateway": null,
+          "vlan": 20
+        },
+        "Vlan30": {
+          "kind": "svi",
+          "ip": "10.0.30.1",
+          "prefix": 24,
+          "gateway": null,
+          "vlan": 30
+        },
+        "Vlan99": {
+          "kind": "svi",
+          "ip": "10.0.99.1",
+          "prefix": 24,
+          "gateway": null,
+          "vlan": 99
+        }
+      }
+    },
+    "ACC-SW2": {
+      "type": "l2switch",
+      "form_factor": "switch-l2",
+      "zone": "STAFF",
+      "interfaces": {
+        "Gi0/1": {
+          "kind": "physical",
+          "ip": null,
+          "prefix": null,
+          "gateway": null,
+          "vlan": null
+        },
+        "Fa0/1": {
+          "kind": "physical",
+          "ip": null,
+          "prefix": null,
+          "gateway": null,
+          "vlan": null
+        },
+        "Fa0/2": {
+          "kind": "physical",
+          "ip": null,
+          "prefix": null,
+          "gateway": null,
+          "vlan": null
+        },
+        "Fa0/3": {
+          "kind": "physical",
+          "ip": null,
+          "prefix": null,
+          "gateway": null,
+          "vlan": null
+        },
+        "Fa0/4": {
+          "kind": "physical",
+          "ip": null,
+          "prefix": null,
+          "gateway": null,
+          "vlan": null
+        }
+      }
+    },
+    "PC-1": {
+      "type": "host",
+      "form_factor": "desktop",
+      "zone": "STAFF",
+      "interfaces": {
+        "eth0": {
+          "kind": "physical",
+          "ip": "10.0.10.11",
+          "prefix": 24,
+          "gateway": "10.0.10.1",
+          "vlan": null
+        }
+      }
+    },
+    "PC-2": {
+      "type": "host",
+      "form_factor": "desktop",
+      "zone": "STAFF",
+      "interfaces": {
+        "eth0": {
+          "kind": "physical",
+          "ip": "10.0.10.12",
+          "prefix": 24,
+          "gateway": "10.0.10.1",
+          "vlan": null
+        }
+      }
+    },
+    "LAPTOP-1": {
+      "type": "host",
+      "form_factor": "laptop",
+      "zone": "STAFF",
+      "interfaces": {
+        "eth0": {
+          "kind": "physical",
+          "ip": "10.0.10.13",
+          "prefix": 24,
+          "gateway": "10.0.10.1",
+          "vlan": null
+        }
+      }
+    },
+    "ADMIN-PC": {
+      "type": "host",
+      "form_factor": "desktop",
+      "zone": "ADMIN",
+      "interfaces": {
+        "eth0": {
+          "kind": "physical",
+          "ip": "10.0.20.10",
+          "prefix": 24,
+          "gateway": "10.0.20.1",
+          "vlan": null
+        }
+      }
+    },
+    "IDS-1": {
+      "type": "ids",
+      "form_factor": "ids-sensor",
+      "zone": "SECOPS",
+      "interfaces": {
+        "span": {
+          "kind": "physical",
+          "ip": null,
+          "prefix": null,
+          "gateway": null,
+          "vlan": null
+        },
+        "mgmt": {
+          "kind": "physical",
+          "ip": "10.0.99.10",
+          "prefix": 24,
+          "gateway": "10.0.99.1",
+          "vlan": null
+        }
+      }
+    },
+    "SEC-LOG": {
+      "type": "syslog",
+      "form_factor": "soc-console",
+      "zone": "SECOPS",
+      "interfaces": {
+        "eth0": {
+          "kind": "physical",
+          "ip": "10.0.99.20",
+          "prefix": 24,
+          "gateway": "10.0.99.1",
+          "vlan": null
+        }
+      }
+    },
+    "IPS-1": {
+      "type": "ips",
+      "form_factor": "ips-appliance",
+      "zone": "SERVERS",
+      "interfaces": {
+        "in": {
+          "kind": "physical",
+          "ip": null,
+          "prefix": null,
+          "gateway": null,
+          "vlan": null
+        },
+        "out": {
+          "kind": "physical",
+          "ip": null,
+          "prefix": null,
+          "gateway": null,
+          "vlan": null
+        },
+        "mgmt": {
+          "kind": "physical",
+          "ip": "10.0.99.11",
+          "prefix": 24,
+          "gateway": "10.0.99.1",
+          "vlan": null
+        }
+      }
+    },
+    "SRV-SW3": {
+      "type": "l2switch",
+      "form_factor": "switch-l2",
+      "zone": "SERVERS",
+      "interfaces": {
+        "Gi0/1": {
+          "kind": "physical",
+          "ip": null,
+          "prefix": null,
+          "gateway": null,
+          "vlan": null
+        },
+        "Fa0/1": {
+          "kind": "physical",
+          "ip": null,
+          "prefix": null,
+          "gateway": null,
+          "vlan": null
+        },
+        "Fa0/2": {
+          "kind": "physical",
+          "ip": null,
+          "prefix": null,
+          "gateway": null,
+          "vlan": null
+        }
+      }
+    },
+    "APP-SRV": {
+      "type": "host",
+      "form_factor": "rack-server",
+      "zone": "SERVERS",
+      "interfaces": {
+        "eth0": {
+          "kind": "physical",
+          "ip": "10.0.30.10",
+          "prefix": 24,
+          "gateway": "10.0.30.1",
+          "vlan": null
+        }
+      }
+    },
+    "DB-SRV": {
+      "type": "host",
+      "form_factor": "rack-server",
+      "zone": "SERVERS",
+      "interfaces": {
+        "eth0": {
+          "kind": "physical",
+          "ip": "10.0.30.20",
+          "prefix": 24,
+          "gateway": "10.0.30.1",
+          "vlan": null
+        }
+      }
+    }
+  },
+  "links": {
+    "L01": {
+      "id": "L01",
+      "a": {
+        "node": "EXT-USR",
+        "iface": "eth0"
+      },
+      "b": {
+        "node": "INET",
+        "iface": "p1"
+      },
+      "kind": "ethernet"
+    },
+    "L02": {
+      "id": "L02",
+      "a": {
+        "node": "EXT-ATK",
+        "iface": "eth0"
+      },
+      "b": {
+        "node": "INET",
+        "iface": "p2"
+      },
+      "kind": "ethernet"
+    },
+    "L03": {
+      "id": "L03",
+      "a": {
+        "node": "INET",
+        "iface": "p3"
+      },
+      "b": {
+        "node": "R1-EDGE",
+        "iface": "Gi0/0"
+      },
+      "kind": "ethernet"
+    },
+    "L04": {
+      "id": "L04",
+      "a": {
+        "node": "R1-EDGE",
+        "iface": "Gi0/1"
+      },
+      "b": {
+        "node": "FW1",
+        "iface": "outside"
+      },
+      "kind": "ethernet"
+    },
+    "L05": {
+      "id": "L05",
+      "a": {
+        "node": "FW1",
+        "iface": "inside"
+      },
+      "b": {
+        "node": "CORE-SW1",
+        "iface": "Gi0/1"
+      },
+      "kind": "ethernet"
+    },
+    "L06": {
+      "id": "L06",
+      "a": {
+        "node": "CORE-SW1",
+        "iface": "Gi0/2"
+      },
+      "b": {
+        "node": "ACC-SW2",
+        "iface": "Gi0/1"
+      },
+      "kind": "trunk",
+      "trunk_vlans": [
+        10,
+        20
+      ]
+    },
+    "L07": {
+      "id": "L07",
+      "a": {
+        "node": "ACC-SW2",
+        "iface": "Fa0/1"
+      },
+      "b": {
+        "node": "PC-1",
+        "iface": "eth0"
+      },
+      "kind": "access",
+      "vlan": 10
+    },
+    "L08": {
+      "id": "L08",
+      "a": {
+        "node": "ACC-SW2",
+        "iface": "Fa0/2"
+      },
+      "b": {
+        "node": "PC-2",
+        "iface": "eth0"
+      },
+      "kind": "access",
+      "vlan": 10
+    },
+    "L09": {
+      "id": "L09",
+      "a": {
+        "node": "ACC-SW2",
+        "iface": "Fa0/3"
+      },
+      "b": {
+        "node": "LAPTOP-1",
+        "iface": "eth0"
+      },
+      "kind": "access",
+      "vlan": 10
+    },
+    "L10": {
+      "id": "L10",
+      "a": {
+        "node": "ACC-SW2",
+        "iface": "Fa0/4"
+      },
+      "b": {
+        "node": "ADMIN-PC",
+        "iface": "eth0"
+      },
+      "kind": "access",
+      "vlan": 20
+    },
+    "L11": {
+      "id": "L11",
+      "a": {
+        "node": "CORE-SW1",
+        "iface": "Gi0/3"
+      },
+      "b": {
+        "node": "IDS-1",
+        "iface": "span"
+      },
+      "kind": "span"
+    },
+    "L12": {
+      "id": "L12",
+      "a": {
+        "node": "CORE-SW1",
+        "iface": "Gi0/4"
+      },
+      "b": {
+        "node": "IDS-1",
+        "iface": "mgmt"
+      },
+      "kind": "mgmt",
+      "vlan": 99
+    },
+    "L13": {
+      "id": "L13",
+      "a": {
+        "node": "CORE-SW1",
+        "iface": "Gi0/5"
+      },
+      "b": {
+        "node": "SEC-LOG",
+        "iface": "eth0"
+      },
+      "kind": "access",
+      "vlan": 99
+    },
+    "L14": {
+      "id": "L14",
+      "a": {
+        "node": "CORE-SW1",
+        "iface": "Gi0/6"
+      },
+      "b": {
+        "node": "IPS-1",
+        "iface": "in"
+      },
+      "kind": "access",
+      "vlan": 30
+    },
+    "L15": {
+      "id": "L15",
+      "a": {
+        "node": "IPS-1",
+        "iface": "out"
+      },
+      "b": {
+        "node": "SRV-SW3",
+        "iface": "Gi0/1"
+      },
+      "kind": "access",
+      "vlan": 30
+    },
+    "L16": {
+      "id": "L16",
+      "a": {
+        "node": "CORE-SW1",
+        "iface": "Gi0/7"
+      },
+      "b": {
+        "node": "IPS-1",
+        "iface": "mgmt"
+      },
+      "kind": "mgmt",
+      "vlan": 99
+    },
+    "L17": {
+      "id": "L17",
+      "a": {
+        "node": "SRV-SW3",
+        "iface": "Fa0/1"
+      },
+      "b": {
+        "node": "APP-SRV",
+        "iface": "eth0"
+      },
+      "kind": "access",
+      "vlan": 30
+    },
+    "L18": {
+      "id": "L18",
+      "a": {
+        "node": "SRV-SW3",
+        "iface": "Fa0/2"
+      },
+      "b": {
+        "node": "DB-SRV",
+        "iface": "eth0"
+      },
+      "kind": "access",
+      "vlan": 30
+    }
+  }
+}

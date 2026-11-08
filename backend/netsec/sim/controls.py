@@ -33,4 +33,13 @@ class DetectorControl(_Strict):
     enabled: bool
 
 
-ControlSpec = Annotated[Union[IpsModeControl, DetectorControl], Field(discriminator="type")]
+class EndpointControl(_Strict):
+    """The SOC operator isolates an endpoint (EDR) or restores it. Applied at the playhead like the other controls."""
+
+    type: Literal["endpoint"]
+    t: float = Field(ge=0)
+    node: str = Field(min_length=1, max_length=32)
+    action: Literal["isolate", "restore"]
+
+
+ControlSpec = Annotated[Union[IpsModeControl, DetectorControl, EndpointControl], Field(discriminator="type")]

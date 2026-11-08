@@ -1,0 +1,39 @@
+{
+  "id": "P3",
+  "name": "Database access restriction",
+  "description": "PC-1 tries to open TCP/3306 on DB-SRV. CORE-SW1 denies it with STAFF-IN rule 10.",
+  "duration": 3,
+  "default_seed": 103,
+  "flows": [
+    {
+      "type": "tcp_session",
+      "id": "P3-mysql",
+      "src": "PC-1",
+      "dst": "DB-SRV",
+      "dport": 3306,
+      "start": 0.5,
+      "request_bytes": 140
+    }
+  ],
+  "features": {
+    "zero_trust": true,
+    "edr": true,
+    "siem": true
+  },
+  "presentation": {
+    "number": 3,
+    "objective": "Show that staff cannot reach the database directly.",
+    "source": "PC-1",
+    "destination": "DB-SRV",
+    "protocol": "TCP",
+    "port": 3306,
+    "security_rule": "STAFF-IN rule 10: deny tcp 10.0.10.0/24 to 10.0.30.20 port 3306 (enforced by CORE-SW1).",
+    "explanation": "The SYN is dropped at CORE-SW1 before it can reach the server VLAN, so the connection never opens and the rule counter rises.",
+    "expected": [
+      "The SYN is dropped at CORE-SW1 by STAFF-IN:10",
+      "No connection is established",
+      "The packet never reaches IPS-1 or DB-SRV",
+      "The SIEM receives a CORE-SW1 enforcement event"
+    ]
+  }
+}

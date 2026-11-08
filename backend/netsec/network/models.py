@@ -24,6 +24,8 @@ FormFactor = Literal[
     "internet-cloud",
 ]
 LinkKind = Literal["ethernet", "access", "trunk", "mgmt", "span"]
+#: Optional function of a security-management host (campus extension). The original 17 nodes have none.
+NodeFunction = Literal["siem", "edr_manager", "zero_trust_pdp"]
 
 
 class _Strict(BaseModel):
@@ -166,6 +168,7 @@ class Node(_Strict):
     routes: list[Route] = Field(default_factory=list)
     services: list[Service] = Field(default_factory=list)
     bridge: Optional[Bridge] = None
+    function: Optional[NodeFunction] = None
 
     @property
     def is_device(self) -> bool:

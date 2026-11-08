@@ -1,0 +1,68 @@
+{
+  "id": "P8",
+  "name": "Endpoint recovery",
+  "description": "PC-2 starts isolated. The operator restores it; connectivity that was permitted comes back and the SIEM records it.",
+  "duration": 26,
+  "default_seed": 108,
+  "flows": [
+    {
+      "type": "tcp_session",
+      "id": "P8-pc1",
+      "src": "PC-1",
+      "dst": "APP-SRV",
+      "dport": 443,
+      "start": 0.5,
+      "request_bytes": 520
+    },
+    {
+      "type": "icmp_echo",
+      "id": "P8-pc2-isolated",
+      "src": "PC-2",
+      "dst": "APP-SRV",
+      "start": 1.0,
+      "count": 2,
+      "interval": 1.0,
+      "payload_bytes": 32
+    },
+    {
+      "type": "tcp_session",
+      "id": "P8-pc2-restored",
+      "src": "PC-2",
+      "dst": "APP-SRV",
+      "dport": 443,
+      "start": 8.0,
+      "request_bytes": 520
+    }
+  ],
+  "features": {
+    "zero_trust": true,
+    "edr": true,
+    "siem": true
+  },
+  "initial_isolated": [
+    "PC-2"
+  ],
+  "operator_actions": [
+    {
+      "t": 5.0,
+      "node": "PC-2",
+      "action": "restore"
+    }
+  ],
+  "presentation": {
+    "number": 8,
+    "objective": "Show that restoring an endpoint removes the isolation and returns its permitted connectivity.",
+    "source": "PC-2",
+    "destination": "APP-SRV",
+    "protocol": "TCP",
+    "port": 443,
+    "security_rule": "EDR isolation policy while isolated; after restore the normal rules apply again (STAFF-IN rule 100, IPS-1 inspection).",
+    "explanation": "While isolated PC-2's pings are dropped at its own agent. At 5 s the operator restores it (Restore Endpoint in its panel, or scripted in the automated run): the state returns to healthy, the SIEM records it, and the HTTPS session at 8 s reaches APP-SRV.",
+    "expected": [
+      "PC-2's pings before the restore are dropped with reason edr_isolated",
+      "The restore changes PC-2 to healthy and the SIEM records it",
+      "PC-2's HTTPS session after the restore is delivered",
+      "PC-1 is unaffected throughout"
+    ]
+  }
+}

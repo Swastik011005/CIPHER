@@ -45,6 +45,25 @@ class TraceRecorder:
         return trace_digest(self._events)
 
 
+class SiemTraceRecorder(TraceRecorder):
+    """A recorder that lets the simulated SIEM watch every event and write its own ``siem.event`` records right after.
+
+    The SIEM only reacts to events the engine really wrote, so it cannot invent one. Its events share the instant of the event
+    that caused them.
+    """
+
+    def __init__(self, collector: Any) -> None:
+        super().__init__()
+        self._collector = collector
+
+    def emit(self, event_type: str, t_us: int, **fields: Any) -> TraceEvent:
+        record = super().emit(event_type, t_us, **fields)
+        if event_type != "siem.event":
+            for payload in self._collector.observe(record):
+                super().emit("siem.event", t_us, **payload)
+        return record
+
+
 def canonical_json(value: Any) -> str:
     """Compact, key-sorted JSON used for hashing."""
     return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=True)

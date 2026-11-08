@@ -32,9 +32,13 @@ from netsec.security.policy.engine import FlowKey, PolicyEvaluator
 from netsec.security.policy.models import PolicyFile, load_policies
 from netsec.security.prevention.block_table import Block
 from netsec.security.prevention.ips import IpsEngine
+from netsec.security.edr import MANAGER as EDR_MANAGER, EdrEngine
 from netsec.security.ruleset import RuleSet
-from netsec.sim.trace import TraceRecorder, canonical_json, trace_digest
-from netsec.sim.controls import ControlSpec, DetectorControl, IpsModeControl
+from netsec.security.siem import SiemCollector, load_siem
+from netsec.security.state import EMPTY_SNAPSHOT, SecuritySnapshot
+from netsec.security.zerotrust import ZeroTrustEngine, load_zerotrust
+from netsec.sim.trace import SiemTraceRecorder, TraceRecorder, canonical_json, trace_digest
+from netsec.sim.controls import ControlSpec, DetectorControl, EndpointControl, IpsModeControl
 from netsec.traffic.flows import FlagProbeFlow, IcmpEchoFlow, PortScanFlow, SynFloodFlow, TcpSessionFlow
 from netsec.traffic.host_stack import HostStack
 from netsec.traffic.packet import IP_TCP_HEADER_BYTES, Packet, PacketSpec, tcp_flags
@@ -66,6 +70,8 @@ class RunResult:
     trace_hash: str
     events: list[TraceEvent]
     stats: RunStats
+    #: Endpoints isolated when the run ended; None when the scenario does not use EDR.
+    final_isolated: Optional[tuple[str, ...]] = None
 
 
 class Engine:
@@ -80,6 +86,7 @@ class Engine:
         detectors: Optional[DetectorsConfig] = None,
         ips_policy: Optional[IpsPolicyConfig] = None,
         policies: Optional[list[PolicyFile]] = None,
+        security_state: Optional[SecuritySnapshot] = None,
     ) -> None:
         self.graph = graph
         self.seed = seed
@@ -93,6 +100,17 @@ class Engine:
         self.ids = DetectionEngine("IDS-1", self.detectors_config, self.correlator)
         self.ips = IpsEngine(ips_mode, self.detectors_config, self.ips_policy_config, self.correlator)
         self._duration_us = 0
+        self.security_state = security_state or EMPTY_SNAPSHOT
+        # Campus security features, switched on per scenario in run(); None means off.
+        self._zt: Optional[ZeroTrustEngine] = None
+        self._zt_flows: dict = {}
+        self._edr: Optional[EdrEngine] = None
+        self._rule_text = {
+            f"{p.name}:{r.id}": r.description or f"rule {r.id}"
+            for pf in self.policy_files
+            for p in pf.policies
+            for r in p.rules
+        }
         self.tables: dict[str, RouteTable] = build_route_tables(graph)
         self.rng = random.Random(seed)
         self.scheduler = Scheduler()
@@ -111,6 +129,8 @@ class Engine:
         scenario: ScenarioSpec,
         controls: Sequence[ControlSpec] = (),
         custom_flows: Sequence[FlowSpec] = (),
+        scripted_operator: bool = False,
+        allow_overrun: bool = False,
     ) -> RunResult:
         """Simulate ``scenario`` to completion and return the finished trace.
 
@@ -131,10 +151,12 @@ class Engine:
                 "detectors": self.detectors_config.model_dump(mode="json"),
                 "ips_policy": self.ips_policy_config.model_dump(mode="json"),
                 "policies": [f.model_dump(mode="json") for f in self.policy_files],
+                **({"security": self.security_state.to_dict()} if self._uses_features(scenario) else {}),
             }
         )
         config_hash = hashlib.sha256(config_json.encode("utf-8")).hexdigest()[:16]
         run_id = f"run-{config_hash[:12]}"
+        self._setup_features(scenario, controls)
 
         self.trace.emit(
             "run.meta",
@@ -147,6 +169,14 @@ class Engine:
             config_hash=config_hash,
         )
         self._duration_us = to_us(scenario.duration)
+        if self._edr is not None:
+            for node in sorted(self._initially_isolated):
+                self.trace.emit("edr.state", 0, node=node, state="isolated", cause="scenario", reason=f"{node} starts isolated")
+            for event in scenario.endpoint_events:
+                self.scheduler.schedule(to_us(event.t), Priority.CONTROL, lambda now, e=event: self._endpoint_event(now, e))
+            if scripted_operator:
+                for action in scenario.operator_actions:
+                    self.scheduler.schedule(to_us(action.t), Priority.CONTROL, lambda now, a=action: self._set_isolation(now, a.node, a.action))
         for flow_spec in scenario.flows:
             self._start_flow(flow_spec)
         scenario_ids = {f.id for f in scenario.flows}
@@ -164,7 +194,7 @@ class Engine:
         self.scheduler.run()
 
         end_us = to_us(scenario.duration)
-        if custom_flows:
+        if custom_flows or allow_overrun:
             end_us = max(end_us, self.scheduler.now_us)
         if self.scheduler.now_us > end_us:
             raise EngineError(
@@ -183,7 +213,94 @@ class Engine:
             trace_hash=trace_digest(self.trace.events),
             events=self.trace.events,
             stats=stats,
+            final_isolated=tuple(sorted(n for n in self._edr_endpoints if self._edr.is_isolated(n))) if self._edr is not None else None,
         )
+
+    def rule_description(self, rule_id: str) -> str:
+        """Human description of a policy rule id such as ``STAFF-IN:20``."""
+        return self._rule_text.get(rule_id, rule_id)
+
+    # -- campus security features -----------------------------------------------------------
+
+    @staticmethod
+    def _uses_features(scenario: ScenarioSpec) -> bool:
+        f = scenario.features
+        return bool(f.zero_trust or f.edr or f.siem)
+
+    def _node_of_ip(self, ip: str) -> Optional[str]:
+        owner = self.graph.owner_of_ip(ip)
+        return owner[0] if owner else None
+
+    def _setup_features(self, scenario: ScenarioSpec, controls: Sequence[ControlSpec]) -> None:
+        features = scenario.features
+        self._initially_isolated = set(self.security_state.isolated) | set(scenario.initial_isolated)
+        self._edr_endpoints = [n.id for n in self.graph.topology.nodes if n.type == "host"]
+        if any(isinstance(c, EndpointControl) for c in controls) and not features.edr:
+            raise EngineError(f"scenario {scenario.id} does not use EDR, so an endpoint cannot be isolated in it")
+        for node in self._initially_isolated:
+            if node not in self._edr_endpoints:
+                raise EngineError(f"{node!r} is not an endpoint that can be isolated")
+        if features.edr:
+            self._edr = EdrEngine(self._edr_endpoints, self._initially_isolated)
+        if features.zero_trust:
+            self._zt = ZeroTrustEngine(load_zerotrust(), self.security_state)
+        if features.siem:
+            collector = SiemCollector(load_siem(), self._node_of_ip, lambda rule: self._rule_text.get(rule, rule))
+            self.trace = SiemTraceRecorder(collector)
+
+    def _endpoint_event(self, t_us: int, event) -> None:
+        """The story of a scenario: the EDR agent on an endpoint reports it suspicious or compromised."""
+        assert self._edr is not None
+        if not self._edr.known(event.node):
+            raise EngineError(f"{event.node!r} is not an endpoint with an EDR agent")
+        self._edr.mark(event.node, event.state)
+        self.trace.emit(
+            "edr.alert", t_us, alert_id=self._edr.new_alert_id(), node=event.node, state=event.state,
+            severity="high" if event.state == "compromised" else "medium", reason=event.reason, manager=EDR_MANAGER,
+        )
+        self.trace.emit("edr.state", t_us, node=event.node, state=event.state if not self._edr.is_isolated(event.node) else "isolated", cause="scenario", reason=event.reason)
+
+    def _set_isolation(self, t_us: int, node: str, action: str) -> None:
+        """The SOC operator isolates or restores an endpoint. From this instant the engine's decisions change."""
+        assert self._edr is not None
+        if not self._edr.known(node):
+            raise EngineError(f"{node!r} is not an endpoint with an EDR agent")
+        if action == "isolate":
+            changed = self._edr.isolate(node)
+            state, reason = "isolated", f"Operator isolated {node}: only {EDR_MANAGER} stays reachable"
+        else:
+            changed = self._edr.restore(node)
+            state, reason = "healthy", f"Operator restored {node}: its permitted connectivity is back"
+        if changed:
+            self.trace.emit("edr.state", t_us, node=node, state=state, cause="operator", reason=reason)
+
+    def _apply_zero_trust(self, pkt: Packet, node, t_us: int) -> bool:
+        """CORE-SW1 enforces the Zero Trust decision for traffic to a protected resource. Returns True if the packet was dropped."""
+        assert self._zt is not None
+        src_node = self._node_of_ip(pkt.src)
+        dst_node = self._node_of_ip(pkt.dst)
+        resource = self._zt.resource_of(dst_node) if dst_node else None
+        if resource is None or src_node is None or self.graph.node(src_node).type != "host":
+            return False
+        key = (src_node, dst_node, pkt.proto, pkt.dport)
+        if key in self._zt_flows:
+            # one decision per flow: the later packets of the same conversation follow it without a new event
+            if self._zt_flows[key].decision == "deny":
+                self._drop(t_us, pkt, node.id, "zt_deny")
+                return True
+            return False
+        isolated = self._edr.is_isolated(src_node) if self._edr is not None else src_node in self.security_state.isolated
+        result = self._zt.evaluate(src_node, resource, pkt.proto, pkt.dport, isolated)
+        self._zt_flows[key] = result
+        self.trace.emit(
+            "zt.decision", t_us, pid=pkt.pid, node=node.id, pdp=self._zt.config.pdp, user=result.user, role=result.role,
+            device=result.device, trust=result.trust, resource=result.resource, proto=pkt.proto, port=pkt.dport,
+            decision=result.decision, reason=result.reason, factors=list(result.factors),
+        )
+        if result.decision == "deny":
+            self._drop(t_us, pkt, node.id, "zt_deny")
+            return True
+        return False
 
     # -- flows ---------------------------------------------------------------------------
 
@@ -310,6 +427,11 @@ class Engine:
         )
         plan = compute_route(self.graph, self.tables, spec.src, spec.dst, DEFAULT_TTL)
         self._emit_created(t_us, pkt)
+        if self._edr is not None:
+            src_node = self._node_of_ip(spec.src)
+            if src_node is not None and self._edr.is_isolated(src_node) and self._node_of_ip(spec.dst) != EDR_MANAGER:
+                self._drop(t_us, pkt, src_node, "edr_isolated")
+                return
         if not plan.hops:
             self.trace.emit(
                 "packet.dropped", t_us, pid=pkt.pid, node=plan.terminal_node, reason=plan.outcome
@@ -345,6 +467,8 @@ class Engine:
         if pkt.mirror_of is None:
             if self._apply_policy(pkt, hop, node, t_us):
                 return
+            if self._zt is not None and node.id == self._zt.config.pep and self._apply_zero_trust(pkt, node, t_us):
+                return
             if node.type == "ips" and self._apply_ips(pkt, node, t_us):
                 return
         elif node.type == "ids":
@@ -364,6 +488,12 @@ class Engine:
             )
             return
 
+        if self._edr is not None and pkt.mirror_of is None and node.type == "host":
+            # Traffic to an isolated endpoint is dropped at its agent. A packet an endpoint sent just before it was isolated is
+            # already on the wire and is delivered normally.
+            if self._edr.is_isolated(node.id) and self._node_of_ip(pkt.src) != EDR_MANAGER:
+                self._drop(t_us, pkt, node.id, "edr_isolated")
+                return
         self.trace.emit("packet.delivered", t_us, pid=pkt.pid, node=node.id)
         stack: Optional[HostStack] = self._stacks.get(node.id)
         if stack is not None and pkt.mirror_of is None:
@@ -486,6 +616,8 @@ class Engine:
         elif isinstance(control, DetectorControl):
             self.ids.set_enabled(control.detector, control.enabled)
             self.ips.detection.set_enabled(control.detector, control.enabled)
+        elif isinstance(control, EndpointControl):
+            self._set_isolation(t_us, control.node, control.action)
 
     def _inject_reset(self, pkt: Packet, node, t_us: int) -> None:
         """IPS-1 rejects a TCP connection attempt: it sends the client a RST that looks like it came from the server.
@@ -558,6 +690,8 @@ def run_scenario(
     controls: Sequence[ControlSpec] = (),
     custom_flows: Sequence[FlowSpec] = (),
     rules: Optional[RuleSet] = None,
+    security_state: Optional[SecuritySnapshot] = None,
+    scripted_operator: bool = False,
 ) -> RunResult:
     """Convenience wrapper: run ``scenario`` with ``seed`` (default: the scenario's own).
 
@@ -567,7 +701,7 @@ def run_scenario(
     mode = scenario.pinned_ips_mode or ips_mode
     seed = scenario.default_seed if seed is None else seed
     if rules is None:
-        engine = Engine(graph, seed, mode)
+        engine = Engine(graph, seed, mode, security_state=security_state)
     else:
-        engine = Engine(graph, seed, mode, detectors=rules.detectors, ips_policy=rules.ips_policy, policies=list(rules.policies))
-    return engine.run(scenario, controls, custom_flows)
+        engine = Engine(graph, seed, mode, detectors=rules.detectors, ips_policy=rules.ips_policy, policies=list(rules.policies), security_state=security_state)
+    return engine.run(scenario, controls, custom_flows, scripted_operator)

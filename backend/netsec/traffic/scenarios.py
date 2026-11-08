@@ -11,7 +11,9 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from netsec.config import SCENARIOS_DIR
 
-_SCENARIO_ID = re.compile(r"^S[0-9]{1,2}$")
+_SCENARIO_ID = re.compile(r"^[SP][0-9]{1,2}$")
+_BASELINE_ID = re.compile(r"^S[0-9]{1,2}$")
+_PRESENTATION_ID = re.compile(r"^P[0-9]{1,2}$")
 
 
 class ScenarioError(Exception):
@@ -97,6 +99,45 @@ FlowSpec = Annotated[
 ]
 
 
+class Features(_Strict):
+    """Campus security features a scenario turns on. The baseline scenarios S1 to S7 turn none on, so they emit no new events."""
+
+    zero_trust: bool = False
+    edr: bool = False
+    siem: bool = False
+
+
+class EndpointEventSpec(_Strict):
+    """The scenario's story: at time ``t`` the EDR agent on ``node`` sees the endpoint become suspicious or compromised."""
+
+    t: float = Field(ge=0)
+    node: str
+    state: Literal["suspicious", "compromised"]
+    reason: str
+
+
+class OperatorActionSpec(_Strict):
+    """A scripted SOC operator action (isolate or restore), applied when the scenario is run with ``scripted_operator``."""
+
+    t: float = Field(ge=0)
+    node: str
+    action: Literal["isolate", "restore"]
+
+
+class Presentation(_Strict):
+    """What the scenario launcher shows for a presentation scenario (P1 to P9)."""
+
+    number: int = Field(ge=1, le=9)
+    objective: str
+    source: str
+    destination: str
+    protocol: str
+    port: Optional[int] = None
+    security_rule: str
+    explanation: str
+    expected: list[str] = Field(min_length=1)
+
+
 class ScenarioSpec(_Strict):
     id: str
     name: str
@@ -106,10 +147,16 @@ class ScenarioSpec(_Strict):
     #: When set, the scenario always runs with the IPS in this mode (S5 and S6), whatever the caller asks for.
     pinned_ips_mode: Optional[Literal["monitor", "enforce"]] = None
     flows: list[FlowSpec] = Field(min_length=1)
+    #: Campus security extension (all default to off, so S1 to S7 are unchanged).
+    features: Features = Field(default_factory=Features)
+    initial_isolated: list[str] = Field(default_factory=list)
+    endpoint_events: list[EndpointEventSpec] = Field(default_factory=list)
+    operator_actions: list[OperatorActionSpec] = Field(default_factory=list)
+    presentation: Optional[Presentation] = None
 
 
 def scenario_path(scenario_id: str, directory: Optional[Path] = None) -> Path:
-    """Resolve a scenario id to its file, refusing anything that is not ``S<number>``."""
+    """Resolve a scenario id to its file, refusing anything that is not ``S<number>`` or ``P<number>``."""
     if not _SCENARIO_ID.match(scenario_id):
         raise ScenarioNotFound(f"unknown scenario {scenario_id!r}")
     return (directory or SCENARIOS_DIR) / f"{scenario_id}.json"
@@ -129,10 +176,17 @@ def load_scenario(scenario_id: str, directory: Optional[Path] = None) -> Scenari
 
 
 def list_scenarios(directory: Optional[Path] = None) -> list[ScenarioSpec]:
-    """All scenarios present in this build, ordered by id."""
+    """The baseline scenarios S1 to S7 present in this build, ordered by id."""
     folder = directory or SCENARIOS_DIR
     ids = sorted(
-        (p.stem for p in folder.glob("S*.json") if _SCENARIO_ID.match(p.stem)),
+        (p.stem for p in folder.glob("S*.json") if _BASELINE_ID.match(p.stem)),
         key=lambda s: int(s[1:]),
     )
+    return [load_scenario(i, folder) for i in ids]
+
+
+def list_presentation_scenarios(directory: Optional[Path] = None) -> list[ScenarioSpec]:
+    """The nine presentation scenarios P1 to P9, in order. They are separate from the baseline S1 to S7 and their 93 checks."""
+    folder = directory or SCENARIOS_DIR
+    ids = sorted((p.stem for p in folder.glob("P*.json") if _PRESENTATION_ID.match(p.stem)), key=lambda s: int(s[1:]))
     return [load_scenario(i, folder) for i in ids]

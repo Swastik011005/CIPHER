@@ -19,10 +19,10 @@ from typing import Callable, Optional
 from netsec.network.models import Link, Node, Subnet, Topology
 
 # Frozen contract values (Rev 3, decisions A3).
-EXPECTED_NODES = 17
-EXPECTED_DEVICES = 16
+EXPECTED_ORIGINAL_NODES = 17
+EXPECTED_ORIGINAL_DEVICES = 16
 EXPECTED_SEGMENTS = 1
-EXPECTED_LINKS = 18
+EXPECTED_ORIGINAL_LINKS = 18
 EXPECTED_ZONES = 7
 EXPECTED_VLAN_IDS = frozenset({10, 20, 30, 99})
 EXPECTED_VLAN_CIDRS = {
@@ -90,26 +90,73 @@ def _subnet_of(ip: str, subnets: list[Subnet]) -> Optional[Subnet]:
     return None
 
 
+def _original_contract() -> dict:
+    """The original 17 nodes and 18 links of the frozen Rev 3 contract (``contracts/topology_original.json``)."""
+    import json
+
+    from netsec.config import CONTRACTS_DIR
+
+    return json.loads((CONTRACTS_DIR / "topology_original.json").read_text(encoding="utf-8"))
+
+
 def _check_node_counts(t: Topology) -> CheckResult:
+    """The 17 original nodes (16 devices + INET) are all present; the campus extension only adds devices."""
     problems: list[str] = []
+    original = _original_contract()["nodes"]
+    ids = {n.id for n in t.nodes}
+    missing = sorted(set(original) - ids)
+    if missing:
+        problems.append(f"original nodes missing: {missing}")
     devices = [n for n in t.nodes if n.type != "segment"]
     segments = [n for n in t.nodes if n.type == "segment"]
-    if len(t.nodes) != EXPECTED_NODES:
-        problems.append(f"expected {EXPECTED_NODES} nodes, found {len(t.nodes)}")
-    if len(devices) != EXPECTED_DEVICES:
-        problems.append(f"expected {EXPECTED_DEVICES} devices, found {len(devices)}")
     if len(segments) != EXPECTED_SEGMENTS:
         problems.append(f"expected {EXPECTED_SEGMENTS} abstract segment, found {len(segments)}")
     elif segments[0].id != "INET":
         problems.append(f"the abstract segment must be 'INET', found {segments[0].id!r}")
-    return problems, f"{len(t.nodes)} nodes = {len(devices)} devices + {len(segments)} segment"
+    extension = len(t.nodes) - len(original)
+    return problems, f"{len(t.nodes)} nodes = {len(original)} original + {extension} extension ({len(devices)} devices + {len(segments)} segment)"
 
 
 def _check_link_count(t: Topology) -> CheckResult:
+    """The 18 original links are all present; the extension only adds links."""
     problems = []
-    if len(t.links) != EXPECTED_LINKS:
-        problems.append(f"expected {EXPECTED_LINKS} links, found {len(t.links)}")
-    return problems, f"{len(t.links)} links"
+    original = _original_contract()["links"]
+    ids = {lk.id for lk in t.links}
+    missing = sorted(set(original) - ids)
+    if missing:
+        problems.append(f"original links missing: {missing}")
+    return problems, f"{len(t.links)} links = {len(original)} original + {len(t.links) - len(original)} extension"
+
+
+def _check_original_unchanged(t: Topology) -> CheckResult:
+    """Every original node and link is exactly as the frozen contract has it (the extension may append ports, nothing else)."""
+    problems = []
+    original = _original_contract()
+    nodes = _node_map(t)
+    for node_id, spec in original["nodes"].items():
+        node = nodes.get(node_id)
+        if node is None:
+            continue  # reported by T01
+        if (node.type, node.form_factor, node.zone) != (spec["type"], spec["form_factor"], spec["zone"]):
+            problems.append(f"{node_id}: type, form factor or zone differs from the contract")
+        have = {i.name: i for i in node.interfaces}
+        for name, want in spec["interfaces"].items():
+            iface = have.get(name)
+            if iface is None:
+                problems.append(f"{node_id}:{name} is missing")
+                continue
+            got = {"kind": iface.kind, "ip": iface.ip, "prefix": iface.prefix, "gateway": iface.gateway, "vlan": iface.vlan}
+            if got != want:
+                problems.append(f"{node_id}:{name} differs from the contract: {got} instead of {want}")
+    links = {lk.id: lk for lk in t.links}
+    for link_id, want in original["links"].items():
+        link = links.get(link_id)
+        if link is None:
+            continue  # reported by T02
+        got = link.model_dump(mode="json", exclude_none=True)
+        if got != {k: v for k, v in want.items() if v is not None}:
+            problems.append(f"{link_id} differs from the contract")
+    return problems, "all 17 original nodes and 18 original links are unchanged (identity, zone, addresses, VLANs, endpoints)"
 
 
 def _check_unique_ids(t: Topology) -> CheckResult:
@@ -421,8 +468,8 @@ def _check_span(t: Topology) -> CheckResult:
 
 
 _CHECKS: list[tuple[str, str, Callable[[Topology], CheckResult]]] = [
-    ("T01", "Exactly 17 nodes (16 devices + INET segment)", _check_node_counts),
-    ("T02", "Exactly 18 links", _check_link_count),
+    ("T01", "The 17 original nodes (16 devices + INET segment) are present; the extension only adds devices", _check_node_counts),
+    ("T02", "The 18 original links are present; the extension only adds links", _check_link_count),
     ("T03", "Identifiers are unique", _check_unique_ids),
     ("T04", "Link endpoints reference real nodes and interfaces", _check_link_references),
     ("T05", "Exactly four VLANs (10, 20, 30, 99)", _check_vlans),
@@ -437,6 +484,7 @@ _CHECKS: list[tuple[str, str, Callable[[Topology], CheckResult]]] = [
     ("T14", "Gateways and static routes are reachable and owned by L3 devices", _check_gateways_and_routes),
     ("T15", "Seven zones, every node in a declared zone", _check_zones),
     ("T16", "SPAN configuration is consistent", _check_span),
+    ("T17", "The original contract is unchanged (nodes, links, addresses, VLANs)", _check_original_unchanged),
 ]
 
 

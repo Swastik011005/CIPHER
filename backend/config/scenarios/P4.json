@@ -1,0 +1,57 @@
+{
+  "id": "P4",
+  "name": "Authorized administrator access",
+  "description": "ADMIN-PC uses the SIEM and EDR consoles under explicit Zero Trust permissions; PC-1 tries the same SIEM and is stopped.",
+  "duration": 13,
+  "default_seed": 104,
+  "flows": [
+    {
+      "type": "tcp_session",
+      "id": "P4-admin-siem",
+      "src": "ADMIN-PC",
+      "dst": "SIEM-1",
+      "dport": 443,
+      "start": 0.5,
+      "request_bytes": 400
+    },
+    {
+      "type": "tcp_session",
+      "id": "P4-admin-edr",
+      "src": "ADMIN-PC",
+      "dst": "EDR-MGMT-1",
+      "dport": 8443,
+      "start": 3.0,
+      "request_bytes": 300
+    },
+    {
+      "type": "tcp_session",
+      "id": "P4-staff-siem",
+      "src": "PC-1",
+      "dst": "SIEM-1",
+      "dport": 443,
+      "start": 6.5,
+      "request_bytes": 400
+    }
+  ],
+  "features": {
+    "zero_trust": true,
+    "edr": true,
+    "siem": true
+  },
+  "presentation": {
+    "number": 4,
+    "objective": "Show that access to the Security VLAN is explicit, not implied by being an administrator.",
+    "source": "ADMIN-PC",
+    "destination": "SIEM-1",
+    "protocol": "TCP",
+    "port": 443,
+    "security_rule": "Zero Trust: the admin role is explicitly permitted tcp/443 on SIEM-1 and tcp/8443 on EDR-MGMT-1. PC-1 is stopped earlier by STAFF-IN rule 20.",
+    "explanation": "CORE-SW1 asks ZT-POLICY-1 about each request to a protected resource. ADMIN-PC is trusted and its role holds the permission, so both sessions are allowed and the decisions list the identity, role, device trust and permission used. PC-1 never gets as far as Zero Trust: the STAFF-IN ACL drops it.",
+    "expected": [
+      "Two Zero Trust allow decisions for ADMIN-PC, each with its reasons",
+      "SIEM-1 and EDR-MGMT-1 answer the administrator",
+      "PC-1's request to SIEM-1 is dropped at CORE-SW1 by STAFF-IN:20",
+      "The difference between the two policies is visible"
+    ]
+  }
+}

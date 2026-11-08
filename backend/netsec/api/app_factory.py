@@ -19,6 +19,7 @@ from netsec.api.protection import RateLimitMiddleware, RequestSizeLimitMiddlewar
 from netsec.config import FRONTEND_DIST_DIR, Settings, load_settings
 from netsec.network.topology import TopologyError, load_topology
 from netsec.network.validator import validate_topology
+from netsec.api import routes_security
 from netsec.security.ruleset import RuleStore
 from netsec.sim.engine import EngineError
 from netsec.traffic.scenarios import ScenarioError, ScenarioNotFound
@@ -60,6 +61,7 @@ def create_app(
     app.state.scenarios_dir = scenarios_dir
     app.state.settings = settings
     app.state.rules = RuleStore()  # the rules every run uses; edited through /api/rules, reset on restart
+    app.state.security = routes_security.build_state(graph)  # isolation, trust, roles, counters; changed through /api/state
     app.state.rules_read_only = settings.rules_read_only  # production: nobody can change the rules the others run with
 
     # Each add_middleware wraps the ones added before it, so the first is innermost. CORS is outermost: it answers
@@ -108,6 +110,7 @@ def create_app(
     app.include_router(routes_topology.router, prefix="/api")
     app.include_router(routes_sim.router, prefix="/api")
     app.include_router(routes_rules.router, prefix="/api")
+    app.include_router(routes_security.router, prefix="/api")
 
     if settings.serve_frontend:
         _mount_frontend(app, frontend_dist if frontend_dist is not None else FRONTEND_DIST_DIR)

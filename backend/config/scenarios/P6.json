@@ -1,0 +1,39 @@
+{
+  "id": "P6",
+  "name": "External database access restriction",
+  "description": "EXT-ATK tries TCP/3306 on DB-SRV. FW1 does not publish it and denies it.",
+  "duration": 3,
+  "default_seed": 106,
+  "flows": [
+    {
+      "type": "tcp_session",
+      "id": "P6-mysql",
+      "src": "EXT-ATK",
+      "dst": "DB-SRV",
+      "dport": 3306,
+      "start": 0.5,
+      "request_bytes": 140
+    }
+  ],
+  "features": {
+    "zero_trust": true,
+    "edr": true,
+    "siem": true
+  },
+  "presentation": {
+    "number": 6,
+    "objective": "Show that the perimeter keeps the database private.",
+    "source": "EXT-ATK",
+    "destination": "DB-SRV",
+    "protocol": "TCP",
+    "port": 3306,
+    "security_rule": "FW1 OUTSIDE-IN: no rule permits tcp 3306, so the implicit deny applies.",
+    "explanation": "The SYN reaches FW1 and is denied there; it never enters the campus. This is a firewall decision, not an IDS or IPS one, and IDS-1 cannot see the packet because it never reached the core.",
+    "expected": [
+      "The SYN is dropped at FW1 (OUTSIDE-IN implicit deny)",
+      "The traffic never reaches CORE-SW1, IPS-1 or DB-SRV",
+      "The SIEM receives an FW1 enforcement event",
+      "No IDS or IPS alert is raised"
+    ]
+  }
+}

@@ -27,7 +27,13 @@ DropReason = Literal[
     "rate_limited",
     "ttl_expired",
     "no_route",
+    # Campus security extension: an isolated endpoint (EDR) and a Zero Trust denial.
+    "edr_isolated",
+    "zt_deny",
 ]
+ZtVerdict = Literal["allow", "deny", "restricted"]
+EndpointStateName = Literal["healthy", "suspicious", "compromised", "isolated"]
+SiemSource = Literal["FW1", "CORE-SW1", "IDS-1", "IPS-1", "EDR", "ZERO-TRUST"]
 
 
 class IcmpInfo(BaseModel):
@@ -202,6 +208,67 @@ class SyslogSent(_Event):
     alert_id: str
 
 
+class ZtDecisionEvent(_Event):
+    """A Zero Trust decision at the policy enforcement point (CORE-SW1), made by the decision point ZT-POLICY-1."""
+
+    type: Literal["zt.decision"] = "zt.decision"
+    pid: int
+    node: str
+    pdp: str
+    user: str
+    role: str
+    device: str
+    trust: str
+    resource: str
+    proto: Proto
+    port: Optional[int]
+    decision: ZtVerdict
+    reason: str
+    factors: list[str]
+
+
+class EdrAlertEvent(_Event):
+    """The simulated EDR agent on an endpoint reports suspicious or compromised behaviour to EDR-MGMT-1."""
+
+    type: Literal["edr.alert"] = "edr.alert"
+    alert_id: str
+    node: str
+    state: Literal["suspicious", "compromised"]
+    severity: Severity
+    reason: str
+    manager: str
+
+
+class EdrStateEvent(_Event):
+    """An endpoint's EDR state changed (for example isolated by the operator, or restored)."""
+
+    type: Literal["edr.state"] = "edr.state"
+    node: str
+    state: EndpointStateName
+    cause: Literal["scenario", "operator"]
+    reason: str
+
+
+class SiemEventRecord(_Event):
+    """An event as the SIEM received it, from the component that really produced it. Simulated, never a real log."""
+
+    type: Literal["siem.event"] = "siem.event"
+    event_id: str
+    source: SiemSource
+    kind: str
+    severity: Severity
+    node: str
+    src: Optional[str]
+    dst: Optional[str]
+    proto: Optional[Proto]
+    dport: Optional[int]
+    reason: str
+    action: str
+    incident_id: str
+    origin_type: str
+    origin_ref: Optional[str]
+
+
 class RunEnd(_Event):
     type: Literal["run.end"] = "run.end"
     stats: RunStats
@@ -223,6 +290,10 @@ EVENT_MODELS: dict[str, type[_Event]] = {
         PacketDelivered,
         PacketDropped,
         SyslogSent,
+        ZtDecisionEvent,
+        EdrAlertEvent,
+        EdrStateEvent,
+        SiemEventRecord,
         RunEnd,
     )
 }
@@ -245,5 +316,9 @@ AnyEvent = Union[
     PacketDelivered,
     PacketDropped,
     SyslogSent,
+    ZtDecisionEvent,
+    EdrAlertEvent,
+    EdrStateEvent,
+    SiemEventRecord,
     RunEnd,
 ]
