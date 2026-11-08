@@ -37,10 +37,11 @@ def load_siem(path: Optional[Path] = None) -> SiemConfig:
 
 
 class SiemCollector:
-    def __init__(self, config: SiemConfig, node_of_ip: Callable[[str], Optional[str]], rule_text: Callable[[str], str]) -> None:
+    def __init__(self, config: SiemConfig, node_of_ip: Callable[[str], Optional[str]], rule_text: Callable[[str], str], scope: str = "") -> None:
         self.config = config
         self._node_of_ip = node_of_ip
         self._rule_text = rule_text
+        self._scope = scope  # makes ids unique across the runs kept in the history
         self._packets: dict[int, tuple[str, str, str, Optional[int]]] = {}
         self._incidents: dict[str, tuple[str, float]] = {}  # actor -> (incident id, time of last event)
         self._incident_count = 0
@@ -56,7 +57,7 @@ class SiemCollector:
         known = self._incidents.get(actor)
         if known is None or t - known[1] > self.config.incident_window_s:
             self._incident_count += 1
-            incident = f"SIEM-INC-{self._incident_count:03d}"
+            incident = f"SIEM-{self._scope}-INC-{self._incident_count:02d}"
         else:
             incident = known[0]
         self._incidents[actor] = (incident, t)
@@ -67,7 +68,7 @@ class SiemCollector:
         self._events += 1
         src, dst, proto, dport = packet if packet else (None, None, None, None)
         return {
-            "event_id": f"SIEM-E{self._events:04d}",
+            "event_id": f"SIEM-{self._scope}-E{self._events:03d}",
             "source": source,
             "kind": kind,
             "severity": severity,

@@ -137,7 +137,7 @@ def _explain(engine: Engine, ev: Evidence, node_id: str) -> tuple[list[str], str
     if reason == "zt_deny" and ev.zt:
         return [f"Reason: Zero Trust denies it: {ev.zt['reason']}", f"Enforcing device: {where} (decision by {ev.zt['pdp']})."], where
     if reason == "edr_isolated":
-        return [f"Reason: {where} is isolated by EDR; only EDR-MGMT-1 can be reached.", f"Enforcing device: the EDR agent on {where}."], where
+        return [f"Reason: {where} is isolated by EDR; its network traffic is blocked.", f"Enforcing device: the EDR agent on {where}."], where
     if reason in ("ips_drop", "ips_reject", "blocked_source", "rate_limited"):
         rule = f" ({ev.ips['rule']})" if ev.ips else ""
         words = {
@@ -225,7 +225,7 @@ class EndpointCli:
         link = self.graph.link_of_interface(node_id, iface.name)
         vlan = link.vlan if link else None
         vlan_name = next((v.name for v in self.graph.topology.vlans if v.id == vlan), None) if vlan else None
-        state = "ISOLATED by EDR (only EDR-MGMT-1 is reachable)" if node_id in self.snapshot.isolated else "healthy"
+        state = "ISOLATED by EDR (network traffic blocked)" if node_id in self.snapshot.isolated else "healthy"
         trust = dict(self.snapshot.trust).get(node_id, "trusted")
         return CliResult([
             "Simulated IP configuration",

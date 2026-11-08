@@ -156,7 +156,7 @@ class Engine:
         )
         config_hash = hashlib.sha256(config_json.encode("utf-8")).hexdigest()[:16]
         run_id = f"run-{config_hash[:12]}"
-        self._setup_features(scenario, controls)
+        self._setup_features(scenario, controls, config_hash[:6])
 
         self.trace.emit(
             "run.meta",
@@ -231,7 +231,7 @@ class Engine:
         owner = self.graph.owner_of_ip(ip)
         return owner[0] if owner else None
 
-    def _setup_features(self, scenario: ScenarioSpec, controls: Sequence[ControlSpec]) -> None:
+    def _setup_features(self, scenario: ScenarioSpec, controls: Sequence[ControlSpec], scope: str) -> None:
         features = scenario.features
         self._initially_isolated = set(self.security_state.isolated) | set(scenario.initial_isolated)
         self._edr_endpoints = [n.id for n in self.graph.topology.nodes if n.type == "host"]
@@ -245,7 +245,7 @@ class Engine:
         if features.zero_trust:
             self._zt = ZeroTrustEngine(load_zerotrust(), self.security_state)
         if features.siem:
-            collector = SiemCollector(load_siem(), self._node_of_ip, lambda rule: self._rule_text.get(rule, rule))
+            collector = SiemCollector(load_siem(), self._node_of_ip, lambda rule: self._rule_text.get(rule, rule), scope)
             self.trace = SiemTraceRecorder(collector)
 
     def _endpoint_event(self, t_us: int, event) -> None:
@@ -267,7 +267,7 @@ class Engine:
             raise EngineError(f"{node!r} is not an endpoint with an EDR agent")
         if action == "isolate":
             changed = self._edr.isolate(node)
-            state, reason = "isolated", f"Operator isolated {node}: only {EDR_MANAGER} stays reachable"
+            state, reason = "isolated", f"Operator isolated {node}: its network traffic is blocked"
         else:
             changed = self._edr.restore(node)
             state, reason = "healthy", f"Operator restored {node}: its permitted connectivity is back"
@@ -429,7 +429,7 @@ class Engine:
         self._emit_created(t_us, pkt)
         if self._edr is not None:
             src_node = self._node_of_ip(spec.src)
-            if src_node is not None and self._edr.is_isolated(src_node) and self._node_of_ip(spec.dst) != EDR_MANAGER:
+            if src_node is not None and self._edr.is_isolated(src_node):
                 self._drop(t_us, pkt, src_node, "edr_isolated")
                 return
         if not plan.hops:
@@ -491,7 +491,7 @@ class Engine:
         if self._edr is not None and pkt.mirror_of is None and node.type == "host":
             # Traffic to an isolated endpoint is dropped at its agent. A packet an endpoint sent just before it was isolated is
             # already on the wire and is delivered normally.
-            if self._edr.is_isolated(node.id) and self._node_of_ip(pkt.src) != EDR_MANAGER:
+            if self._edr.is_isolated(node.id):
                 self._drop(t_us, pkt, node.id, "edr_isolated")
                 return
         self.trace.emit("packet.delivered", t_us, pid=pkt.pid, node=node.id)

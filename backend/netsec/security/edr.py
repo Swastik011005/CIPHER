@@ -2,9 +2,9 @@
 
 Each PC, laptop and server has a simulated EDR agent with a state: healthy, suspicious, compromised or isolated. A scenario can
 mark an endpoint suspicious or compromised (the simulation of an attacker succeeding); the agent then reports to EDR-MGMT-1.
-The operator can isolate an endpoint and restore it. While an endpoint is isolated the engine drops its traffic, except
-traffic to and from EDR-MGMT-1, so containment changes the network decisions immediately. No malware and no operating-system
-process is involved: it is a state machine plus the rules above.
+The operator can isolate an endpoint and restore it. While an endpoint is isolated the engine drops all its traffic, in and out. The
+agent's own channel to EDR-MGMT-1 is out-of-band and is not simulated as packets. Containment therefore changes the network
+decisions immediately. No malware and no operating-system process is involved: it is a state machine plus the rules above.
 """
 
 from __future__ import annotations
@@ -55,8 +55,5 @@ class EdrEngine:
         return True
 
     def allows(self, src_node: str | None, dst_node: str | None) -> bool:
-        """May traffic pass between these two endpoints? An isolated endpoint may talk only to the EDR manager."""
-        for end, other in ((src_node, dst_node), (dst_node, src_node)):
-            if end is not None and self.is_isolated(end) and other != MANAGER:
-                return False
-        return True
+        """May traffic pass between these two endpoints? Not if either one is isolated."""
+        return not any(end is not None and self.is_isolated(end) for end in (src_node, dst_node))

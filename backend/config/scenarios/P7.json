@@ -91,7 +91,7 @@
     "destination": "APP-SRV",
     "protocol": "TCP",
     "port": null,
-    "security_rule": "EDR state machine, IDS D1 (port scan), IPS-1 policy for D1, and the EDR isolation policy (only EDR-MGMT-1 stays reachable).",
+    "security_rule": "EDR state machine, IDS D1 (port scan), IPS-1 policy for D1, and the EDR isolation policy (the isolated endpoint's network traffic is blocked).",
     "explanation": "At 1 s the EDR agent on PC-2 reports a compromise to EDR-MGMT-1 and the SIEM opens an incident. From 3 s PC-2 scans APP-SRV: IDS-1 (passive) and IPS-1 (inline) both detect it. At 9 s the operator isolates PC-2 (Isolate Endpoint in its panel, or scripted in the automated run). After that PC-2's traffic is dropped at its own agent, while PC-1 still reaches APP-SRV.",
     "expected": [
       "EDR alert for PC-2 at 1 s and PC-2 shown as compromised",
