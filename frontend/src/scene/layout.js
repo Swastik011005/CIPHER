@@ -45,9 +45,9 @@ export const PLATES = Object.freeze([
  * model chosen from the topology form factor, `labelOffset` moves the floating label.
  */
 export const NODE_LAYOUT = Object.freeze({
-  INET: { position: [-48, 0], labelOffset: [-1.9 * S, 0 * S, 0 * S] },
-  'EXT-USR': { position: [-55, -6] },
-  'EXT-ATK': { position: [-55, 6] },
+  INET: { position: [-55, 0], labelOffset: [-1.9 * S, 0 * S, 0 * S] },
+  'EXT-USR': { position: [-46, -6] },
+  'EXT-ATK': { position: [-46, 6] },
   'R1-EDGE': { position: [-31, 0] },
   FW1: { position: [-20, 0] },
   'CORE-SW1': { position: [0, 0] },
@@ -162,8 +162,8 @@ function socRoute(index, deviceId, bLat = 0) {
  * `lift`/`radius` arch a cable over a gap. `lane` offsets the double tube of a trunk.
  */
 export const LINK_LAYOUT = Object.freeze({
-  L01: { a: { side: '+x' }, b: { side: '-z' }, via: [[-48, -6]] },
-  L02: { a: { side: '+x' }, b: { side: '+z' }, via: [[-48, 6]] },
+  L01: { a: { side: '-x' }, b: { side: '-z' }, via: [[-55, -6]] },
+  L02: { a: { side: '-x' }, b: { side: '+z' }, via: [[-55, 6]] },
   L03: { a: { side: '+x' }, b: { side: '-x' }, lift: 1.1, radius: 2.2 },
   L04: { a: { side: '+x' }, b: { side: '-x' } },
   L05: { a: { side: '+x' }, b: { side: '-x' }, outB: 1.0 },

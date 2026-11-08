@@ -70,8 +70,11 @@ async function findDevice(id) {
     if (!p) continue
     for (const [dx, dy] of [[0, 0], [8, 0], [-8, 0], [0, 8], [0, -8]]) {
       await move(p.x + dx, p.y + dy)
-      await sleep(70)
-      if ((await st('selection.hoveredId')) === id) return { x: p.x + dx, y: p.y + dy }
+      // hover is resolved on a rendered frame: on a slow software GPU that can take a few hundred ms, so poll for it
+      for (let tries = 0; tries < 6; tries++) {
+        await sleep(90)
+        if ((await st('selection.hoveredId')) === id) return { x: p.x + dx, y: p.y + dy }
+      }
     }
   }
   return null
@@ -98,6 +101,7 @@ const keyOf = (node) => modelKeyFor(node, NODE_LAYOUT[node.id])
 
 /** Point the campus camera at a spot (the expanded campus does not fit one screen, so every target is brought into view first). */
 const view = async (x, z, d = 26) => {
+  await ev('window.__netsecStore.getState().dismissQualityNotice && window.__netsecStore.getState().dismissQualityNotice()') // a slow test GPU may raise the auto-quality banner over the scene
   await ev(`window.__netsecProbe.lookAt(${x}, 0.5, ${z}, ${d})`)
   await sleep(700)
 }
@@ -110,7 +114,9 @@ const zoneCentre = (zone) => {
 const nodeView = (id) => view(NODE_LAYOUT[id].position[0], NODE_LAYOUT[id].position[1], 22)
 async function pointFor(id) {
   await nodeView(id)
-  return findDevice(id)
+  const found = await findDevice(id)
+  if (!found) console.log(`  (diagnostic: ${id} not hoverable; zone=${JSON.stringify(await st('zone'))}, hovered=${await st('selection.hoveredId')}, camera=${JSON.stringify(await cameraAt())})`)
+  return found
 }
 
 try {
@@ -185,6 +191,7 @@ try {
     await view(...zoneCentre('staff'))
     const staff = await findZoneFloor('staff')
     await click(staff.x, staff.y)
+    await sleep(1800) // the zone selection animates the camera; let it finish before moving the view
     const pc1 = await pointFor('PC-1')
     await click(pc1.x, pc1.y)
     check('selecting a device keeps the selected zone', (await st('selection.selectedId')) === 'PC-1' && (await st('zone.selectedId')) === 'staff')
