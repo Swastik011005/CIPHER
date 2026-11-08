@@ -6,7 +6,7 @@
  * IDS-1 is passive: its tags only ever report alerts. Only IPS-1 reports drops and blocks.
  */
 
-/** @typedef {{text: string, tone: 'ok'|'warn'|'danger'|'sensor'|'info'}} DeviceTag */
+/** @typedef {{text: string, tone: 'ok'|'warn'|'danger'|'sensor'|'info'|'isolated'}} DeviceTag */
 
 const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 'S'}`
 
@@ -16,9 +16,15 @@ const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 'S'}`
  * @param {ReturnType<import('./reducers.js').initialState>|null} state
  * @returns {DeviceTag[]}
  */
-export function deviceTags(node, address, state) {
-  if (!state || !state.meta) return []
+export function deviceTags(node, address, state, persistedIsolated = false) {
   const tags = []
+  const hasRun = Boolean(state && state.meta)
+  // EDR state of an endpoint: from the loaded run, or (with no run reporting it) the server's committed isolation.
+  const edr = hasRun ? state.edr?.[node.id]?.state : undefined
+  if (edr === 'isolated' || (edr === undefined && persistedIsolated)) tags.push({ text: 'ISOLATED', tone: 'isolated' })
+  else if (edr === 'compromised') tags.push({ text: 'COMPROMISED', tone: 'danger' })
+  else if (edr === 'suspicious') tags.push({ text: 'SUSPICIOUS', tone: 'warn' })
+  if (!hasRun) return tags
   const stats = state.nodes[node.id]
 
   if (address && state.blocks[address]) tags.push({ text: 'BLOCKED', tone: 'danger' })
@@ -54,6 +60,8 @@ export function parseTagsKey(key) {
 /** Ring state for the floor ring under a device. */
 export function ringStateFor(tags, selected, hovered) {
   if (tags.some((t) => t.text === 'BLOCKED')) return 'blocked'
+  if (tags.some((t) => t.text === 'ISOLATED')) return 'isolated'
+  if (tags.some((t) => t.text === 'COMPROMISED')) return 'compromised'
   if (selected) return 'selected'
   if (hovered) return 'hover'
   if (tags.some((t) => t.tone === 'sensor' || t.tone === 'danger')) return 'alert'

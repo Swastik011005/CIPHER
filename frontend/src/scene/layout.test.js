@@ -11,6 +11,7 @@ import {
   LINK_LAYOUT,
   NODE_LAYOUT,
   PLATES,
+  RACKS,
   SLAB_TOP,
   ZONE_LAYOUT,
   distanceScaleForAspect,
@@ -26,9 +27,9 @@ describe('scene layout covers the backend topology', () => {
     expect(validateLayout(topology)).toEqual([])
   })
 
-  it('has a position for every one of the 17 nodes and a route for every one of the 18 links', () => {
-    expect(topology.nodes).toHaveLength(17)
-    expect(topology.links).toHaveLength(18)
+  it('has a position for every one of the 31 nodes (17 original) and a route for every one of the 32 links (18 original)', () => {
+    expect(topology.nodes).toHaveLength(31)
+    expect(topology.links).toHaveLength(32)
     expect(Object.keys(NODE_LAYOUT).sort()).toEqual(topology.nodes.map((n) => n.id).sort())
     expect(Object.keys(LINK_LAYOUT).sort()).toEqual(topology.links.map((l) => l.id).sort())
   })
@@ -146,13 +147,19 @@ describe('placement', () => {
     }
   })
 
-  it('stacks the three rack units without overlap in height', () => {
-    const units = topology.nodes
-      .filter((n) => NODE_LAYOUT[n.id].y)
-      .map((n) => ({ id: n.id, y0: NODE_LAYOUT[n.id].y, y1: NODE_LAYOUT[n.id].y + DEVICE_SPECS[modelKeyFor(n, NODE_LAYOUT[n.id])].height }))
-      .sort((a, b) => a.y0 - b.y0)
-    expect(units.map((u) => u.id).sort()).toEqual(['APP-SRV', 'DB-SRV', 'SRV-SW3'])
-    for (let i = 1; i < units.length; i++) expect(units[i].y0).toBeGreaterThanOrEqual(units[i - 1].y1)
+  it('stacks the units of every rack without overlap in height, at the rack position', () => {
+    const raised = topology.nodes.filter((n) => NODE_LAYOUT[n.id].y).map((n) => n.id).sort()
+    expect(raised).toEqual(RACKS.flatMap((r) => r.holds).sort())
+    for (const rack of RACKS) {
+      const units = rack.holds
+        .map((id) => {
+          const n = topology.nodes.find((x) => x.id === id)
+          return { id, at: NODE_LAYOUT[id].position, y0: NODE_LAYOUT[id].y, y1: NODE_LAYOUT[id].y + DEVICE_SPECS[modelKeyFor(n, NODE_LAYOUT[id])].height }
+        })
+        .sort((a, b) => a.y0 - b.y0)
+      for (const u of units) expect(u.at, `${u.id} stands in rack ${rack.id}`).toEqual(rack.position)
+      for (let i = 1; i < units.length; i++) expect(units[i].y0).toBeGreaterThanOrEqual(units[i - 1].y1)
+    }
   })
 })
 

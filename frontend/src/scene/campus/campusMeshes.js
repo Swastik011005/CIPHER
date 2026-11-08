@@ -1,7 +1,7 @@
 import * as THREE from 'three'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 
-import { BALUSTRADE, CAMPUS_ZONES, GATE_COURT, ISLAND, PLATFORM_TOP, PLINTH_TOP, SIGNS, campusGeometry, devicePads, signSubtitle, zoneVolumes } from './campusLayout.js'
+import { BALUSTRADE, CAMPUS_ZONES, GATE_COURT, ISLAND, PLATFORM_TOP, PLINTH_TOP, SIGNS, campusGeometry, devicePads, roadRects, signSubtitle, zoneVolumes } from './campusLayout.js'
 import { campusMaterials } from './campusMaterials.js'
 
 /**
@@ -155,6 +155,9 @@ export function buildCampus(topology) {
     for (let z = a; z <= b + 0.01; z += 2.8) put('gate', 'frame', box(0.07, h, 0.07, BALUSTRADE.x, h / 2, z))
   }
 
+  // Grey roads between the zones: flat, on the ground, below the cables (one draw call).
+  for (const r of roadRects()) put('gate', 'road', box(r.x1 - r.x0, 0.04, r.z1 - r.z0, (r.x0 + r.x1) / 2, 0.02, (r.z0 + r.z1) / 2))
+
   // Darker mounting pads under the devices, and a soft contact shadow on them: the clay devices read against a darker ground,
   // in Low as well as High. Both are flat and merged: one draw call each.
   for (const pad of devicePads(topology)) {
@@ -216,7 +219,7 @@ export function buildCampus(topology) {
     for (const g of geometries) g.dispose()
     const solid = kind === 'top' || kind === 'plinth'
     const order = kind === 'glass' ? 2 : kind === 'blob' ? 1 : 0
-    parts.push({ key: kind, geometry, material: campusMaterials[kind], cast: solid, receive: solid || kind === 'pad', order })
+    parts.push({ key: kind, geometry, material: campusMaterials[kind], cast: solid, receive: solid || kind === 'pad' || kind === 'road', order })
   }
 
   return {

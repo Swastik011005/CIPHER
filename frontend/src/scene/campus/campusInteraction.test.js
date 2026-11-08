@@ -10,17 +10,19 @@ const topology = loadBackendTopology()
 const inside = (inner, outer) => inner.x0 >= outer.x0 - 1e-6 && inner.x1 <= outer.x1 + 1e-6 && inner.z0 >= outer.z0 - 1e-6 && inner.z1 <= outer.z1 + 1e-6
 
 describe('campus zone to device mapping (approved)', () => {
-  it('uses exactly the approved mapping for the four campus zones', () => {
-    expect(campusZone('staff').devices).toEqual(['PC-1', 'PC-2', 'LAPTOP-1', 'ACC-SW2'])
-    expect(campusZone('admin').devices).toEqual(['ADMIN-PC'])
-    expect(campusZone('datacentre').devices).toEqual(['APP-SRV', 'DB-SRV', 'SRV-SW3'])
-    expect(campusZone('soc').devices).toEqual(['IDS-1', 'IPS-1', 'SEC-LOG'])
+  it('keeps the approved mapping first in each of the four campus zones, then the extension devices', () => {
+    expect(campusZone('staff').devices.slice(0, 4)).toEqual(['PC-1', 'PC-2', 'LAPTOP-1', 'ACC-SW2'])
+    expect(campusZone('admin').devices[0]).toBe('ADMIN-PC')
+    expect(campusZone('datacentre').devices.slice(0, 3)).toEqual(['APP-SRV', 'DB-SRV', 'SRV-SW3'])
+    expect(campusZone('soc').devices.slice(0, 3)).toEqual(['IDS-1', 'IPS-1', 'SEC-LOG'])
+    expect(campusZone('staff').devices.slice(4)).toEqual(['PC-3', 'PC-4', 'PC-5', 'PC-6', 'PC-7'])
+    expect(campusZone('soc').devices.slice(3)).toEqual(['SIEM-1', 'EDR-MGMT-1', 'ZT-POLICY-1'])
   })
 
-  it('puts each of the 17 nodes in exactly one zone, and nothing else', () => {
+  it('puts each of the 31 nodes in exactly one zone, and nothing else', () => {
     const all = CAMPUS_ZONES.flatMap((z) => z.devices)
-    expect(all).toHaveLength(17)
-    expect(new Set(all).size).toBe(17)
+    expect(all).toHaveLength(31)
+    expect(new Set(all).size).toBe(31)
     expect([...all].sort()).toEqual(topology.nodes.map((n) => n.id).sort())
     for (const node of topology.nodes) expect(ZONE_OF_DEVICE[node.id], node.id).toBeTypeOf('string')
   })
@@ -64,9 +66,9 @@ describe('zone pick volumes', () => {
 describe('device mounting pads', () => {
   const pads = devicePads(topology)
 
-  it('one pad per free-standing device plus one for the rack that holds the three rack units', () => {
-    expect(pads).toHaveLength(17 - 3 + 1)
-    expect(pads.map((p) => p.id)).toContain('RACK')
+  it('one pad per free-standing device plus one for each of the four racks that hold the 8 rack units', () => {
+    expect(pads).toHaveLength(31 - 8 + 4)
+    expect(pads.map((p) => p.id)).toEqual(expect.arrayContaining(['RACK-A', 'RACK-B', 'RACK-C', 'RACK-D']))
     for (const id of ['APP-SRV', 'DB-SRV', 'SRV-SW3']) expect(pads.map((p) => p.id)).not.toContain(id)
   })
 
@@ -80,8 +82,8 @@ describe('device mounting pads', () => {
 })
 
 describe('cable information', () => {
-  it('describes both ends of all 18 links from the topology, with their real interfaces', () => {
-    expect(topology.links).toHaveLength(18)
+  it('describes both ends of all 32 links from the topology, with their real interfaces', () => {
+    expect(topology.links).toHaveLength(32)
     for (const link of topology.links) {
       const ends = cableEnds(link.id, topology)
       expect(ends, link.id).not.toBeNull()

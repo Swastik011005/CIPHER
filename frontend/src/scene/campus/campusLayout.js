@@ -10,7 +10,7 @@
  * no roof; an L-shaped steel frame with no post at the south-east corner. Units are about one metre; x east, z south, y up.
  */
 import { DEVICE_SPECS, modelKeyFor } from '../devices/specs.js'
-import { LINK_LAYOUT, NODE_LAYOUT, PERIMETER_WALL, RACK, SLAB_TOP, ZONE_LAYOUT } from '../layout.js'
+import { LINK_LAYOUT, NODE_LAYOUT, PERIMETER_WALL, RACKS, ROADS, SLAB_TOP, ZONE_LAYOUT } from '../layout.js'
 import { buildCablePoints } from '../links/cablePoints.js'
 
 /** Top of every platform: the height the zone slabs always had, so devices and cables stay exactly where they were. */
@@ -30,10 +30,10 @@ export const inflate = (r, m) => ({ x0: r.x0 - m, z0: r.z0 - m, x1: r.x1 + m, z1
  * zone; no device is invented or duplicated. `topologyZone` is the zone of the logical layout the campus zone presents.
  */
 export const CAMPUS_ZONES = Object.freeze([
-  { id: 'staff', name: 'Staff and Academic', topologyZone: 'STAFF', devices: ['PC-1', 'PC-2', 'LAPTOP-1', 'ACC-SW2'], accent: '#4da3ff' },
-  { id: 'admin', name: 'Administration', topologyZone: 'ADMIN', devices: ['ADMIN-PC'], accent: '#7aa2ff' },
-  { id: 'datacentre', name: 'Data Centre', topologyZone: 'SERVERS', devices: ['APP-SRV', 'DB-SRV', 'SRV-SW3'], accent: '#38d6e6' },
-  { id: 'soc', name: 'Security Operations', topologyZone: 'SECOPS', devices: ['IDS-1', 'IPS-1', 'SEC-LOG'], accent: '#a78bfa' },
+  { id: 'staff', name: 'Staff and Academic', topologyZone: 'STAFF', devices: ['PC-1', 'PC-2', 'LAPTOP-1', 'ACC-SW2', 'PC-3', 'PC-4', 'PC-5', 'PC-6', 'PC-7'], accent: '#4da3ff' },
+  { id: 'admin', name: 'Administration', topologyZone: 'ADMIN', devices: ['ADMIN-PC', 'ADMIN-PC-2', 'ADMIN-PC-3', 'ADMIN-PC-4'], accent: '#7aa2ff' },
+  { id: 'datacentre', name: 'Data Centre', topologyZone: 'SERVERS', devices: ['APP-SRV', 'DB-SRV', 'SRV-SW3', 'WEB-SRV', 'DNS-SRV', 'FILE-SRV'], accent: '#38d6e6' },
+  { id: 'soc', name: 'Security Operations', topologyZone: 'SECOPS', devices: ['IDS-1', 'IPS-1', 'SEC-LOG', 'SIEM-1', 'EDR-MGMT-1', 'ZT-POLICY-1'], accent: '#a78bfa' },
   { id: 'core', name: 'Core Network Hub', topologyZone: 'CORE', devices: ['CORE-SW1'], accent: '#2fb6a8' },
   { id: 'gate', name: 'Main Gate and Edge', topologyZone: 'PERIMETER', devices: ['R1-EDGE', 'FW1'], accent: '#2fb6a8' },
   { id: 'offcampus', name: 'Public Internet', topologyZone: 'OUTSIDE', devices: ['INET', 'EXT-USR', 'EXT-ATK'], accent: '#8aa0c8' },
@@ -44,19 +44,19 @@ export const CAMPUS_ZONES = Object.freeze([
  * the frame. `holds` lists the devices that stand inside (checked by the tests).
  */
 export const STRUCTURES = Object.freeze([
-  { id: 'staff', zone: 'staff', r: rect([6.4, -12.2, 15.8, -5.3]), h: STRUCTURE_HEIGHT, glass: ['N', 'W'], margin: 0.25, holds: ['PC-1', 'PC-2', 'LAPTOP-1', 'ACC-SW2'] },
-  { id: 'admin', zone: 'admin', r: rect([17.0, -10.6, 20.0, -5.4]), h: STRUCTURE_HEIGHT, glass: ['N', 'W'], margin: 0.25, holds: ['ADMIN-PC'] },
-  { id: 'datacentre', zone: 'datacentre', r: rect([12.3, 4.9, 16.7, 9.0]), h: STRUCTURE_HEIGHT, glass: ['N', 'W'], margin: 0.25, holds: ['APP-SRV', 'DB-SRV', 'SRV-SW3'] },
-  { id: 'soc', zone: 'soc', r: rect([-3.2, 7.6, 3.68, 11.0]), h: STRUCTURE_HEIGHT, glass: ['N', 'W'], margin: 0.12, holds: ['IDS-1', 'SEC-LOG'] },
-  { id: 'ips-gate', zone: 'soc', r: rect([8.3, 4.4, 10.1, 7.6]), h: STRUCTURE_HEIGHT, glass: ['N', 'W'], margin: 0.25, holds: ['IPS-1'] },
-  { id: 'edge', zone: 'gate', r: rect([-11.6, -1.3, -9.4, 1.3]), h: 2.2, glass: ['N', 'W'], margin: 0.2, holds: ['R1-EDGE'], onCourt: true },
+  { id: 'staff', zone: 'staff', r: rect([10, -30, 34, -14]), h: STRUCTURE_HEIGHT, glass: ['N', 'W'], margin: 0.25, holds: ['PC-1', 'PC-2', 'PC-3', 'PC-4', 'LAPTOP-1', 'PC-5', 'PC-6', 'PC-7', 'ACC-SW2'] },
+  { id: 'admin', zone: 'admin', r: rect([42, -30, 54, -14]), h: STRUCTURE_HEIGHT, glass: ['N', 'W'], margin: 0.25, holds: ['ADMIN-PC', 'ADMIN-PC-2', 'ADMIN-PC-3', 'ADMIN-PC-4'] },
+  { id: 'datacentre', zone: 'datacentre', r: rect([24, 15, 50, 33]), h: STRUCTURE_HEIGHT, glass: ['N', 'W'], margin: 0.25, holds: ['APP-SRV', 'DB-SRV', 'SRV-SW3', 'WEB-SRV', 'DNS-SRV', 'FILE-SRV'] },
+  { id: 'soc', zone: 'soc', r: rect([-18, 16, 13, 32]), h: STRUCTURE_HEIGHT, glass: ['N', 'W'], margin: 0.12, holds: ['IDS-1', 'SEC-LOG', 'SIEM-1', 'EDR-MGMT-1', 'ZT-POLICY-1'] },
+  { id: 'ips-gate', zone: 'soc', r: rect([18.4, 16.8, 21.6, 23.2]), h: STRUCTURE_HEIGHT, glass: ['N', 'W'], margin: 0.25, holds: ['IPS-1'] },
+  { id: 'edge', zone: 'gate', r: rect([-34, -3, -28, 3]), h: 2.2, glass: ['N', 'W'], margin: 0.2, holds: ['R1-EDGE'], onCourt: true },
 ])
 
 /** The round open pavilion over the core switch: a platform, eight columns and a thin ring beam. No roof. */
 export const CORE_PAVILION = Object.freeze({ id: 'core', zone: 'core', center: [0, 0], platformRadius: 3.6, columnRadius: 2.9, columns: 8, phase: 22.5, h: STRUCTURE_HEIGHT, holds: ['CORE-SW1'] })
 
 /** Platforms with no frame of their own: the gate court (FW1 is its own gate model) and the off-campus island. */
-export const GATE_COURT = Object.freeze({ id: 'gate-court', zone: 'gate', platform: rect([-12.0, -2.4, -6.4, 2.4]), holds: ['FW1'] })
+export const GATE_COURT = Object.freeze({ id: 'gate-court', zone: 'gate', platform: rect([-34, -5, -17, 5]), holds: ['FW1'] })
 const slab = (id) => {
   const z = ZONE_LAYOUT[id]
   return rect([z.center[0] - z.size[0] / 2, z.center[1] - z.size[1] / 2, z.center[0] + z.size[0] / 2, z.center[1] + z.size[1] / 2])
@@ -65,13 +65,13 @@ export const ISLAND = Object.freeze({ id: 'island', zone: 'offcampus', platform:
 
 /** Raised signs: a small tilted plaque on the ground in front of a platform, facing the default camera. */
 export const SIGNS = Object.freeze([
-  { zone: 'staff', x: 9.0, z: -4.2, w: 3.6 },
-  { zone: 'admin', x: 18.5, z: -4.3, w: 2.8 },
-  { zone: 'datacentre', x: 14.5, z: 10.1, w: 3.0 },
-  { zone: 'soc', x: 0.2, z: 11.9, w: 4.2 },
-  { zone: 'core', x: -5.2, z: 2.3, w: 2.4 },
-  { zone: 'gate', x: -9.2, z: 3.3, w: 3.4 },
-  { zone: 'offcampus', x: -18.1, z: 7.7, w: 3.4 },
+  { zone: 'staff', x: 17.0, z: -11.4, w: 5.0 },
+  { zone: 'admin', x: 47.0, z: -11.4, w: 4.4 },
+  { zone: 'datacentre', x: 34.0, z: 35.2, w: 5.0 },
+  { zone: 'soc', x: -2.0, z: 34.2, w: 6.0 },
+  { zone: 'core', x: -5.4, z: 3.8, w: 3.2 },
+  { zone: 'gate', x: -26.0, z: 7.0, w: 4.6 },
+  { zone: 'offcampus', x: -50.0, z: 13.2, w: 4.6 },
 ])
 
 /** The low glass balustrade that replaces the opaque perimeter wall (same line, with the gate gap). */
@@ -198,11 +198,11 @@ export function signSubtitle(topology, campusZone) {
 
 /** What each campus zone is for, in the words of the security design. Shown in the zone panel. */
 export const ZONE_PURPOSE = Object.freeze({
-  staff: 'Staff and academic computers on VLAN 10. They reach the campus servers through the core switch, where the STAFF-IN ACL denies direct access to the database port and to the Security VLAN.',
-  admin: 'The administration workstation on VLAN 20. Its traffic to the database port passes the core ACL, but IPS-1 still inspects it and rejects the restricted port (scenario S3, case d).',
-  datacentre: 'The application and database servers behind a top-of-rack switch on VLAN 30. Everything entering the server VLAN passes the inline IPS-1.',
-  soc: 'The security team: IDS-1 passively watches a SPAN copy of the traffic entering the core, IPS-1 is the inline enforcement point in front of the servers, and SEC-LOG collects the syslog. IPS-1 keeps its place beside the Data Centre; its cable and position are unchanged.',
-  core: 'The core Layer 3 switch: inter-VLAN routing, the STAFF-IN ACL and the SPAN source that feeds IDS-1.',
+  staff: 'The staff computer lab: eight staff computers on VLAN 10 behind the access switch ACC-SW2. They reach the campus servers through the core switch, where the STAFF-IN ACL denies direct access to the database port and to the Security VLAN.',
+  admin: 'The administration office: four administrator workstations on VLAN 20. They may use the SIEM and EDR consoles only through explicit Zero Trust permissions, and their traffic to the database port is still inspected and rejected by IPS-1.',
+  datacentre: 'The data centre: the application, database, web, DNS and file servers on VLAN 30, in racks behind the top-of-rack switch. Everything entering the server VLAN passes the inline IPS-1.',
+  soc: 'The security operations centre: IDS-1 passively watches a SPAN copy of the traffic entering the core; IPS-1 is the inline enforcement point in front of the servers (its gate stands beside the Data Centre); SEC-LOG and SIEM-1 collect events; EDR-MGMT-1 manages endpoint isolation; ZT-POLICY-1 decides Zero Trust access.',
+  core: 'The core Layer 3 switch: inter-VLAN routing, the STAFF-IN ACL, the Zero Trust enforcement point and the SPAN source that feeds IDS-1.',
   gate: 'The campus edge: the router to the Internet and the stateful firewall FW1, which enforces its policy whatever the IPS mode.',
   offcampus: 'Outside the campus: the abstract Internet segment, a normal external user and the simulated attacker. All traffic is synthetic.',
 })
@@ -255,6 +255,9 @@ export function devicePads(topology) {
     const spec = DEVICE_SPECS[modelKeyFor(node, lay)]
     pads.push({ id: node.id, x: lay.position[0], z: lay.position[1], w: spec.half[0] * 2 + 0.7, d: spec.half[1] * 2 + 0.7 })
   }
-  pads.push({ id: 'RACK', x: RACK.position[0], z: RACK.position[1], w: RACK.size[0] + 0.7, d: RACK.size[2] + 0.7 })
+  for (const rack of RACKS) pads.push({ id: `RACK-${rack.id}`, x: rack.position[0], z: rack.position[1], w: rack.size[0] + 0.7, d: rack.size[2] + 0.7 })
   return pads
 }
+
+/** The roads, as rectangles (decor): checked by the tests to stay clear of every platform. */
+export const roadRects = () => ROADS.map((r) => ({ id: r.id, ...rect(r.rect) }))

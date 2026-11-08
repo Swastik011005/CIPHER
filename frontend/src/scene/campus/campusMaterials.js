@@ -15,6 +15,8 @@ export const campusMaterials = {
   plinth: standard('#aebdd6', 0.85),
   /** The darker mounting pad under each device: a blue-grey the pale clay stands out from. */
   pad: standard('#9fb0cc', 0.9),
+  /** Grey roads between the zones. */
+  road: standard('#7d8aa0', 0.95),
   /** Slim steel posts and beams. */
   frame: standard('#dde6f2', 0.35, 0.5),
   /**

@@ -1,7 +1,7 @@
 import { DeviceNode } from './devices/DeviceNode.jsx'
 import { EffectsLayer } from './effects/EffectsLayer.jsx'
 import { CampusWorld } from './campus/CampusWorld.jsx'
-import { BasePlates, RackFrame } from './environment/Environment.jsx'
+import { BasePlates, RackFrames } from './environment/Environment.jsx'
 import { NODE_LAYOUT } from './layout.js'
 import { NetworkLinks } from './links/NetworkLinks.jsx'
 import { PacketLayer } from './packets/PacketLayer.jsx'
@@ -15,7 +15,7 @@ export function NetworkWorld({ topology }) {
     <group>
       <BasePlates />
       <CampusWorld topology={topology} />
-      <RackFrame />
+      <RackFrames />
       {topology.nodes
         .filter((node) => NODE_LAYOUT[node.id])
         .map((node) => (

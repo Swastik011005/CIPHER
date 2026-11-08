@@ -18,6 +18,11 @@ export const EVENT_TYPES = Object.freeze([
   'packet.delivered',
   'packet.dropped',
   'syslog.sent',
+  // campus security extension (contracts/events.json 1.1.0): emitted only by scenarios that enable the feature
+  'zt.decision',
+  'edr.alert',
+  'edr.state',
+  'siem.event',
   'run.end',
 ])
 
@@ -39,6 +44,10 @@ export const EVENT_FIELDS = Object.freeze({
   'packet.delivered': ['pid', 'node'],
   'packet.dropped': ['pid', 'node', 'reason'],
   'syslog.sent': ['pid', 'from', 'to', 'alert_id'],
+  'zt.decision': ['pid', 'node', 'pdp', 'user', 'role', 'device', 'trust', 'resource', 'proto', 'port', 'decision', 'reason', 'factors'],
+  'edr.alert': ['alert_id', 'node', 'state', 'severity', 'reason', 'manager'],
+  'edr.state': ['node', 'state', 'cause', 'reason'],
+  'siem.event': ['event_id', 'source', 'kind', 'severity', 'node', 'src', 'dst', 'proto', 'dport', 'reason', 'action', 'incident_id', 'origin_type', 'origin_ref'],
   'run.end': ['stats'],
 })
 

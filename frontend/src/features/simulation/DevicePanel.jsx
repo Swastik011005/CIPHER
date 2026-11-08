@@ -97,7 +97,7 @@ function LiveSection({ live, node }) {
  * Details of the selected device, taken from the topology and, while a run is loaded, from the trace.
  * @param {{node: any, topology: any}} props
  */
-export function DevicePanel({ node, topology }) {
+export function DevicePanel({ node, topology, tabs = null, hideDetails = false, children = null }) {
   const select = useStore((s) => s.select)
   const requestFocus = useStore((s) => s.requestFocus)
   const openInspector = useStore((s) => s.openInspector)
@@ -127,6 +127,11 @@ export function DevicePanel({ node, topology }) {
         </div>
       }
     >
+      {tabs}
+      {hideDetails ? (
+        children
+      ) : (
+      <>
       <div className="chip-row">
         <Chip tone="accent">{TYPE_LABELS[node.type] ?? node.type}</Chip>
         {zone && <Chip>{zone.name}</Chip>}
@@ -197,6 +202,8 @@ export function DevicePanel({ node, topology }) {
           </li>
         ))}
       </ul>
+      </>
+      )}
     </Card>
   )
 }

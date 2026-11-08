@@ -26,14 +26,15 @@ function distToSeg(p, a, b) {
 const nearestCable = (p) => Math.min(...campus.segments.map((s) => distToSeg(p, s.a, s.b)))
 
 describe('the logical layout is untouched by the campus', () => {
-  it('has the fingerprint recorded before the campus layer existed: no device, cable route, zone rectangle or plate moved', () => {
+  it('has the fingerprint recorded for the expanded campus layout: no device, cable route, zone rectangle or plate moved by accident', () => {
     const fingerprint = createHash('sha256').update(JSON.stringify({ nodes: NODE_LAYOUT, links: LINK_LAYOUT, zones: ZONE_LAYOUT, plates: PLATES })).digest('hex')
-    expect(fingerprint).toBe('f51b9dc991902a11163acd9236ce94a01c3e91c972d5f93dc3eb478f931647f3')
+    expect(fingerprint).toBe('cae52887cdae2e5d6091bff84d163e4f0c6aceb582230011521d022d610012cf')
   })
 
-  it('keeps all 17 nodes and 18 links', () => {
-    expect(topology.nodes).toHaveLength(17)
-    expect(topology.links).toHaveLength(18)
+  it('keeps all 17 original nodes and 18 original links inside the 31 nodes and 32 links', () => {
+    expect(topology.nodes).toHaveLength(31)
+    expect(topology.links).toHaveLength(32)
+    expect(topology.nodes.slice(0, 17).map((n) => n.id)).toEqual(['INET', 'EXT-USR', 'EXT-ATK', 'R1-EDGE', 'FW1', 'CORE-SW1', 'ACC-SW2', 'PC-1', 'PC-2', 'LAPTOP-1', 'ADMIN-PC', 'IDS-1', 'SEC-LOG', 'IPS-1', 'SRV-SW3', 'APP-SRV', 'DB-SRV'])
   })
 
   it('raises platforms to the height the zone slabs always had, so every device base and cable height is unchanged', () => {
@@ -45,17 +46,17 @@ describe('the logical layout is untouched by the campus', () => {
 describe('campus zones map to the existing devices', () => {
   const holds = (id) => CAMPUS_ZONES.find((z) => z.id === id).devices.slice().sort()
 
-  it('holds exactly the devices in the approved mapping', () => {
-    expect(holds('staff')).toEqual(['ACC-SW2', 'LAPTOP-1', 'PC-1', 'PC-2'])
-    expect(holds('admin')).toEqual(['ADMIN-PC'])
-    expect(holds('datacentre')).toEqual(['APP-SRV', 'DB-SRV', 'SRV-SW3'])
-    expect(holds('soc')).toEqual(['IDS-1', 'IPS-1', 'SEC-LOG'])
+  it('holds the devices of the approved mapping and exactly the extension devices on top', () => {
+    expect(holds('staff')).toEqual(['ACC-SW2', 'LAPTOP-1', 'PC-1', 'PC-2', 'PC-3', 'PC-4', 'PC-5', 'PC-6', 'PC-7'])
+    expect(holds('admin')).toEqual(['ADMIN-PC', 'ADMIN-PC-2', 'ADMIN-PC-3', 'ADMIN-PC-4'])
+    expect(holds('datacentre')).toEqual(['APP-SRV', 'DB-SRV', 'DNS-SRV', 'FILE-SRV', 'SRV-SW3', 'WEB-SRV'])
+    expect(holds('soc')).toEqual(['EDR-MGMT-1', 'IDS-1', 'IPS-1', 'SEC-LOG', 'SIEM-1', 'ZT-POLICY-1'])
   })
 
-  it('puts every one of the 17 topology nodes in exactly one zone and invents no device', () => {
+  it('puts every one of the 31 topology nodes in exactly one zone and invents no device', () => {
     const placed = CAMPUS_ZONES.flatMap((z) => z.devices)
-    expect(placed).toHaveLength(17)
-    expect(new Set(placed).size).toBe(17)
+    expect(placed).toHaveLength(31)
+    expect(new Set(placed).size).toBe(31)
     expect([...placed].sort()).toEqual(topology.nodes.map((n) => n.id).sort())
   })
 
@@ -143,7 +144,7 @@ describe('platforms and frames keep clear of each other and of the cables', () =
 
   it('cut a framed opening in the glass wherever a cable crosses it, and nowhere else', () => {
     const found = campus.structures.flatMap((s) => s.openings.map((o) => `${s.id}-${o.edge}[${o.links.join('+')}]`)).sort()
-    expect(found).toEqual(['admin-W[L10]', 'datacentre-W[L15]', 'edge-W[L03]', 'ips-gate-W[L14]', 'soc-N[L11+L12]', 'soc-N[L13]', 'staff-W[L06]'])
+    expect(found).toEqual(['admin-W[L10+L24+L25+L26]', 'datacentre-W[L15]', 'edge-W[L03]', 'ips-gate-W[L14+L16]', 'soc-N[L11+L12]', 'soc-N[L13]', 'soc-N[L30]', 'soc-N[L31+L32]', 'staff-W[L06]'])
     for (const s of campus.structures) {
       for (const pane of s.panes) for (const o of s.openings.filter((q) => q.edge === pane.edge)) expect(pane.u1 <= o.u0 + 1e-6 || pane.u0 >= o.u1 - 1e-6, `${s.id} pane over an opening`).toBe(true)
     }
@@ -165,9 +166,9 @@ describe('signs, balustrade and subtitles', () => {
     expect(SIGNS.map((s) => s.zone).sort()).toEqual(CAMPUS_ZONES.map((z) => z.id).sort())
   })
 
-  it('keep the balustrade on the old wall line with the gate gap', () => {
-    expect(BALUSTRADE.x).toBe(-7.2)
-    expect(BALUSTRADE.spans).toEqual([[-8.4, -1.75], [1.75, 8.4]])
+  it('keep the balustrade on the perimeter wall line with the gate gap', () => {
+    expect(BALUSTRADE.x).toBe(-20.2)
+    expect(BALUSTRADE.spans).toEqual([[-14, -1.75], [1.75, 14]])
   })
 
   it('show the VLAN and subnet of the zone as the old captions did', () => {

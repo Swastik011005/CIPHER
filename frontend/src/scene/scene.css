@@ -156,3 +156,18 @@
 .dev-label[data-state='related'] {
   border-color: var(--accent);
 }
+
+/* EDR states on a device label. */
+.dev-label__tag[data-tone='isolated'] {
+  background: rgba(180, 77, 255, 0.2);
+  color: #d9b3ff;
+}
+
+.dev-label[data-state='compromised'] {
+  border-color: #ff8a3d;
+}
+
+.dev-label[data-state='isolated'] {
+  border-color: #b44dff;
+  background: rgba(50, 20, 80, 0.92);
+}

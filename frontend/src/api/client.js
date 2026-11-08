@@ -180,6 +180,40 @@ export function createApiClient({ baseUrl = API_BASE, fetchImpl } = {}) {
     resetRules(options) {
       return request('/rules/reset', { method: 'POST', ...options })
     },
+    /** The nine presentation scenarios (P1 to P9) with what the launcher shows. */
+    presentation(options) {
+      return request('/presentation', options)
+    },
+    /** Isolated endpoints, device trust, roles, revoked permissions and cumulative rule counters. */
+    securityState(options) {
+      return request('/state', options)
+    },
+    /**
+     * An operator action: isolate, restore, trust, role, revoke, grant or reset.
+     * @param {{action: string, node?: string, user?: string, level?: string, role?: string, resource?: string}} body
+     */
+    stateAction(body, options) {
+      return request('/state/action', { method: 'POST', body, ...options })
+    },
+    /** One whitelisted endpoint command, run through the simulation engine. @param {{node: string, command: string, ips_mode?: string, animate?: boolean}} body */
+    cliExec(body, options) {
+      return request('/cli/exec', { method: 'POST', body, timeoutMs: 20000, ...options })
+    },
+    /** What Zero Trust would decide, and why. @param {{device: string, resource: string, proto?: string, port?: number|null}} body */
+    explainZeroTrust(body, options) {
+      return request('/zerotrust/explain', { method: 'POST', body, ...options })
+    },
+    zeroTrust(options) {
+      return request('/zerotrust', options)
+    },
+    /** One endpoint's identity, addressing, trust and health. */
+    endpoint(node, options) {
+      return request(`/endpoints/${encodeURIComponent(node)}`, options)
+    },
+    /** The SIEM's retained event history and its incidents. */
+    siemEvents(options) {
+      return request('/siem/events', options)
+    },
     /** Run scenarios with the rules in force and check what they should do. @param {{scenario_ids?: string[]}} body */
     validate(body, options) {
       return request('/sim/validate', { method: 'POST', body, timeoutMs: 60000, ...options })

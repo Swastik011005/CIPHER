@@ -10,7 +10,7 @@
  */
 
 /** Drop reasons that count as `blocked` (policy decisions); the rest are `other_drop`. */
-export const BLOCKED_REASONS = Object.freeze(['fw_deny', 'acl_deny', 'ips_drop', 'ips_reject', 'blocked_source', 'rate_limited'])
+export const BLOCKED_REASONS = Object.freeze(['fw_deny', 'acl_deny', 'ips_drop', 'ips_reject', 'blocked_source', 'rate_limited', 'edr_isolated', 'zt_deny'])
 
 const LOG_LIMIT = 60
 
@@ -60,6 +60,11 @@ export function initialState() {
     incidentIds: [],
     alerts: [],
     blocks: {},
+    // Campus security extension: what the EDR agents, the Zero Trust decision point and the SIEM reported in this run.
+    edr: {},
+    edrAlerts: [],
+    zt: [],
+    siem: [],
     packets: {},
     drops: {},
     nodes: {},
@@ -99,6 +104,14 @@ export function describeEvent(e) {
       return `#${e.pid} delivered to ${e.node}`
     case 'packet.dropped':
       return `#${e.pid} dropped at ${e.node}: ${e.reason}`
+    case 'zt.decision':
+      return `${e.pdp} ${e.decision === 'allow' ? 'allowed' : e.decision === 'deny' ? 'denied' : 'restricted'} ${e.device} (${e.role}) to ${e.resource} ${e.proto === 'icmp' ? 'ICMP' : `${e.proto.toUpperCase()}/${e.port}`}: ${e.reason}`
+    case 'edr.alert':
+      return `EDR ALERT ${e.severity.toUpperCase()} on ${e.node}: ${e.reason}`
+    case 'edr.state':
+      return `${e.node} is now ${e.state} (${e.cause === 'operator' ? 'operator action' : 'scenario'})`
+    case 'siem.event':
+      return `SIEM ${e.severity.toUpperCase()} from ${e.source}: ${e.reason}`
     case 'run.end':
       return 'Run finished'
     default:
@@ -107,7 +120,7 @@ export function describeEvent(e) {
 }
 
 /** Events worth showing in the ticker (hops and routine inspections would flood it). */
-const TICKER_TYPES = new Set(['alert.raised', 'ips.action', 'block.added', 'block.expired', 'packet.dropped', 'policy.decision', 'run.meta', 'run.end'])
+const TICKER_TYPES = new Set(['zt.decision', 'edr.alert', 'edr.state', 'siem.event', 'alert.raised', 'ips.action', 'block.added', 'block.expired', 'packet.dropped', 'policy.decision', 'run.meta', 'run.end'])
 
 /** Copy of `nodes` with one counter of one device increased (and its last-activity time set). */
 function bumpNode(nodes, id, key, t) {
@@ -268,6 +281,27 @@ export function applyEvent(state, e) {
       next.blocks = rest
       break
     }
+
+    case 'zt.decision': {
+      next.zt = [...state.zt, e]
+      const packet = state.packets[e.pid]
+      if (!packet) break
+      const tone = e.decision === 'allow' ? 'ok' : e.decision === 'restricted' ? 'warn' : 'danger'
+      next.packets = { ...state.packets, [e.pid]: annotate(packet, e, { verdict: e.decision === 'deny' ? 'blocked' : null, node: e.pdp, tone, text: `${e.pdp} ${e.decision}: ${e.reason}` }) }
+      break
+    }
+
+    case 'edr.alert':
+      next.edrAlerts = [...state.edrAlerts, e]
+      break
+
+    case 'edr.state':
+      next.edr = { ...state.edr, [e.node]: { state: e.state, since: e.t, cause: e.cause, reason: e.reason } }
+      break
+
+    case 'siem.event':
+      next.siem = [...state.siem, e]
+      break
 
     case 'run.end':
       next.finalStats = e.stats

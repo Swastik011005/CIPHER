@@ -20,8 +20,8 @@ function nearDevice(p, id, margin = 0.6) {
 }
 
 describe('packets follow the drawn cables', () => {
-  it('has a path for all 18 links', () => {
-    expect(paths.size).toBe(18)
+  it('has a path for all 32 links', () => {
+    expect(paths.size).toBe(32)
     for (const [, path] of paths) expect(path.length).toBeGreaterThan(0.5)
   })
 

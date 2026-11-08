@@ -24,7 +24,10 @@ const hosts = trafficHosts(loadBackendTopology())
 
 describe('the hosts offered by the form', () => {
   it('are the devices that can send and receive traffic, with their addresses', () => {
-    expect(hosts.map((h) => h.id).sort()).toEqual(['ADMIN-PC', 'APP-SRV', 'DB-SRV', 'EXT-ATK', 'EXT-USR', 'LAPTOP-1', 'PC-1', 'PC-2', 'SEC-LOG'])
+    const all = loadBackendTopology().nodes.filter((n) => n.type === 'host' || n.type === 'syslog').map((n) => n.id).sort()
+    expect(hosts.map((h) => h.id).sort()).toEqual(all)
+    expect(all).toHaveLength(23)
+    for (const id of ['ADMIN-PC', 'APP-SRV', 'DB-SRV', 'EXT-ATK', 'EXT-USR', 'LAPTOP-1', 'PC-1', 'PC-2', 'SEC-LOG']) expect(all).toContain(id)
     expect(hosts.find((h) => h.id === 'PC-1').address).toBe('10.0.10.11')
     expect(hosts.find((h) => h.id === 'DB-SRV').address).toBe('10.0.30.20')
     expect(trafficHosts(null)).toEqual([])

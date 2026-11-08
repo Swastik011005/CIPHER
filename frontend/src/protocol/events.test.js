@@ -8,7 +8,7 @@ const contract = loadEventContract()
 describe('event protocol matches contracts/events.json', () => {
   it('lists the same event types in the same order', () => {
     expect(EVENT_TYPES).toEqual(Object.keys(contract.events))
-    expect(EVENT_TYPES).toHaveLength(14)
+    expect(EVENT_TYPES).toHaveLength(18) // the 14 frozen events plus zt.decision, edr.alert, edr.state, siem.event
   })
 
   it('lists the same fields for every event', () => {

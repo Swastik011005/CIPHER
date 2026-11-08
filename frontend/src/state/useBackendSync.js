@@ -19,10 +19,12 @@ export function useBackendSync() {
       try {
         const health = await api.health({ signal: controller.signal })
         store.recordHealthSuccess(health)
-        const { topology } = useStore.getState()
+        const { topology, presentation, securityState } = useStore.getState()
         if (topology.status === 'idle' || topology.status === 'error') {
           useStore.getState().loadTopology()
         }
+        if (presentation.status === 'idle' || presentation.status === 'error') useStore.getState().loadPresentation()
+        if (securityState === null) useStore.getState().loadSecurityState()
       } catch (error) {
         if (controller.signal.aborted) return
         store.recordHealthFailure(error?.message ?? String(error))

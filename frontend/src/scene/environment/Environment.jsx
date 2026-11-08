@@ -1,5 +1,5 @@
 import { Block, Slab } from '../devices/parts/parts.jsx'
-import { PLATES, RACK, SLAB_THICKNESS } from '../layout.js'
+import { PLATES, RACKS, SLAB_THICKNESS } from '../layout.js'
 import { materials } from '../materials/materials.js'
 
 /**
@@ -19,10 +19,10 @@ export function BasePlates() {
   )
 }
 
-/** Open four-post rack frame that the rack-mounted switch and servers sit in. */
-export function RackFrame() {
-  const [px, pz] = RACK.position
-  const [w, h, d] = RACK.size
+/** An open four-post rack frame that the rack-mounted switch and servers stand in. */
+function RackFrame({ rack }) {
+  const [px, pz] = rack.position
+  const [w, h, d] = rack.size
   const top = SLAB_THICKNESS + h
   return (
     <group position={[px, 0, pz]}>
@@ -31,6 +31,17 @@ export function RackFrame() {
       ))}
       <Block size={[w + 0.1, 0.06, d + 0.1]} position={[0, SLAB_THICKNESS + 0.03, 0]} material="rack" radius={0.015} />
       <Block size={[w + 0.1, 0.06, d + 0.1]} position={[0, top, 0]} material="rack" radius={0.015} />
+    </group>
+  )
+}
+
+/** Every server rack of the campus. */
+export function RackFrames() {
+  return (
+    <group>
+      {RACKS.map((rack) => (
+        <RackFrame key={rack.id} rack={rack} />
+      ))}
     </group>
   )
 }

@@ -52,14 +52,15 @@ export const useStore = create((set, get) => ({
   playback: { loaded: false, playing: false, speed: 1, time: 0, duration: 0, finished: false, state: null },
 
   /** Ask the engine to simulate a scenario and load its trace into the player (paused at T+0). */
-  runScenario: async (scenarioId, ipsMode, controls = [], resume = null, customFlows = []) => {
+  runScenario: async (scenarioId, ipsMode, controls = [], resume = null, customFlows = [], options = {}) => {
     set({ run: { status: 'loading', meta: null, error: null, request: null } })
     try {
-      const body = await api.runScenario({ scenario_id: scenarioId, ips_mode: ipsMode, controls, custom_flows: customFlows })
+      const body = await api.runScenario({ scenario_id: scenarioId, ips_mode: ipsMode, controls, custom_flows: customFlows, ...(options.commitState ? { commit_state: true } : {}), ...(options.scriptedOperator ? { scripted_operator: true } : {}) })
       const { events, ...meta } = body
       const player = session.load(body)
       set({ run: { status: 'ready', meta, error: null, request: { scenarioId, ipsMode, controls, customFlows } } })
       get().syncPlayback()
+      if (options.commitState) get().loadSecurityState()
       if (resume) player.seek(resume.time) // a re-run from the playhead: everything before it is identical
       if (!resume || resume.playing) player.play()
       get().syncPlayback()
@@ -147,6 +148,84 @@ export const useStore = create((set, get) => ({
     player.reset()
     player.play()
     get().syncPlayback()
+  },
+
+  // -- campus security: presentation scenarios, security state, endpoint CLI ---------------
+  presentation: { status: 'idle', items: [], error: null },
+  loadPresentation: async () => {
+    if (get().presentation.status === 'loading') return
+    set((s) => ({ presentation: { ...s.presentation, status: 'loading', error: null } }))
+    try {
+      set({ presentation: { status: 'ready', items: await api.presentation(), error: null } })
+    } catch (error) {
+      set((s) => ({ presentation: { status: s.presentation.items.length ? 'ready' : 'error', items: s.presentation.items, error: error?.message ?? String(error) } }))
+    }
+  },
+  /** The server's security state: isolated endpoints, trust, roles, revoked permissions and cumulative rule counters. */
+  securityState: null,
+  loadSecurityState: async () => {
+    try {
+      set({ securityState: await api.securityState() })
+    } catch {
+      /* offline: the last known state stays on screen */
+    }
+  },
+  /** An operator action on the server's security state (isolate, restore, trust, role, revoke, grant, reset). */
+  securityAction: async (body) => {
+    const state = await api.stateAction(body)
+    set({ securityState: state })
+    return state
+  },
+  /**
+   * Isolate or restore an endpoint. With a run loaded this is a control at the playhead (the engine re-simulates from there and
+   * everything before it stays identical) and the result is committed to the server state; with no run it changes the state only.
+   */
+  setEndpointIsolation: async (node, action) => {
+    const { run, playback } = get()
+    const request = run.request
+    if (request && playback.loaded && request.scenarioId !== 'CLI') {
+      const t = Math.round(playback.time * 100) / 100
+      const controls = [...request.controls, { type: 'endpoint', t, node, action }]
+      await get().runScenario(request.scenarioId, request.ipsMode, controls, { time: t, playing: playback.playing }, request.customFlows, { commitState: true })
+      return
+    }
+    await get().securityAction({ action, node })
+  },
+  /** Reset the server's security state to the shipped one and clear the loaded run. */
+  resetSecurity: async () => {
+    session.clear()
+    set({
+      run: { status: 'idle', meta: null, error: null, request: null },
+      playback: { loaded: false, playing: false, speed: 1, time: 0, duration: 0, finished: false, state: null },
+    })
+    await get().securityAction({ action: 'reset' })
+  },
+  /** Endpoint CLI sessions: the lines of each endpoint's terminal, so they survive switching devices. */
+  cli: {},
+  /** Run one command in an endpoint's CLI. The output comes from the backend; with `animate` the packets replay in 3D. */
+  runCli: async (node, command, animate = true) => {
+    const input = command.trim()
+    const push = (entry) => set((s) => ({ cli: { ...s.cli, [node]: [...(s.cli[node] ?? []), entry].slice(-80) } }))
+    if (input === '') return
+    try {
+      const result = await api.cliExec({ node, command: input, ips_mode: get().settings.cliIpsMode ?? 'enforce', animate })
+      if (result.clear) {
+        set((s) => ({ cli: { ...s.cli, [node]: [] } }))
+        return
+      }
+      push({ input, lines: result.lines, ok: result.ok, decision: result.decision })
+      if (result.run && animate) {
+        const { events, ...meta } = result.run
+        const player = session.load(result.run)
+        set({ run: { status: 'ready', meta, error: null, request: { scenarioId: 'CLI', ipsMode: meta.ips_mode, controls: [], customFlows: [] } } })
+        get().syncPlayback()
+        player.play()
+        get().syncPlayback()
+      }
+      get().loadSecurityState()
+    } catch (error) {
+      push({ input, lines: [error?.message ?? String(error)], ok: false, decision: {} })
+    }
   },
 
   // -- selection ----------------------------------------------------------------------

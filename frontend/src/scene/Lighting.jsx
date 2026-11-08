@@ -12,20 +12,20 @@ export function Lighting({ shadows }) {
   return (
     <>
       <color attach="background" args={[PALETTE.void]} />
-      <fog attach="fog" args={[PALETTE.void, 80, 190]} />
+      <fog attach="fog" args={[PALETTE.void, 150, 380]} />
 
       <hemisphereLight args={['#bfd8ff', '#0b1a3a', 0.75]} />
       <directionalLight
-        position={[-18, 30, 12]}
+        position={[-30, 60, 20]}
         intensity={2.4}
         castShadow={shadows}
         shadow-mapSize={[2048, 2048]}
-        shadow-camera-left={-34}
-        shadow-camera-right={34}
-        shadow-camera-top={34}
-        shadow-camera-bottom={-34}
+        shadow-camera-left={-78}
+        shadow-camera-right={78}
+        shadow-camera-top={78}
+        shadow-camera-bottom={-78}
         shadow-camera-near={1}
-        shadow-camera-far={110}
+        shadow-camera-far={220}
         shadow-bias={-0.0004}
         shadow-normalBias={0.03}
       />

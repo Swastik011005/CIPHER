@@ -83,7 +83,7 @@ export function ScenarioPanel() {
   const modeNow = ipsModeAt(request, runPinned, playbackTime)
 
   return (
-    <Card eyebrow="Scenarios" title="Run a scenario">
+    <Card eyebrow="Baseline scenarios" title="Run a baseline scenario (S1 to S7)">
       {scenarios.status === 'loading' && (
         <div className="inline-status">
           <Spinner /> <span className="muted">Asking the engine…</span>

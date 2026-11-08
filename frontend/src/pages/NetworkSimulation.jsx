@@ -3,7 +3,9 @@ import { lazy, Suspense, useMemo } from 'react'
 import { ScenarioPanel } from '../features/simulation/ScenarioPanel.jsx'
 import { DeviceList } from '../features/simulation/DeviceList.jsx'
 import { CablePanel } from '../features/simulation/CablePanel.jsx'
+import { DemoScenarios } from '../features/simulation/DemoScenarios.jsx'
 import { DevicePanel } from '../features/simulation/DevicePanel.jsx'
+import { EndpointPanel } from '../features/simulation/EndpointPanel.jsx'
 import { PacketList, PacketPanel } from '../features/simulation/PacketPanel.jsx'
 import { SendTrafficPanel } from '../features/simulation/SendTrafficPanel.jsx'
 import { SimulationViewport } from '../features/simulation/SimulationViewport.jsx'
@@ -35,13 +37,14 @@ export function NetworkSimulation() {
         {topology && zoneId !== null && <ZonePanel zoneId={zoneId} topology={topology} />}
         {topology && packetId !== null && <PacketPanel pid={packetId} />}
         {topology && packetId === null && cableId !== null && <CablePanel linkId={cableId} topology={topology} />}
-        {topology && packetId === null && cableId === null && selectedNode && <DevicePanel node={selectedNode} topology={topology} />}
+        {topology && packetId === null && cableId === null && selectedNode && (selectedNode.type === 'host' ? <EndpointPanel node={selectedNode} topology={topology} /> : <DevicePanel node={selectedNode} topology={topology} />)}
         {topology && packetId === null && cableId === null && !selectedNode && (
           <>
             <PacketList />
             <DeviceList topology={topology} />
           </>
         )}
+        <DemoScenarios />
         <ScenarioPanel />
         <SendTrafficPanel />
       </aside>

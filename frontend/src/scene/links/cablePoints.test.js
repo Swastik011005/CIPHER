@@ -10,8 +10,8 @@ const topology = loadBackendTopology()
 const nodesById = new Map(topology.nodes.map((n) => [n.id, n]))
 
 describe('cable routes', () => {
-  it('builds a finite route for all 18 links', () => {
-    expect(topology.links).toHaveLength(18)
+  it('builds a finite route for all 32 links (18 original, 14 campus extension)', () => {
+    expect(topology.links).toHaveLength(32)
     for (const link of topology.links) {
       const points = buildCablePoints(link, nodesById)
       expect(points.length, link.id).toBeGreaterThanOrEqual(2)
