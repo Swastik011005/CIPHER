@@ -44,20 +44,20 @@ export const CAMPUS_ZONES = Object.freeze([
  * the frame. `holds` lists the devices that stand inside (checked by the tests).
  */
 export const STRUCTURES = Object.freeze([
-  { id: 'staff', zone: 'staff', r: rect([10, -30, 34, -14]), h: STRUCTURE_HEIGHT, glass: ['N', 'W'], margin: 0.25, holds: ['PC-1', 'PC-2', 'PC-3', 'PC-4', 'LAPTOP-1', 'PC-5', 'PC-6', 'PC-7', 'ACC-SW2'] },
-  { id: 'admin', zone: 'admin', r: rect([42, -30, 54, -14]), h: 6.2, glass: ['N', 'W'], margin: 0.25, holds: ['ADMIN-PC', 'ADMIN-PC-2', 'ADMIN-PC-3', 'ADMIN-PC-4'] },
-  { id: 'datacentre', zone: 'datacentre', r: rect([24, 15, 50, 33]), h: 5.2, glass: ['N', 'W'], margin: 0.25, holds: ['APP-SRV', 'DB-SRV', 'SRV-SW3', 'WEB-SRV', 'DNS-SRV', 'FILE-SRV'] },
-  { id: 'soc', zone: 'soc', r: rect([-18, 16, 13, 32]), h: 4.8, glass: ['N', 'W'], margin: 0.12, holds: ['IDS-1', 'SEC-LOG', 'SIEM-1', 'EDR-MGMT-1', 'ZT-POLICY-1'] },
-  { id: 'ips-gate', zone: 'soc', r: rect([18.4, 16.8, 21.6, 23.2]), h: STRUCTURE_HEIGHT, glass: ['N', 'W'], margin: 0.25, holds: ['IPS-1'] },
-  { id: 'reception', zone: 'gate', r: rect([-34, 10.5, -25, 17]), h: 3.4, glass: ['N', 'W'], margin: 0.25, holds: [] }, // the visitor reception at the gate: a pavilion with no device
-  { id: 'edge', zone: 'gate', r: rect([-34, -3, -28, 3]), h: 3.2, glass: ['N', 'W'], margin: 0.2, holds: ['R1-EDGE'], onCourt: true },
+  { id: 'staff', zone: 'staff', r: rect([2, -24, 26, -8]), h: STRUCTURE_HEIGHT, glass: ['N', 'W'], margin: 0.25, holds: ['PC-1', 'PC-2', 'PC-3', 'PC-4', 'LAPTOP-1', 'PC-5', 'PC-6', 'PC-7', 'ACC-SW2'] },
+  { id: 'admin', zone: 'admin', r: rect([30, -24, 42, -8]), h: 6.2, glass: ['N', 'W'], margin: 0.25, holds: ['ADMIN-PC', 'ADMIN-PC-2', 'ADMIN-PC-3', 'ADMIN-PC-4'] },
+  { id: 'datacentre', zone: 'datacentre', r: rect([21, 9, 47, 27]), h: 5.2, glass: ['N', 'W'], margin: 0.25, holds: ['APP-SRV', 'DB-SRV', 'SRV-SW3', 'WEB-SRV', 'DNS-SRV', 'FILE-SRV'] },
+  { id: 'soc', zone: 'soc', r: rect([-21, 9, 10, 25]), h: 4.8, glass: ['N', 'W'], margin: 0.12, holds: ['IDS-1', 'SEC-LOG', 'SIEM-1', 'EDR-MGMT-1', 'ZT-POLICY-1'] },
+  { id: 'ips-gate', zone: 'soc', r: rect([15.4, 10.8, 18.6, 17.2]), h: STRUCTURE_HEIGHT, glass: ['N', 'W'], margin: 0.25, holds: ['IPS-1'] },
+  { id: 'reception', zone: 'gate', r: rect([-25, -17, -16, -10.5]), h: 3.4, glass: ['N', 'W'], margin: 0.25, holds: [] }, // the visitor reception at the gate: a pavilion with no device
+  { id: 'edge', zone: 'gate', r: rect([-25, -3, -19, 3]), h: 3.2, glass: ['N', 'W'], margin: 0.2, holds: ['R1-EDGE'], onCourt: true },
 ])
 
 /** The round open pavilion over the core switch: a platform, eight columns and a thin ring beam. No roof. */
 export const CORE_PAVILION = Object.freeze({ id: 'core', zone: 'core', center: [0, 0], platformRadius: 3.6, columnRadius: 2.9, columns: 8, phase: 22.5, h: STRUCTURE_HEIGHT, holds: ['CORE-SW1'] })
 
 /** Platforms with no frame of their own: the gate court (FW1 is its own gate model) and the off-campus island. */
-export const GATE_COURT = Object.freeze({ id: 'gate-court', zone: 'gate', platform: rect([-34, -5, -17, 5]), holds: ['FW1'] })
+export const GATE_COURT = Object.freeze({ id: 'gate-court', zone: 'gate', platform: rect([-25, -5, -8, 5]), holds: ['FW1'] })
 const slab = (id) => {
   const z = ZONE_LAYOUT[id]
   return rect([z.center[0] - z.size[0] / 2, z.center[1] - z.size[1] / 2, z.center[0] + z.size[0] / 2, z.center[1] + z.size[1] / 2])
@@ -66,13 +66,13 @@ export const ISLAND = Object.freeze({ id: 'island', zone: 'offcampus', platform:
 
 /** Raised signs: a small tilted plaque on the ground in front of a platform, facing the default camera. */
 export const SIGNS = Object.freeze([
-  { zone: 'staff', x: 17.0, z: -11.4, w: 5.0 },
-  { zone: 'admin', x: 47.0, z: -11.4, w: 4.4 },
-  { zone: 'datacentre', x: 34.0, z: 35.2, w: 5.0 },
-  { zone: 'soc', x: -2.0, z: 34.2, w: 6.0 },
+  { zone: 'staff', x: 9.0, z: -5.4, w: 5.0 },
+  { zone: 'admin', x: 40.5, z: -5.4, w: 4.4 },
+  { zone: 'datacentre', x: 31.0, z: 29.2, w: 5.0 },
+  { zone: 'soc', x: -5.0, z: 27.2, w: 6.0 },
   { zone: 'core', x: -5.4, z: 3.8, w: 3.2 },
-  { zone: 'gate', x: -26.0, z: 7.0, w: 4.6 },
-  { zone: 'offcampus', x: -50.0, z: 13.2, w: 4.6 },
+  { zone: 'gate', x: -20.0, z: -8.0, w: 4.6 },
+  { zone: 'offcampus', x: -42.0, z: 13.2, w: 4.6 },
 ])
 
 /** The low glass balustrade that replaces the opaque perimeter wall (same line, with the gate gap). */

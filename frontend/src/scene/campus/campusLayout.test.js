@@ -28,7 +28,7 @@ const nearestCable = (p) => Math.min(...campus.segments.map((s) => distToSeg(p, 
 describe('the logical layout is untouched by the campus', () => {
   it('has the fingerprint recorded for the expanded campus layout: no device, cable route, zone rectangle or plate moved by accident', () => {
     const fingerprint = createHash('sha256').update(JSON.stringify({ nodes: NODE_LAYOUT, links: LINK_LAYOUT, zones: ZONE_LAYOUT, plates: PLATES })).digest('hex')
-    expect(fingerprint).toBe('ec32fc53d88dd5e4de8a6ad27b31ce500228be73bf5e5d54693ed6c079def7e5')
+    expect(fingerprint).toBe('fdcce50b07d2eba2539acac2e29407b4fd7917a36f1de14b2300e2d631618849')
   })
 
   it('keeps all 17 original nodes and 18 original links inside the 31 nodes and 32 links', () => {
@@ -167,8 +167,8 @@ describe('signs, balustrade and subtitles', () => {
   })
 
   it('keep the balustrade on the perimeter wall line with the gate gap', () => {
-    expect(BALUSTRADE.x).toBe(-20.2)
-    expect(BALUSTRADE.spans).toEqual([[-14, -1.75], [1.75, 14]])
+    expect(BALUSTRADE.x).toBe(-11.2)
+    expect(BALUSTRADE.spans).toEqual([[-8, -1.75], [1.75, 8]])
   })
 
   it('show the VLAN and subnet of the zone as the old captions did', () => {

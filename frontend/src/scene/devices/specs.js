@@ -41,7 +41,7 @@ const BASE_SPECS = Object.freeze({
  * factor in DeviceNode, and every length below (footprint, height, port height, label height, ring) is scaled with it, so cables,
  * selection boxes, labels, rings and racks all agree with the bigger model.
  */
-export const DEVICE_SCALE = 1.5
+export const DEVICE_SCALE = 1.8
 
 /** @type {Record<string, DeviceSpec>} */
 export const DEVICE_SPECS = Object.freeze(

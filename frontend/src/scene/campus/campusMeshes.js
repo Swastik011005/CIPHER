@@ -4,7 +4,7 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 import { BALUSTRADE, CAMPUS_ZONES, GATE_COURT, ISLAND, PLATFORM_TOP, PLINTH_TOP, SIGNS, campusGeometry, devicePads, roadRects, signSubtitle, zoneVolumes } from './campusLayout.js'
 import { campusMaterials } from './campusMaterials.js'
 import { buildArchitecture } from './campusBuildings.js'
-import { CABINETS, ENTRANCE, SERVER_CABINETS, SOC_STATIONS, SOC_WALL } from './campusDecor.js'
+import { CABINETS, ENTRANCE, SERVER_CABINETS, SOC_STATIONS, SOC_WALL, WALL_CABINETS } from './campusDecor.js'
 
 /**
  * Turns the campus layout into three.js meshes, merged to one mesh per material: every platform top, every plinth, all the
@@ -129,9 +129,9 @@ export function buildCampus(topology) {
     if (!s.onCourt) platform(s.zone, s.platform, s.r)
     const top = PLATFORM_TOP + s.h
     for (const b of s.beams) {
-      put(s.zone, 'frame', b.side === 'N' ? box(b.x1 - b.x0, 0.1, 0.1, (b.x0 + b.x1) / 2, top - 0.05, b.z0) : box(0.1, 0.1, b.z1 - b.z0, b.x0, top - 0.05, (b.z0 + b.z1) / 2))
+      put(s.zone, 'frame', b.side === 'N' ? box(b.x1 - b.x0, 0.4, 0.16, (b.x0 + b.x1) / 2, top - 0.2, b.z0) : box(0.16, 0.4, b.z1 - b.z0, b.x0, top - 0.2, (b.z0 + b.z1) / 2))
     }
-    for (const p of s.posts) put(s.zone, 'frame', box(0.1, s.h, 0.1, p.x, PLATFORM_TOP + s.h / 2, p.z))
+    for (const p of s.posts) put(s.zone, 'frame', box(0.16, s.h, 0.16, p.x, PLATFORM_TOP + s.h / 2, p.z))
     const paneH = s.h - 0.1
     for (const p of s.panes) {
       const len = p.u1 - p.u0
@@ -174,12 +174,6 @@ export function buildCampus(topology) {
   // Campus infrastructure (decoration only): entrance, cabinets, server cabinets, monitoring wall and stations.
   const T = PLATFORM_TOP
   {
-    const a = ENTRANCE.arch
-    for (const z of [a.z0, a.z1]) put('gate', 'frame', box(0.4, a.height, 0.4, a.x, a.height / 2, z))
-    put('gate', 'frame', box(0.45, 0.45, a.z1 - a.z0 + 0.4, a.x, a.height, (a.z0 + a.z1) / 2))
-    put('gate', 'lights', box(0.12, 0.7, a.z1 - a.z0 - 0.4, a.x + 0.05, a.height - 0.75, (a.z0 + a.z1) / 2))
-    put('gate', 'marking', box(0.12, 0.14, ENTRANCE.barrier.length, ENTRANCE.barrier.x, 1.1, ENTRANCE.barrier.z + ENTRANCE.barrier.length / 2))
-    put('gate', 'cabinet', box(0.3, 1.1, 0.3, ENTRANCE.barrier.x, 0.55, ENTRANCE.barrier.z))
     const b = ENTRANCE.booth
     const [bx, bz, bw, bd] = [(b.x0 + b.x1) / 2, (b.z0 + b.z1) / 2, b.x1 - b.x0, b.z1 - b.z0]
     put('gate', 'glass', box(bw, 2.5, bd, bx, 1.3, bz))
@@ -189,6 +183,11 @@ export function buildCampus(topology) {
   for (const [x, z, w, d] of CABINETS) {
     put('staff', 'cabinet', box(w, 2.1, d, x, 1.05, z))
     put('staff', 'lights', box(w > d ? 0.5 : 0.04, 1.2, w > d ? 0.04 : 0.5, x + (w > d ? 0 : (w / 2 + 0.01) * (x > 30 ? -1 : 1)), 1.2, z + (w > d ? d / 2 + 0.01 : 0)))
+  }
+  for (const [zone, x, z] of WALL_CABINETS) {
+    put(zone, 'cabinet', box(1.6, 2.2, 0.5, x, T + 1.1, z))
+    for (const dx of [-0.4, 0.4]) put(zone, 'frame', box(0.7, 0.04, 0.02, x + dx, T + 1.5, z + 0.26))
+    for (const dy of [0.7, 1.9]) put(zone, 'lights', box(0.1, 0.04, 0.02, x + 0.55, T + dy, z + 0.26))
   }
   for (const [x, z] of SERVER_CABINETS) {
     put('datacentre', 'cabinet', box(1.5, 3.3, 1.35, x, T + 1.65, z))

@@ -15,25 +15,29 @@ const overlapsRect = (a, b, gap = 0) => a.x0 < b.x1 + gap && a.x1 > b.x0 - gap &
 
 /** The campus entrance: a gate arch over the west end of the main avenue, with a barrier arm and a glass guard booth. */
 export const ENTRANCE = Object.freeze({
-  arch: { x: -15.2, z0: -10.9, z1: -5.1, height: 5.0 },
-  booth: rect([-19.4, -13.4, -16.6, -11.2]),
-  barrier: { x: -15.2, z: -10.2, length: 3.4 },
+  booth: rect([-14, -10, -11.2, -7.8]),
 })
 
 /** Networking cabinets beside the buildings: [x, z, width, depth]. */
 export const CABINETS = Object.freeze([
-  [7.2, -17, 1.6, 1.0], [7.2, -27.5, 1.6, 1.0], // staff lab, west side
-  [56.6, -25, 1.0, 1.6], [56.6, -19, 1.0, 1.6], // administration, east side
-  [52.6, 17, 1.0, 1.6], [52.6, 30, 1.0, 1.6], // data centre, east side
-  [-20.2, 19, 1.0, 1.6], [-20.2, 28, 1.0, 1.6], // security operations, west side
+  [-4.0, -11, 1.6, 1.0], [-4.0, -21.5, 1.6, 1.0], // staff lab, west side
+  [44.6, -19, 1.0, 1.6], [44.6, -13, 1.0, 1.6], // administration, east side
+  [49.6, 11, 1.0, 1.6], [49.6, 24, 1.0, 1.6], // data centre, east side
+  [-23.2, 12, 1.0, 1.6], [-23.2, 21, 1.0, 1.6], // security operations, west side
+])
+
+/** Storage and equipment cabinets along the north wall inside the laboratory and the administration building: [zone, x, z]; each is 1.6 wide, 0.5 deep, 2.2 high. */
+export const WALL_CABINETS = Object.freeze([
+  ...[5.5, 9.7, 13.9, 18.1, 22.3].map((x) => ['staff', x, -23.55]),
+  ...[32.5, 35.9, 39.3].map((x) => ['admin', x, -23.55]),
 ])
 
 /** Empty server cabinets standing in a row along the south wall of the data centre. [x, z]; each is 1.5 wide, 1.35 deep, 3.3 high. */
-export const SERVER_CABINETS = Object.freeze([27, 31, 35, 39, 43, 47].map((x) => [x, 30.6]))
+export const SERVER_CABINETS = Object.freeze([24, 28, 32, 36, 40, 44].map((x) => [x, 24.6]))
 
 /** The security monitoring wall (screens on the west wall of the operations centre) and the monitoring stations in front of it. */
-export const SOC_WALL = Object.freeze({ x: -17.2, z0: 25.4, z1: 31, screens: 4 })
-export const SOC_STATIONS = Object.freeze([[-8, 27.6], [-2, 27.6], [4, 27.6]])
+export const SOC_WALL = Object.freeze({ x: -20.2, z0: 18.4, z1: 24, screens: 4 })
+export const SOC_STATIONS = Object.freeze([[-11, 20.6], [-5, 20.6], [1, 20.6]])
 
 function distanceToSegment(p, a, b) {
   const [dx, dz] = [b[0] - a[0], b[1] - a[1]]

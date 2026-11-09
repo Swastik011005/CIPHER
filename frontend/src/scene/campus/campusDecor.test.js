@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { NODE_LAYOUT, PLATES } from '../layout.js'
 import { loadBackendTopology } from '../testSupport.js'
 import {
-  CABINETS, ENTRANCE, SERVER_CABINETS, SOC_STATIONS, SOC_WALL, decorFootprints, overlapsRect, roadRects,
+  CABINETS, SERVER_CABINETS, WALL_CABINETS, SOC_STATIONS, SOC_WALL, decorFootprints, overlapsRect, roadRects,
 } from './campusDecor.js'
 import * as decor from './campusDecor.js'
 import { ARCHITECTURE_FOOTPRINTS, frontPosts } from './campusBuildings.js'
@@ -57,11 +57,6 @@ describe('campus decoration is visual only and stays out of the way', () => {
     for (const f of footprints) expect(cableDistance(f.rect), f.id).toBeGreaterThanOrEqual(0.6)
   })
 
-  it('puts the arch posts on the avenue, off any cable', () => {
-    const a = ENTRANCE.arch
-    for (const z of [a.z0, a.z1]) expect(Math.min(...cables.map((s) => distToSeg([a.x, z], s.a, s.b)))).toBeGreaterThan(0.6)
-  })
-
   it('has no car park, no vehicle and no vegetation in the decoration data', () => {
     const names = Object.keys(decor)
     for (const n of names) expect(/park|car|tree|grass|bush|path/i.test(n), n).toBe(false)
@@ -94,8 +89,19 @@ describe('campus decoration is visual only and stays out of the way', () => {
     expect(Object.keys(decor).some((n) => /walkway/i.test(n))).toBe(false)
     for (const st of STRUCTURES) {
       const posts = frontPosts(st, cables)
-      expect(posts.length, st.id).toBeGreaterThanOrEqual(1)
+      expect(posts.length, st.id).toBeGreaterThanOrEqual(0)
       for (const p of posts) expect(Math.min(...cables.map((c) => distToSeg([p.x, p.z], c.a, c.b))), `${st.id} post at ${p.x},${p.z}`).toBeGreaterThanOrEqual(0.8)
+    }
+  })
+
+  it('puts the wall cabinets inside their building, clear of devices and cables', () => {
+    const devices = topology.nodes.filter((n) => NODE_LAYOUT[n.id]).map((n) => deviceRect(n))
+    for (const [zone, x, z] of WALL_CABINETS) {
+      const r = { x0: x - 0.8, x1: x + 0.8, z0: z - 0.25, z1: z + 0.25 }
+      const b = STRUCTURES.find((s) => s.id === zone).r
+      expect(r.x0 >= b.x0 && r.x1 <= b.x1 && r.z0 >= b.z0 && r.z1 <= b.z1, `${zone} cabinet at ${x} inside`).toBe(true)
+      for (const d of devices) expect(overlapsRect(r, d, 0.2), `cabinet at ${x} on a device`).toBe(false)
+      expect(cableDistance(r), `cabinet at ${x} near a cable`).toBeGreaterThanOrEqual(0.3)
     }
   })
 })

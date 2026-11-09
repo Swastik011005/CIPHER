@@ -25,19 +25,19 @@ export const CHANNEL_Y = SLAB_TOP + 0.06
  * The campus is laid out for 31 nodes: the zones stand well apart, joined by the cables (and, in the campus layer, by roads).
  */
 export const ZONE_LAYOUT = Object.freeze({
-  OUTSIDE: { center: [-50, 0], size: [18, 22], labelAt: [-58, 9], caption: 'OUTSIDE' },
-  PERIMETER: { center: [-25.5, 0], size: [17, 10], labelAt: [-33, 4], caption: 'PERIMETER' },
+  OUTSIDE: { center: [-42, 0], size: [18, 22], labelAt: [-50, 9], caption: 'OUTSIDE' },
+  PERIMETER: { center: [-16.5, 0], size: [17, 10], labelAt: [-24, 4], caption: 'PERIMETER' },
   CORE: { center: [0, 0], size: [8, 8], labelAt: [-3.5, 3], caption: 'CORE' },
-  STAFF: { center: [22, -22], size: [26, 18], labelAt: [10, -14], caption: 'STAFF LAN' },
-  ADMIN: { center: [48, -22], size: [14, 18], labelAt: [42, -14], caption: 'ADMIN' },
-  SECOPS: { center: [-2, 24], size: [34, 18], labelAt: [-18, 32], caption: 'SECURITY OPS' },
-  SERVERS: { center: [34, 24], size: [32, 20], labelAt: [19, 33], caption: 'SERVER ROOM' },
+  STAFF: { center: [14, -16], size: [26, 18], labelAt: [2, -8], caption: 'STAFF LAN' },
+  ADMIN: { center: [36, -16], size: [14, 18], labelAt: [30, -8], caption: 'ADMIN' },
+  SECOPS: { center: [-5, 17], size: [34, 18], labelAt: [-21, 25], caption: 'SECURITY OPS' },
+  SERVERS: { center: [31, 18], size: [32, 20], labelAt: [16, 27], caption: 'SERVER ROOM' },
 })
 
 /** Base plates the slabs stand on. The Outside island is separated from the campus by an air gap. */
 export const PLATES = Object.freeze([
-  { id: 'campus', center: [14, 2], size: [98, 84], color: 'plate' },
-  { id: 'island', center: [-50, 0], size: [24, 28], color: 'plate' },
+  { id: 'campus', center: [11, 1], size: [80, 60], color: 'plate' },
+  { id: 'island', center: [-42, 0], size: [24, 28], color: 'plate' },
 ])
 
 /**
@@ -45,37 +45,37 @@ export const PLATES = Object.freeze([
  * model chosen from the topology form factor, `labelOffset` moves the floating label.
  */
 export const NODE_LAYOUT = Object.freeze({
-  INET: { position: [-55, 0], labelOffset: [-1.9 * S, 0 * S, 0 * S] },
-  'EXT-USR': { position: [-46, -6] },
-  'EXT-ATK': { position: [-46, 6] },
-  'R1-EDGE': { position: [-31, 0] },
-  FW1: { position: [-20, 0] },
+  INET: { position: [-47, 0], labelOffset: [-1.9 * S, 0 * S, 0 * S] },
+  'EXT-USR': { position: [-38, -6] },
+  'EXT-ATK': { position: [-38, 6] },
+  'R1-EDGE': { position: [-22, 0] },
+  FW1: { position: [-11, 0] },
   'CORE-SW1': { position: [0, 0] },
-  'ACC-SW2': { position: [11.5, -22] },
-  'PC-1': { position: [17, -27] },
-  'PC-2': { position: [22, -27] },
-  'PC-3': { position: [27, -27] },
-  'PC-4': { position: [32, -27] },
-  'LAPTOP-1': { position: [17, -17] },
-  'PC-5': { position: [22, -17] },
-  'PC-6': { position: [27, -17] },
-  'PC-7': { position: [32, -17] },
-  'ADMIN-PC': { position: [45, -27] },
-  'ADMIN-PC-2': { position: [51, -27] },
-  'ADMIN-PC-3': { position: [45, -17] },
-  'ADMIN-PC-4': { position: [51, -17] },
-  'IDS-1': { position: [-14, 22] },
-  'SEC-LOG': { position: [-8, 22] },
-  'SIEM-1': { position: [-1, 22] },
-  'EDR-MGMT-1': { position: [8, 22], y: 1.15 * S, labelOffset: [1.9 * S, 0.55 * S, 0.4 * S] },
-  'ZT-POLICY-1': { position: [8, 22], y: 0.65 * S, labelOffset: [0.5 * S, -0.1 * S, 1.9 * S] },
-  'IPS-1': { position: [20, 20] },
-  'SRV-SW3': { position: [28, 24], y: 1.75 * S, model: 'switch-rack', labelOffset: [0 * S, 0.95 * S, 0 * S] },
-  'APP-SRV': { position: [28, 24], y: 1.15 * S, labelOffset: [1.9 * S, 0.55 * S, 0.4 * S] },
-  'DB-SRV': { position: [28, 24], y: 0.65 * S, labelOffset: [0.5 * S, -0.1 * S, 1.9 * S] },
-  'WEB-SRV': { position: [36, 24], y: 1.15 * S, labelOffset: [1.9 * S, 0.55 * S, 0.4 * S] },
-  'DNS-SRV': { position: [36, 24], y: 0.65 * S, labelOffset: [0.5 * S, -0.1 * S, 1.9 * S] },
-  'FILE-SRV': { position: [44, 24], y: 1.15 * S, labelOffset: [1.9 * S, 0.55 * S, 0.4 * S] },
+  'ACC-SW2': { position: [3.5, -16] },
+  'PC-1': { position: [9, -21] },
+  'PC-2': { position: [14, -21] },
+  'PC-3': { position: [19, -21] },
+  'PC-4': { position: [24, -21] },
+  'LAPTOP-1': { position: [9, -11] },
+  'PC-5': { position: [14, -11] },
+  'PC-6': { position: [19, -11] },
+  'PC-7': { position: [24, -11] },
+  'ADMIN-PC': { position: [33, -21] },
+  'ADMIN-PC-2': { position: [39, -21] },
+  'ADMIN-PC-3': { position: [33, -11] },
+  'ADMIN-PC-4': { position: [39, -11] },
+  'IDS-1': { position: [-17, 15] },
+  'SEC-LOG': { position: [-11, 15] },
+  'SIEM-1': { position: [-4, 15] },
+  'EDR-MGMT-1': { position: [5, 15], y: 1.15 * S, labelOffset: [1.9 * S, 0.55 * S, 0.4 * S] },
+  'ZT-POLICY-1': { position: [5, 15], y: 0.65 * S, labelOffset: [0.5 * S, -0.1 * S, 1.9 * S] },
+  'IPS-1': { position: [17, 14] },
+  'SRV-SW3': { position: [25, 18], y: 1.75 * S, model: 'switch-rack', labelOffset: [0 * S, 0.95 * S, 0 * S] },
+  'APP-SRV': { position: [25, 18], y: 1.15 * S, labelOffset: [1.9 * S, 0.55 * S, 0.4 * S] },
+  'DB-SRV': { position: [25, 18], y: 0.65 * S, labelOffset: [0.5 * S, -0.1 * S, 1.9 * S] },
+  'WEB-SRV': { position: [33, 18], y: 1.15 * S, labelOffset: [1.9 * S, 0.55 * S, 0.4 * S] },
+  'DNS-SRV': { position: [33, 18], y: 0.65 * S, labelOffset: [0.5 * S, -0.1 * S, 1.9 * S] },
+  'FILE-SRV': { position: [41, 18], y: 1.15 * S, labelOffset: [1.9 * S, 0.55 * S, 0.4 * S] },
 })
 
 /** The device model of every node (the topology's form factor, or the layout override). Checked against the topology by the tests. */
@@ -93,23 +93,19 @@ export const NODE_FORM = Object.freeze({
  * `holds` names the nodes that stand in each rack.
  */
 export const RACKS = Object.freeze([
-  { id: 'A', position: [28, 24], size: [1.0 * S, 2.2 * S, 0.9 * S], holds: ['SRV-SW3', 'APP-SRV', 'DB-SRV'] },
-  { id: 'B', position: [36, 24], size: [1.0 * S, 2.2 * S, 0.9 * S], holds: ['WEB-SRV', 'DNS-SRV'] },
-  { id: 'C', position: [44, 24], size: [1.0 * S, 2.2 * S, 0.9 * S], holds: ['FILE-SRV'] },
-  { id: 'D', position: [8, 22], size: [1.0 * S, 2.2 * S, 0.9 * S], holds: ['EDR-MGMT-1', 'ZT-POLICY-1'] },
+  { id: 'A', position: [25, 18], size: [1.0 * S, 2.2 * S, 0.9 * S], holds: ['SRV-SW3', 'APP-SRV', 'DB-SRV'] },
+  { id: 'B', position: [33, 18], size: [1.0 * S, 2.2 * S, 0.9 * S], holds: ['WEB-SRV', 'DNS-SRV'] },
+  { id: 'C', position: [41, 18], size: [1.0 * S, 2.2 * S, 0.9 * S], holds: ['FILE-SRV'] },
+  { id: 'D', position: [5, 15], size: [1.0 * S, 2.2 * S, 0.9 * S], holds: ['EDR-MGMT-1', 'ZT-POLICY-1'] },
 ])
 /** The rack of SRV-SW3, APP-SRV and DB-SRV (kept for code that knew a single rack). */
 export const RACK = RACKS[0]
 
 /** The perimeter wall that FW1's gate is set into (decor). */
-export const PERIMETER_WALL = Object.freeze({ x: -20.2, zFrom: -14, zTo: 14, gateHalf: 1.75 })
+export const PERIMETER_WALL = Object.freeze({ x: -11.2, zFrom: -8, zTo: 8, gateHalf: 1.75 })
 
-/** Roads between the zones (decor, flat on the ground, below the cables): [x0, z0, x1, z1]. They keep clear of every platform. */
-export const ROADS = Object.freeze([
-  { id: 'avenue', rect: [-16, -9.5, 58, -6.5] }, // the main east-west avenue between the core and the Staff and Admin zones
-  { id: 'spine', rect: [13.4, -6.5, 16.2, 13.4] }, // north-south road between the Security Operations and the Server zones
-  { id: 'west', rect: [-17, -9.5, -14, 13.4] }, // connects the avenue to the Security Operations building
-])
+/** Roads were removed: the facilities stand close together on one ground plate and are joined only by cables. */
+export const ROADS = Object.freeze([])
 
 /** Face of a device: the plan position of the point `lat` along the face `side` ('+x' '-x' '+z' '-z'). Used to route cables. */
 function facePoint(id, side, lat = 0) {
@@ -140,7 +136,7 @@ function staffRoute(index) {
 /** An administration cable: south out of ACC-SW2, along a lane of the corridor between the PC rows, to a PC's face. */
 function adminRoute(index, pc, north) {
   const lat = spread(4, 0.22)[index]
-  const lane = -19.3 + index * 0.28
+  const lane = -13.3 + index * 0.28
   const [bx] = NODE_LAYOUT[pc].position
   const [ax] = facePoint('ACC-SW2', '+z', lat)
   return { a: { side: '+z', lateral: lat }, b: { side: north ? '-z' : '+z' }, outA: 0.8, outB: 0.7, via: [[ax, lane], [bx, lane]] }
@@ -149,7 +145,7 @@ function adminRoute(index, pc, north) {
 /** A Security Operations cable: south out of the core, along a lane of a corridor north of the building, down to a device's north face. */
 function socRoute(index, deviceId, bLat = 0) {
   const lat = spread(6, 0.25)[index]
-  const lane = 11.2 + index * 0.35
+  const lane = 5 + index * 0.35
   const [bx] = facePoint(deviceId, '-z', bLat)
   return { a: { side: '+z', lateral: lat }, b: { side: '-z', lateral: bLat }, outA: 1.0, outB: 1.1, via: [[lat, lane], [bx, lane]] }
 }
@@ -162,12 +158,12 @@ function socRoute(index, deviceId, bLat = 0) {
  * `lift`/`radius` arch a cable over a gap. `lane` offsets the double tube of a trunk.
  */
 export const LINK_LAYOUT = Object.freeze({
-  L01: { a: { side: '-x' }, b: { side: '-z' }, via: [[-55, -6]] },
-  L02: { a: { side: '-x' }, b: { side: '+z' }, via: [[-55, 6]] },
+  L01: { a: { side: '-x' }, b: { side: '-z' }, via: [[-47, -6]] },
+  L02: { a: { side: '-x' }, b: { side: '+z' }, via: [[-47, 6]] },
   L03: { a: { side: '+x' }, b: { side: '-x' }, lift: 1.1, radius: 2.2 },
   L04: { a: { side: '+x' }, b: { side: '-x' } },
   L05: { a: { side: '+x' }, b: { side: '-x' }, outB: 1.0 },
-  L06: { a: { side: '-z' }, b: { side: '-x' }, outA: 1.2, outB: 0.55, via: [[0, -22]], lane: 0.055 },
+  L06: { a: { side: '-z' }, b: { side: '-x' }, outA: 1.2, outB: 0.55, via: [[0, -16]], lane: 0.055 },
   L07: staffRoute(0),
   L08: staffRoute(1),
   L19: staffRoute(2),
@@ -186,30 +182,30 @@ export const LINK_LAYOUT = Object.freeze({
   L30: socRoute(3, 'SIEM-1'),
   L31: socRoute(4, 'EDR-MGMT-1', 0.05),
   L32: socRoute(5, 'ZT-POLICY-1', -0.05),
-  L14: { a: { side: '+x', lateral: -0.2 }, b: { side: '-x', lateral: -0.2 }, outA: 1.0, outB: 0.6, via: [[14, -0.2], [14, 19.8]] },
-  L16: { a: { side: '+x', lateral: 0.2 }, b: { side: '-x', lateral: 0.3 }, outA: 1.0, outB: 0.6, via: [[15, 0.2], [15, 20.3]] },
-  L15: { a: { side: '+x' }, b: { side: '-x', lateral: -0.3 }, outA: 0.8, outB: 0.6, via: [[22.7, 20], [22.7, 23.7]] },
+  L14: { a: { side: '+x', lateral: -0.2 }, b: { side: '-x', lateral: -0.2 }, outA: 1.0, outB: 0.6, via: [[14, -0.2], [14, 13.8]] },
+  L16: { a: { side: '+x', lateral: 0.2 }, b: { side: '-x', lateral: 0.3 }, outA: 1.0, outB: 0.6, via: [[15, 0.2], [15, 14.3]] },
+  L15: { a: { side: '+x' }, b: { side: '-x', lateral: -0.3 }, outA: 0.8, outB: 0.6, via: [[19.7, 14], [19.7, 17.7]] },
   L17: { a: { side: '-x', lateral: 0.25 }, b: { side: '-x', lateral: 0.25 }, outA: 0.3, outB: 0.3, internal: true },
   L18: { a: { side: '-x', lateral: 0.0 }, b: { side: '-x', lateral: 0.0 }, outA: 0.55, outB: 0.55, internal: true },
   L27: { a: { side: '+x', lateral: -0.2 }, b: { side: '-x' }, outA: 0.8, outB: 0.6 },
-  L28: { a: { side: '+x', lateral: 0.2 }, b: { side: '-x' }, outA: 1.0, outB: 0.6, via: [[31.5, 26.2], [33, 26.2], [33, 24.2]] },
-  L29: { a: { side: '+x', lateral: 0.0 }, b: { side: '+z' }, outA: 1.2, outB: 0.9, via: [[31, 27.5], [44, 27.5]] },
+  L28: { a: { side: '+x', lateral: 0.2 }, b: { side: '-x' }, outA: 1.0, outB: 0.6, via: [[28.5, 20.2], [30, 20.2], [30, 18.2]] },
+  L29: { a: { side: '+x', lateral: 0.0 }, b: { side: '+z' }, outA: 1.2, outB: 0.9, via: [[28, 21.5], [41, 21.5]] },
 })
 
 /** Camera presets: look at `target` from a given azimuth/elevation (degrees) and distance. */
 export const CAMERA_PRESETS = Object.freeze([
-  { id: 'overview', label: 'Overview', target: [14, 0, 10], azimuth: 45, elevation: 43, distance: 160 },
-  { id: 'perimeter', label: 'Perimeter', target: [-26, 0.6, 0], azimuth: 38, elevation: 36, distance: 42 },
-  { id: 'staff', label: 'Staff LAN', target: [24, 0.6, -22], azimuth: 42, elevation: 38, distance: 52 },
-  { id: 'core', label: 'Core', target: [2, 0.4, 6], azimuth: 40, elevation: 38, distance: 44 },
-  { id: 'servers', label: 'Server Room', target: [32, 1.0, 22], azimuth: 52, elevation: 33, distance: 46 },
-  { id: 'secops', label: 'Security Ops', target: [-2, 0.4, 24], azimuth: 30, elevation: 40, distance: 48 },
+  { id: 'overview', label: 'Overview', target: [11, 0, 6], azimuth: 45, elevation: 43, distance: 116 },
+  { id: 'perimeter', label: 'Perimeter', target: [-17, 0.6, 0], azimuth: 38, elevation: 36, distance: 40 },
+  { id: 'staff', label: 'Staff LAN', target: [22, 0.6, -16], azimuth: 42, elevation: 38, distance: 50 },
+  { id: 'core', label: 'Core', target: [1, 0.4, 5], azimuth: 40, elevation: 38, distance: 42 },
+  { id: 'servers', label: 'Server Room', target: [30, 1.0, 17], azimuth: 52, elevation: 33, distance: 44 },
+  { id: 'secops', label: 'Security Ops', target: [-5, 0.4, 17], azimuth: 30, elevation: 40, distance: 46 },
 ])
 
 export const DEFAULT_PRESET_ID = 'overview'
 
 /** Keep the camera target over the campus. [min, max] corners of the allowed target box. */
-export const CAMERA_BOUNDARY = Object.freeze({ min: [-70, -1, -50], max: [75, 8, 56] })
+export const CAMERA_BOUNDARY = Object.freeze({ min: [-60, -1, -40], max: [60, 8, 45] })
 
 export const CAMERA_LIMITS = Object.freeze({
   minDistance: 9,

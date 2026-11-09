@@ -20,12 +20,12 @@ export const campusMaterials = {
   /** Grey roads between the zones. */
   road: standard('#5f6f8c', 0.95),
   /** Slim steel posts and beams. */
-  frame: standard('#2e4468', 0.45, 0.35),
+  frame: standard('#4d6c9c', 0.4, 0.4),
   /**
    * Glass: a light blue tint at 20% opacity, matte enough (roughness 0.15, weak environment reflection) not to mirror the
    * studio lights. It never writes depth, so what is behind it is never culled, and it is one layer deep at most.
    */
-  glass: standard('#78b0f0', 0.55, 0, { transparent: true, opacity: 0.16, depthWrite: false, side: THREE.DoubleSide, envMapIntensity: 0.12 }),
+  glass: standard('#5a9be6', 0.2, 0, { transparent: true, opacity: 0.26, depthWrite: false, side: THREE.DoubleSide, envMapIntensity: 0.9 }),
 }
 
 /**
