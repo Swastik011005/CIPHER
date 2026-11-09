@@ -1,4 +1,4 @@
-# NetSec 3D: Final Technical Report
+# CIPHER: Final Technical Report
 
 **Project:** Intelligent network security with IDS, IPS, Zero Trust, SIEM and EDR on a simulated smart campus, shown in 3D.
 **Branch:** `feature/campus-c1-design` (nothing pushed, nothing deployed).
@@ -8,7 +8,7 @@
 ---
 
 ## 1. Executive summary
-NetSec 3D is a teaching and demonstration application. A Python backend runs a deterministic discrete-event simulation of a campus network (30 devices plus an abstract Internet segment, 32 links, 4 VLANs, 7 IP subnets) and returns a time-stamped trace. A React and Three.js front end replays that trace as a 3D campus with moving packets, device panels, a SIEM console and an endpoint CLI. The backend decides what happens to every packet; the front end only draws it.
+CIPHER is a teaching and demonstration application. A Python backend runs a deterministic discrete-event simulation of a campus network (30 devices plus an abstract Internet segment, 32 links, 4 VLANs, 7 IP subnets) and returns a time-stamped trace. A React and Three.js front end replays that trace as a 3D campus with moving packets, device panels, a SIEM console and an endpoint CLI. The backend decides what happens to every packet; the front end only draws it.
 
 The project demonstrates five security capabilities (IDS, IPS, Zero Trust, SIEM, EDR) through nine presentation scenarios (P1 to P9) plus the original seven scenarios (S1 to S7). The last full verification passed: 1210 backend tests, 93 of 93 scenario checks across 12 runs, 363 frontend tests, a production build, 70 of 70 browser interaction checks, 39 of 39 browser demonstration checks, the split-origin checks (20 of 20 and 34 of 34) and the offline recovery check (8 of 8).
 
@@ -110,7 +110,7 @@ Status: **Implemented and tested** (`backend/tests/security/test_device_cli.py`)
 Status: **Implemented and tested.**
 
 ## 17. Front end features
-Scenario launcher, endpoint panel (Overview, CLI, Security tabs), device panel, packet panel, playback bar with event markers, camera presets, High/Low quality with automatic fall-back, SIEM console, Monitoring and Threats pages, and a banner that says the traffic is synthetic.
+Scenario launcher, endpoint panel (Overview, CLI, Security tabs), device panel, packet panel, playback bar with event markers, camera presets, High/Low quality with automatic fall-back, SIEM console, the Monitoring page (counters, a stacked traffic chart with the playhead, a protocol mix, the busiest senders, a per-device table and the event log: every point is counted from the loaded trace) and the Threats page, and a banner that says the traffic is synthetic.
 UI polish done in this stage: the quality notice moved out of the scene. Other items remain minor (see section 22).
 
 ## 18. Testing and validation
@@ -120,7 +120,7 @@ Last full run on the final build:
 |---|---|
 | Backend tests (pytest) | 1210 passed |
 | Scenario checks S1 to S7 (shipped rules) | 12 of 12 runs, 93 of 93 checks |
-| Frontend tests (Vitest) | 30 files, 363 tests passed |
+| Frontend tests (Vitest) | 31 files, 367 tests passed |
 | Production build | succeeded |
 | Browser interaction check (`scripts/check_interactions.mjs`) | 70 of 70 |
 | Browser demonstration check (`scripts/check_demo_scenarios.mjs`) | 39 of 39 (including the progressive ping output, the sequential requests and Stop) |

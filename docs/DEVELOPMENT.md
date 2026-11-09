@@ -1,6 +1,6 @@
 # Development guide
 
-How to set up, run and check NetSec 3D, how the dependencies are organised, and what continuous integration does.
+How to set up, run and check CIPHER, how the dependencies are organised, and what continuous integration does.
 The branch and approval rules are in [CONTRIBUTING.md](../CONTRIBUTING.md).
 
 ## The task runner
@@ -107,8 +107,8 @@ says anything about the 55 fps target on an RTX 4050, which remains unverified.
 
 | Check | Result |
 |---|---|
-| Backend tests | 948 passed (937 from v1.0 plus 11 tooling guard tests) |
-| Frontend tests | 277 passed in 18 files |
+| Backend tests | 1210 passed (v1.0 release: 948) |
+| Frontend tests | 367 passed in 31 files (v1.0 release: 277 in 18 files) |
 | Scenario checks | 12 of 12 runs, 93 of 93 checks; trace hashes identical to the values above |
 | Production build | succeeds |
 | Fresh clone: `tasks.py setup` | 44 s with warm package caches; `tasks.py verify` 48 s |

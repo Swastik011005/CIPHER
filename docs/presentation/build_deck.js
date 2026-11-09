@@ -1,5 +1,5 @@
 /**
- * Builds the nine-slide final presentation: docs/presentation/NetSec3D-final-presentation.pptx
+ * Builds the nine-slide final presentation: docs/presentation/CIPHER-final-presentation.pptx
  *
  *   mkdir %TEMP%\deck && cd %TEMP%\deck && npm init -y && npm install pptxgenjs
  *   node <repo>\docs\presentation\build_deck.js          (run with NODE_PATH pointing at that node_modules)
@@ -12,7 +12,7 @@ const pptxgen = require('pptxgenjs')
 
 const REPO = path.resolve(__dirname, '..', '..')
 const shot = (p) => path.join(REPO, p)
-const OUT = path.join(__dirname, 'NetSec3D-final-presentation.pptx')
+const OUT = path.join(__dirname, 'CIPHER-final-presentation.pptx')
 
 // Executed results (see docs/STAGE7_PROGRESS.md). Update these only from a real run of scripts\verify.cmd.
 const RESULTS = { backendTests: '937', frontendTests: '277', checks: '93/93', rehearsal: '34/34', offline: '8/8' }
@@ -37,7 +37,7 @@ pres.defineSlideMaster({
   objects: [
     {
       text: {
-        text: 'NetSec 3D  |  a simulation: synthetic traffic only',
+        text: 'CIPHER  |  a simulation: synthetic traffic only',
         options: { x: 0.5, y: 5.25, w: 6, h: 0.25, fontFace: FONT, fontSize: 10, color: C.muted, margin: 0 },
       },
     },

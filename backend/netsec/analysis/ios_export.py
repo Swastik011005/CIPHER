@@ -65,5 +65,5 @@ def export_cisco(rules: RuleSet) -> dict:
     restricted = rules.restricted_ips
     policies = [p for f in rules.policies for p in f.policies]
     blocks = [{"name": p.name, "node": p.node, "text": policy_config(p, restricted)} for p in policies]
-    header = "! Exported from the NetSec simulation. Synthetic network: addresses are documentation ranges.\n! Rules in force: " + rules.digest()
+    header = "! Exported from the CIPHER simulation. Synthetic network: addresses are documentation ranges.\n! Rules in force: " + rules.digest()
     return {"rules_hash": rules.digest(), "policies": blocks, "text": header + "\n\n" + "\n!\n".join(b["text"] for b in blocks) + "\n"}

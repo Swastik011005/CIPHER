@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { Suspense, lazy, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import { LOG_FILTERS, deviceRows, eventLog, kpis } from '../playback/monitoring.js'
@@ -7,6 +7,9 @@ import { labelAddress, linkVlanLabel } from '../scene/deviceInfo.js'
 import { useStore } from '../state/store.js'
 import { Banner, Card, Chip, KpiTile, Segmented, Spinner } from '../ui/index.js'
 import './pages.css'
+
+// the charts library is loaded only when a run is on this page
+const MonitoringCharts = lazy(() => import('../features/monitoring/MonitoringCharts.jsx'))
 
 const DROP_LABELS = {
   fw_deny: 'FW1 deny',
@@ -65,6 +68,10 @@ export function NetworkMonitoring() {
               </Card>
             ))}
           </div>
+
+          <Suspense fallback={<Card><div className="inline-status"><Spinner /> <span className="muted">Loading the charts…</span></div></Card>}>
+            <MonitoringCharts state={state} duration={run.meta?.duration ?? 1} time={time} topology={data} />
+          </Suspense>
 
           <Card eyebrow="Enforcement" title="Why packets were stopped">
             {Object.keys(state.drops).length === 0 ? (

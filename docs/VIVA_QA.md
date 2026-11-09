@@ -25,7 +25,7 @@ FW1 is a stateful firewall between R1-EDGE and the core. It decides by address, 
 
 ## B. Network topology, VLANs, subnets, routing
 **Q. Describe the topology.**
-17 nodes: 16 devices plus an abstract Internet segment (`INET`), joined by 18 links (L01 to L18), in 7 zones (outside, perimeter, core, Staff, Admin, Security Ops, Server room). Path inward: EXT hosts, INET, R1-EDGE, FW1, CORE-SW1; CORE-SW1 connects the access switch ACC-SW2 (Staff and Admin PCs), the security network (IDS-1, SEC-LOG) and, through IPS-1, the server switch SRV-SW3 with APP-SRV and DB-SRV.
+31 nodes: 30 devices plus an abstract Internet segment (`INET`), joined by 32 links (L01 to L32; the original 17 nodes and 18 links L01 to L18 are the frozen core), in 7 zones (outside, perimeter, core, Staff, Admin, Security Ops, Server room). Path inward: EXT hosts, INET, R1-EDGE, FW1, CORE-SW1; CORE-SW1 connects the access switch ACC-SW2 (Staff and Admin PCs), the security network (IDS-1, SEC-LOG) and, through IPS-1, the server switch SRV-SW3 with APP-SRV and DB-SRV.
 
 **Q. Which VLANs and subnets are there?**
 VLAN 10 Staff 10.0.10.0/24, VLAN 20 Admin 10.0.20.0/24, VLAN 30 Servers 10.0.30.0/24, VLAN 99 Security 10.0.99.0/24. Three more routed subnets are outside any VLAN: 203.0.113.0/24 (outside; a documentation range, RFC 5737), 10.255.0.0/30 (R1-EDGE to FW1) and 10.255.1.0/30 (FW1 to CORE-SW1). That is 4 VLAN subnets plus 3 routed = **7 subnets**.
@@ -139,7 +139,7 @@ All pages derive counters from the same trace up to the playhead with one shared
 
 ## G. Testing
 **Q. How did you test it?**
-Backend pytest (937 tests: topology, routing, policy, each detector's thresholds, scenarios across seeds, determinism and prefix stability, API contracts, rules validation), frontend Vitest (277 tests: player seeking equals sequential replay, counters equal the backend's statistics, panels, rules editor), the 93 scenario checks, a production build, plus a real-Chrome rehearsal of the demo (34 checks) and an offline-recovery test (8 checks). `scripts\verify.cmd` runs the first four in one command.
+Backend pytest (1210 tests: topology, routing, policy, each detector's thresholds, scenarios across seeds, determinism and prefix stability, API contracts, rules validation), frontend Vitest (367 tests: player seeking equals sequential replay, counters equal the backend's statistics, panels, rules editor), the 93 scenario checks, a production build, plus a real-Chrome rehearsal of the demo (34 checks) and an offline-recovery test (8 checks). `scripts\verify.cmd` runs the first four in one command.
 
 **Q. What did the testing find?**
 For example, the offline test found that stopping the backend replaced the scenario list with an error and left the page unusable; fixed so the loaded run and the scenario list stay visible while the engine is offline.

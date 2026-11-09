@@ -65,7 +65,7 @@ in `docs/LIMITATIONS.md`.
 | Scenario checks from the command line | `scripts\run_scenario_checks.py` |
 | Real-browser rehearsal and offline-recovery tools | `scripts\rehearse_demo.mjs`, `scripts\check_offline_recovery.mjs`, `scripts\lib\cdp.mjs` |
 | Timed demo script (9 min 40 s) | `docs\DEMO_SCRIPT.md` |
-| Nine-slide presentation with speaker notes | `docs\presentation\NetSec3D-final-presentation.pptx` (generator: `docs\presentation\build_deck.js`) |
+| Nine-slide presentation with speaker notes | `docs\presentation\CIPHER-final-presentation.pptx` (generator: `docs\presentation\build_deck.js`) |
 | Viva question bank | `docs\VIVA_QA.md` |
 | Offline checklist, backup plan, recovery steps | `docs\BACKUP_AND_RECOVERY.md` |
 | Real screenshots (rehearsal, offline recovery, every page and device) | `docs\demo\`, `docs\screenshots\` |

@@ -1,4 +1,4 @@
-# Contributing to NetSec 3D
+# Contributing to CIPHER
 
 Thanks for helping. This project is a security simulation with a **frozen network design and frozen security behaviour**, so
 the rules below are stricter than usual about what may change and how a change reaches `main`.

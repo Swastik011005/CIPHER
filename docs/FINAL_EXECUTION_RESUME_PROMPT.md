@@ -1,4 +1,4 @@
-# NetSec 3D: remaining work
+# CIPHER: remaining work
 
 Repo `C:\dev\NetSec-3D`, branch `feature/campus-c1-design`. Do not push, merge to main or deploy.
 
@@ -8,5 +8,5 @@ Everything in the master prompt and the later design revisions is done and commi
 3. Building interiors are less dense than the supplied reference image.
 4. The device models are procedural and simpler than the reference.
 
-Last verified state: backend 1176, scenario checks 93/93, frontend 350, interaction 70/70, demonstration 35/35, split-check 20/20 and 34/34, offline recovery 8/8.
-See `docs/FINAL_EXECUTION_PROGRESS.md` and `docs/NETSEC_3D_FINAL_TECHNICAL_REPORT.md`.
+Last verified state: backend 1210, scenario checks 93/93, frontend 367, interaction 70/70, demonstration 39/39, split-check 20/20 and 34/34, offline recovery 8/8.
+See `docs/FINAL_EXECUTION_PROGRESS.md` and `docs/CIPHER_FINAL_TECHNICAL_REPORT.md`.

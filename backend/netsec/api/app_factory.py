@@ -50,7 +50,7 @@ def create_app(
 
     docs = {} if settings.enable_docs else {"docs_url": None, "redoc_url": None, "openapi_url": None}
     app = FastAPI(
-        title="NetSec IDS/IPS Simulation Engine",
+        title="CIPHER Simulation Engine",
         version=__version__,
         description="Simulation API. All traffic is synthetic.",
         **docs,

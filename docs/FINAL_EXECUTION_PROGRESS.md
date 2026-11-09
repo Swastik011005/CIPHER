@@ -1,4 +1,4 @@
-# NetSec 3D final completion: execution progress
+# CIPHER final completion: execution progress
 
 Branch: `feature/campus-c1-design` (continues from commit `3446055`). Nothing is pushed, merged or deployed.
 Started: 2026-11-09. This file is updated after every major stage. If it says a stage is unfinished, resume there.
@@ -72,7 +72,7 @@ What existed (verified in the code, not assumed):
 - [x] Stage 6 performance measured; High idle overview on an integrated GPU is 26 fps (below target), Low is 60 fps
 - [x] Stage 7 UI polish: quality notice moved out of the scene; live SOC screens; elevated signs; dark ground
 - [x] Stage 8 verify, interaction (70/70), demonstration (35/35) and split-check (20/20 + 34/34); offline recovery 8/8
-- [x] Stage 9 technical report: docs/NETSEC_3D_FINAL_TECHNICAL_REPORT.md and .pdf (PDF rendered to images and inspected: 7 pages, headings and tables intact)
+- [x] Stage 9 technical report: docs/CIPHER_FINAL_TECHNICAL_REPORT.md and .pdf (PDF rendered to images and inspected: 7 pages, headings and tables intact)
 - [ ] Stage 10 final delivery
 
 ## Exact next action

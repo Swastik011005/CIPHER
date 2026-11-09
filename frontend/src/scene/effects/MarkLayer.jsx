@@ -14,8 +14,8 @@ import { isPingPacket } from '../packets/packetColor.js'
  * Two instanced billboards (one draw call each), drawn over everything so a mark is never hidden by glass or a device.
  */
 const POOL = 24
-const SIZE = 1.35
-const LIFT = 1.05
+const SIZE = 1.9
+const LIFT = 1.6
 const POP_S = 0.18
 
 function markTexture(kind) {

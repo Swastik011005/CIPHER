@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""HTTP checks against a deployed NetSec 3D API and static site (run this after deploying, see docs/DEPLOYMENT_RENDER.md).
+"""HTTP checks against a deployed CIPHER API and static site (run this after deploying, see docs/DEPLOYMENT_RENDER.md).
 
     python scripts/tasks.py check-deployed --api https://netsec-3d-api.onrender.com/api --site https://netsec-3d.onrender.com [--spoof-test]
 

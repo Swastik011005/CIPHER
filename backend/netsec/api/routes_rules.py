@@ -58,7 +58,7 @@ DETECTOR_INFO: dict[str, dict[str, str]] = {
 
 READ_ONLY_MESSAGE = (
     "Rules are read-only on this server. The rules are shared by every visitor, so one visitor's edit would change "
-    "every other visitor's runs. Run NetSec 3D locally to edit them."
+    "every other visitor's runs. Run CIPHER locally to edit them."
 )
 
 

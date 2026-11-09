@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Cross-platform project tasks for NetSec 3D (Windows, macOS, Linux).
+"""Cross-platform project tasks for CIPHER (Windows, macOS, Linux).
 
     python scripts/tasks.py setup [--runtime-only] [--skip-build]
     python scripts/tasks.py verify [--only backend|scenarios|frontend|build ...]
@@ -200,7 +200,7 @@ def cmd_demo(args: argparse.Namespace) -> int:
             return 1
     port = backend_port()
     url = f"http://127.0.0.1:{port}/simulation"
-    say(f"Starting NetSec 3D at {url}  (Ctrl+C to stop)")
+    say(f"Starting CIPHER at {url}  (Ctrl+C to stop)")
     if not args.no_browser:
         threading.Thread(target=lambda: wait_for_health(port) and webbrowser.open(url), daemon=True).start()
     process = subprocess.Popen([str(python), "app.py"], cwd=BACKEND)

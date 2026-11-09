@@ -1,4 +1,4 @@
-# Render Blueprint for NetSec 3D: a static front end and a FastAPI back end, both on Render's free plan.
+# Render Blueprint for CIPHER: a static front end and a FastAPI back end, both on Render's free plan.
 # Full instructions, the security decisions and the checks to run after creating it: docs/DEPLOYMENT_RENDER.md.
 #
 # Nothing here creates anything by itself. A Blueprint takes effect only when its owner connects this repository in the

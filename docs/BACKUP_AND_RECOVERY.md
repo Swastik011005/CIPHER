@@ -49,7 +49,7 @@ screen recording of a live demo, and a recording that does not exist must not be
 1. Run the checklist in section 1 with Wi-Fi off. Close notifications.
 2. Start a screen recorder (Windows: **Win + Alt + R** with the Xbox Game Bar, or **Win + Shift + S** then the video option of the Snipping Tool; or OBS Studio).
 3. Follow `docs/DEMO_SCRIPT.md` section by section at normal pace. Narrate, or add narration later. Target 9 to 10 minutes.
-4. Save as `NetSec3D-demo-backup.mp4` on the laptop **and** on the USB stick. **Do not commit it to Git** (large file); `docs/` should only reference its name.
+4. Save as `CIPHER-demo-backup.mp4` on the laptop **and** on the USB stick. **Do not commit it to Git** (large file); `docs/` should only reference its name.
 5. Play the first 30 seconds to confirm picture and sound before filing it.
 6. On the day, if the live app cannot be recovered within two minutes using section 4, say "I will switch to the recording of the same run", and play it.
 

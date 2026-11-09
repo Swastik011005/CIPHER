@@ -15,7 +15,7 @@ This page lists, without softening, what the project does not do and which claim
 | Cisco Packet Tracer lab (`packet-tracer/`) | **Not built.** Only a feature-check note exists. There is no `.pkt` file, no test matrix T1 to T12 and no parity table. Nothing in the app or the slides claims Packet Tracer results. |
 | D3 half-open connection condition | Not implemented. D3 counts connection-starting packets per second only (more than 25 per second over 5 s is MEDIUM, more than 50 is HIGH). |
 | D7 host-sweep detector | Not implemented (listed as future work). |
-| Monitoring-page charts (traffic over time, protocol doughnut, top talkers) | Not built. The page has counters, a per-device table and the event log. |
+| Monitoring-page charts (traffic over time, protocol doughnut, top talkers) | **Built** (Chart.js, `frontend/src/features/monitoring/MonitoringCharts.jsx`): a stacked traffic chart with the playhead, a protocol mix and the busiest senders, all counted from the loaded trace. |
 | PCAP export and hex dump of packets | Not implemented. |
 | Follow-packet camera | Not implemented. |
 | Syslog packets travelling to SEC-LOG | Not built. IDS-1 and IPS-1 alerts are shown in the UI, but no syslog packet is simulated (the event type exists in the schema and statistics, the engine does not emit it). |

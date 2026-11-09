@@ -1,4 +1,6 @@
-# NetSec 3D
+# CIPHER
+
+> **CIPHER** (formerly NetSec 3D) is the project's official name. Technical identifiers keep their original names so that nothing breaks: the Python package `netsec`, the `NETSEC_*` environment variables, the health-check service name `netsec-ids-engine`, the `window.__netsec*` debug handles and the repository folder.
 
 **An interactive 3D simulation of network security: a firewall, a passive IDS and an inline IPS defending a small campus network.**
 
@@ -14,20 +16,27 @@ and blocked, and see exactly which device made each decision.
 
 ## What it shows
 
-- **A frozen, validated topology:** 16 devices plus an abstract Internet segment, 18 links, 4 VLANs and 7 IP subnets
-  (`docs/NETWORK_TOPOLOGY.md`). A validator checks it with 16 rules.
+- **A validated campus topology:** 30 devices plus an abstract Internet segment, 32 links, 4 VLANs, 7 IP subnets and 7 zones
+  (`docs/NETWORK_TOPOLOGY.md`). The original 17 nodes and 18 links are frozen and checked; a validator checks the whole topology with 17 rules.
 - **Defence in depth with honest roles:**
   - **FW1** and the **CORE-SW1 ACL** enforce static policy, whatever the IPS mode.
   - **IDS-1 is passive.** It only receives SPAN copies of traffic and raises alerts. It never forwards, drops or blocks.
   - **IPS-1 is inline** (a transparent bridge on the server VLAN) and is the only sensor that can enforce. In **Monitor** mode it
     records what it would do; in **Enforce** mode it drops, rejects, rate-limits or blocks a source.
-- **Seven scenarios** (normal traffic, port scan, unauthorised access, flood, SSH brute force, and the same scan with the IPS in
-  Monitor and Enforce mode), each with declared expectations that are checked automatically (93 checks).
-- **Six detectors** (D1 to D6) with sliding windows, correlated into incidents across IDS-1 and IPS-1.
+- **Sixteen scenarios.** Seven original scenarios (normal traffic, port scan, unauthorised access, flood, SSH brute force, and the
+  same scan with the IPS in Monitor and Enforce mode) with 93 automated checks, and nine presentation scenarios P1 to P9 (normal
+  traffic, Staff to Security VLAN, Staff to database, authorised administrator access, external HTTP, external database, a
+  compromised endpoint and EDR isolation, recovery, SIEM monitoring), each launched from the Simulation page.
+- **Six detectors** (D1 to D6) with sliding windows, correlated into incidents across IDS-1 and IPS-1, plus **Zero Trust**
+  decisions with their reasons, a simulated **SIEM** and **EDR** with operator isolate and restore. An isolated endpoint creates
+  no packet at all.
+- **Endpoint terminals.** Open a PC, laptop or server and type `ping`, `tracert`, `telnet`, `curl` or `ipconfig`. A ping is four
+  sequential journeys of coloured envelope packets along the real cables, and each `Reply from` line is printed only when its
+  reply reaches the source. Routers, the core switch and the firewall have a read-only `show` command line.
 - **Deterministic by design.** The same seed gives the same trace. Mid-run changes (IPS mode, detector switches, your own
   injected packets) re-simulate from the playhead and leave everything before it identical.
-- **Five pages:** Overview, 3D Simulation, Monitoring, Threat Centre, and a Rules and Scenarios editor with Cisco IOS export of the
-  firewall and ACL policy.
+- **Five pages:** Overview, 3D Simulation, Monitoring (counters, charts, per-device table, event log), Threat Centre (incidents and the
+  SIEM console), and a Rules and Scenarios editor with Cisco IOS export of the firewall and ACL policy.
 
 | Threat Centre | Rules and scenario checks |
 |---|---|
@@ -84,8 +93,9 @@ python scripts/tasks.py verify --only backend        # or just one step: backend
 
 Continuous integration (`.github/workflows/ci.yml`) runs the same steps on every push and pull request.
 
-The release record for v1.0 (937 backend tests, 277 frontend tests, 93 of 93 scenario checks, production build, browser
-rehearsal) is in `docs/STAGE7_PROGRESS.md`, together with what was **not** verified. Notably, the 55 fps target on a discrete
+The latest verified results (1210 backend tests, 93 of 93 scenario checks, the frontend tests, production build, demonstration,
+interaction, offline and split-origin browser checks) are in `docs/CIPHER_FINAL_TECHNICAL_REPORT.md` (section 18); the v1.0 release record is
+in `docs/STAGE7_PROGRESS.md`, together with what was **not** verified. Notably, the 55 fps target on a discrete
 GPU was never measured, and a second laptop was never tested. See `docs/LIMITATIONS.md` for the full, unsoftened list.
 
 ## Hosting

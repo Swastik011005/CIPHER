@@ -11,8 +11,8 @@ export function Header() {
   return (
     <header className="header">
       <div>
-        <div className="eyebrow eyebrow--accent">{route?.eyebrow ?? 'NetSec 3D'}</div>
-        <h1>{route?.label ?? 'NetSec 3D'}</h1>
+        <div className="eyebrow eyebrow--accent">{route?.eyebrow ?? 'CIPHER'}</div>
+        <h1>{route?.label ?? 'CIPHER'}</h1>
       </div>
       <div className="header__status">
         <TopologyStatus />

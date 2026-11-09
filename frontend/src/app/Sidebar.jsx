@@ -38,8 +38,8 @@ export function Sidebar() {
         </span>
         {!collapsed && (
           <div>
-            <div className="sidebar__name">NetSec 3D</div>
-            <div className="eyebrow">IDS / IPS simulation</div>
+            <div className="sidebar__name">CIPHER</div>
+            <div className="eyebrow">Network security simulation</div>
           </div>
         )}
       </div>
