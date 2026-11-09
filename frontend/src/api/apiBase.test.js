@@ -9,12 +9,12 @@ describe('the API base (VITE_API_BASE)', () => {
     expect(normaliseApiBase('')).toBe('/api')
     expect(normaliseApiBase('   ')).toBe('/api')
     expect(normaliseApiBase('/api/')).toBe('/api')
-    expect(normaliseApiBase(' https://netsec-3d-api.onrender.com/api/ ')).toBe('https://netsec-3d-api.onrender.com/api')
+    expect(normaliseApiBase(' https://cipher-api.onrender.com/api/ ')).toBe('https://cipher-api.onrender.com/api')
   })
 
   it('tells a separately hosted API from the same-origin one', () => {
     expect(isRemoteApi('/api')).toBe(false)
-    expect(isRemoteApi('https://netsec-3d-api.onrender.com/api')).toBe(true)
+    expect(isRemoteApi('https://cipher-api.onrender.com/api')).toBe(true)
     expect(isRemoteApi('http://127.0.0.1:8300/api')).toBe(true)
   })
 
@@ -24,16 +24,16 @@ describe('the API base (VITE_API_BASE)', () => {
       urls.push(url)
       return new Response(JSON.stringify({ ok: true }), { status: 200 })
     }
-    const client = createApiClient({ baseUrl: 'https://netsec-3d-api.onrender.com/api', fetchImpl })
+    const client = createApiClient({ baseUrl: 'https://cipher-api.onrender.com/api', fetchImpl })
     await client.scenarios()
     await client.rules()
-    expect(urls).toEqual(['https://netsec-3d-api.onrender.com/api/scenarios', 'https://netsec-3d-api.onrender.com/api/rules'])
+    expect(urls).toEqual(['https://cipher-api.onrender.com/api/scenarios', 'https://cipher-api.onrender.com/api/rules'])
   })
 
   it('keeps the local wording exactly, and gives a different, accurate hint for a hosted engine', () => {
     expect(offlineAdvice('/api')).toBe('Start it with "python app.py"; retrying every 3 s.')
-    expect(offlineAdvice('https://netsec-3d-api.onrender.com/api')).toMatch(/waking up.*about a minute.*retrying/)
-    expect(offlineAdvice('https://netsec-3d-api.onrender.com/api')).not.toMatch(/python app\.py/)
+    expect(offlineAdvice('https://cipher-api.onrender.com/api')).toMatch(/waking up.*about a minute.*retrying/)
+    expect(offlineAdvice('https://cipher-api.onrender.com/api')).not.toMatch(/python app\.py/)
   })
 })
 

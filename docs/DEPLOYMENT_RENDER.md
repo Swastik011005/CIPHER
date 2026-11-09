@@ -9,25 +9,25 @@
 
 ```
  visitor's browser
-   │  https://netsec-3d.onrender.com                    https://netsec-3d-api.onrender.com
+   │  https://cipher.onrender.com                       https://cipher-api.onrender.com
    ▼                                                      ▲
- Render Static Site  "netsec-3d"                          │ fetch(VITE_API_BASE + "/scenarios", ...)
+ Render Static Site  "cipher"                             │ fetch(VITE_API_BASE + "/scenarios", ...)
    serves frontend/dist (HTML, JS, fonts)                 │ cross-origin, JSON, CORS allow-list = the site's origin
    rewrites client-side routes to /index.html             │
    adds security headers + Content-Security-Policy        │
-                                                  Render Web Service "netsec-3d-api"  (Python 3.13, free plan)
+                                                  Render Web Service "cipher-api"  (Python 3.13, free plan)
                                                     python app.py  -> FastAPI engine, read-only rules,
                                                     rate limits, size limit, gzip, no API docs
 ```
 
 | Piece | Render type | Defined in |
 |---|---|---|
-| Front end (React, Three.js) | Static Site, free | `render.yaml`, service `netsec-3d` |
-| API (FastAPI simulation engine) | Web Service, Python, free | `render.yaml`, service `netsec-3d-api` |
+| Front end (React, Three.js) | Static Site, free | `render.yaml`, service `cipher` |
+| API (FastAPI simulation engine) | Web Service, Python, free | `render.yaml`, service `cipher-api` |
 | Database, disk, secrets | **None needed** | The engine is stateless apart from the in-memory rule store, which is read-only in production |
 
 **Addresses.** Render builds `https://<service name>.onrender.com` if the name is free. The preferred front end address is
-`netsec-3d.onrender.com`; the API is `netsec-3d-api.onrender.com`. If either is taken, Render adds a suffix; then change
+`cipher.onrender.com`; the API is `cipher-api.onrender.com`. If either is taken, Render adds a suffix; then change
 the three values marked `ADDRESS` in `render.yaml` (the API's `NETSEC_CORS_ORIGINS`, the front end's `VITE_API_BASE`, and the
 `connect-src` of the Content-Security-Policy) and redeploy both. `backend/tests/unit/test_render_blueprint.py` fails if those
 values stop agreeing with each other.
@@ -45,7 +45,7 @@ values stop agreeing with each other.
 
 ## 3. Configuration
 
-### API service (`netsec-3d-api`)
+### API service (`cipher-api`)
 
 | Variable | Value in `render.yaml` | Meaning |
 |---|---|---|
@@ -54,7 +54,7 @@ values stop agreeing with each other.
 | `NETSEC_HOST` | `0.0.0.0` | Bind on all interfaces so Render's proxy can reach it |
 | `NETSEC_ALLOW_PUBLIC_BIND` | `true` | The server **refuses** a non-loopback host without this *and* `NETSEC_ENV=production` |
 | `PORT` | set by Render (10000) | Read in production when `NETSEC_PORT` is not set. Ignored in development, so a stray `PORT` cannot move a local server |
-| `NETSEC_CORS_ORIGINS` | `https://netsec-3d.onrender.com` | The exact origin(s) allowed to call the API from a browser. No wildcard is accepted; production requires https |
+| `NETSEC_CORS_ORIGINS` | `https://cipher.onrender.com` | The exact origin(s) allowed to call the API from a browser. No wildcard is accepted; production requires https |
 | `NETSEC_SERVE_FRONTEND` | `false` | The API never serves a front end (the static site does that) |
 | `NETSEC_RULES_READ_ONLY` | `true` | Nobody can change the rules the other visitors run with (default in production) |
 | `NETSEC_ENABLE_DOCS` | `false` | No `/docs`, `/redoc`, `/openapi.json` (default in production) |
@@ -63,12 +63,12 @@ values stop agreeing with each other.
 | `NETSEC_TRUST_PROXY` | `false` | See section 6: do not believe forwarded headers until they are verified |
 | `NETSEC_LOG_LEVEL` | `info` | |
 
-### Front end service (`netsec-3d`)
+### Front end service (`cipher`)
 
 | Variable | Value | Meaning |
 |---|---|---|
 | `NODE_VERSION` | `24.15.0` | The version it was built and tested with (Vite 8 needs 20.19 or newer) |
-| `VITE_API_BASE` | `https://netsec-3d-api.onrender.com/api` | Where the browser sends API calls. **Vite writes it into the bundle when it builds**, so it is public, and changing it needs a rebuild |
+| `VITE_API_BASE` | `https://cipher-api.onrender.com/api` | Where the browser sends API calls. **Vite writes it into the bundle when it builds**, so it is public, and changing it needs a rebuild |
 
 Build: `npm ci && npm run build` in `frontend/`, publishing `dist`. Start command: none (static).
 
@@ -132,7 +132,7 @@ This is the order to follow. **None of it has been done.**
 ## 7. After deploying: what to check
 
 ```
-python scripts/tasks.py check-deployed --api https://netsec-3d-api.onrender.com/api --site https://netsec-3d.onrender.com
+python scripts/tasks.py check-deployed --api https://cipher-api.onrender.com/api --site https://cipher.onrender.com
 ```
 
 It checks, over HTTPS: health; CORS for the site's origin and none for another; no wildcard or credentials; the preflight for a

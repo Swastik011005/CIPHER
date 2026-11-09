@@ -55,7 +55,7 @@ validated at start-up and an unsafe combination stops the server with a message.
 | `NETSEC_MAX_BODY_BYTES` | 65536 | 65536 |
 | `NETSEC_SERVE_FRONTEND` | on (serves `frontend/dist` if built) | on; the Render API service sets it off |
 | `NETSEC_TRUST_PROXY`, `NETSEC_TRUSTED_PROXY_HOPS`, `NETSEC_CLIENT_IP_HEADER` | off | off (see `docs/DEPLOYMENT_RENDER.md`, section 6) |
-| `VITE_API_BASE` (front end, read when it is built) | `/api` | the full API URL, e.g. `https://netsec-3d-api.onrender.com/api` |
+| `VITE_API_BASE` (front end, read when it is built) | `/api` | the full API URL, e.g. `https://cipher-api.onrender.com/api` |
 
 ## Continuous integration
 
@@ -107,8 +107,8 @@ says anything about the 55 fps target on an RTX 4050, which remains unverified.
 
 | Check | Result |
 |---|---|
-| Backend tests | 1210 passed (v1.0 release: 948) |
-| Frontend tests | 367 passed in 31 files (v1.0 release: 277 in 18 files) |
+| Backend tests | 1214 passed (v1.0 release: 948) |
+| Frontend tests | 369 passed in 31 files (v1.0 release: 277 in 18 files) |
 | Scenario checks | 12 of 12 runs, 93 of 93 checks; trace hashes identical to the values above |
 | Production build | succeeds |
 | Fresh clone: `tasks.py setup` | 44 s with warm package caches; `tasks.py verify` 48 s |

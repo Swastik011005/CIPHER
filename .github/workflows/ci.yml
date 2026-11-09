@@ -62,7 +62,7 @@ jobs:
         working-directory: backend
         env:
           NETSEC_ENV: production
-          NETSEC_CORS_ORIGINS: https://netsec-3d.onrender.com
+          NETSEC_CORS_ORIGINS: https://cipher.onrender.com
           NETSEC_LOG_LEVEL: warning
           PORT: "18080"
         run: |
@@ -71,7 +71,7 @@ jobs:
           curl -fsS http://127.0.0.1:18080/api/health | grep -q '"status":"ok"'
           test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:18080/docs)" = 404
           test "$(curl -s -o /dev/null -w '%{http_code}' -X PUT -H 'Content-Type: application/json' -d '{}' http://127.0.0.1:18080/api/rules/detectors)" = 403
-          curl -s -D - -o /dev/null -H 'Origin: https://netsec-3d.onrender.com' http://127.0.0.1:18080/api/health | grep -qi 'access-control-allow-origin: https://netsec-3d.onrender.com'
+          curl -s -D - -o /dev/null -H 'Origin: https://cipher.onrender.com' http://127.0.0.1:18080/api/health | grep -qi 'access-control-allow-origin: https://cipher.onrender.com'
 
   frontend:
     name: Frontend tests and production build

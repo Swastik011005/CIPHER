@@ -72,7 +72,7 @@ bucket still passes at most about 10 packets a second, controls and custom traff
 All five pages at **1366 x 768, 1440 x 900 and 1920 x 1080**, High quality: no sideways scrolling in the window or in any inner scroll container, no wide element, **no console errors**.
 The 3D page was shot at all six camera presets (1920 x 1080 kept in the repository). 16 device close-ups are in `docs/screenshots/devices/`.
 
-### Memory (`scripts/measure_memory.mjs`, `docs/memory-s4-high-10min.json`)
+### Memory (`scripts/measure_memory.mjs`, `docs/perf/memory-s4-high-10min.json`)
 10 minutes of S4 Enforce at High quality, played at 2x, restarted whenever it ended and re-run from the backend every minute (so trace loading is exercised too), 20 samples with a forced
 garbage collection before each. JS heap after a 90 s warm-up: **53.66 MB at the start of the baseline, 53.00 MB at the end: -1.2 %** (limit 15 %; peak 53.98 MB). DOM nodes (1183 to 1130),
 event listeners (3394 to 3394), three.js geometries (174 to 174) and textures (54 to 54) did not grow. The first attempt was discarded: a Vite hot reload during the run reset the page.

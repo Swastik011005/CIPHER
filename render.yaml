@@ -9,9 +9,9 @@
 # a service a different address, change the three values marked ADDRESS below to match, then redeploy both services.
 
 services:
-  # ---------------------------------------------------------------- back end: https://netsec-3d-api.onrender.com
+  # ---------------------------------------------------------------- back end: https://cipher-api.onrender.com
   - type: web
-    name: netsec-3d-api
+    name: cipher-api
     runtime: python
     plan: free
     rootDir: backend
@@ -40,7 +40,7 @@ services:
         value: "false"
       # ADDRESS: the exact address of the front end below. The only browser origin allowed to call the API.
       - key: NETSEC_CORS_ORIGINS
-        value: https://netsec-3d.onrender.com
+        value: https://cipher.onrender.com
       # Safe starting point: rate limits count the proxy's address, so visitors share one allowance. To count each visitor
       # separately, verify what Render's proxy sends and then follow docs/DEPLOYMENT_RENDER.md before changing this.
       - key: NETSEC_TRUST_PROXY
@@ -63,9 +63,9 @@ services:
       - key: NETSEC_LOG_LEVEL
         value: info
 
-  # --------------------------------------------------------------- front end: https://netsec-3d.onrender.com
+  # --------------------------------------------------------------- front end: https://cipher.onrender.com
   - type: web
-    name: netsec-3d
+    name: cipher
     runtime: static
     rootDir: frontend
     branch: main
@@ -78,7 +78,7 @@ services:
         value: 24.15.0
       # ADDRESS: the full URL of the API, with /api. Vite writes it into the bundle at build time, so it is public.
       - key: VITE_API_BASE
-        value: https://netsec-3d-api.onrender.com/api
+        value: https://cipher-api.onrender.com/api
     # Client-side routes (/simulation, /rules, ...) have no file of their own: serve the app for them. Real files win.
     routes:
       - type: rewrite
@@ -112,5 +112,5 @@ services:
         name: Content-Security-Policy
         value: >-
           default-src 'self'; script-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:;
-          font-src 'self' data:; connect-src 'self' https://netsec-3d-api.onrender.com; worker-src 'self' blob:;
+          font-src 'self' data:; connect-src 'self' https://cipher-api.onrender.com; worker-src 'self' blob:;
           object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'

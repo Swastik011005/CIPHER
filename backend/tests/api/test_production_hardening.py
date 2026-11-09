@@ -18,7 +18,7 @@ from netsec.security.ruleset import RuleSet
 from netsec.sim.engine import run_scenario
 from netsec.traffic.scenarios import load_scenario
 
-ORIGIN = "https://netsec-3d.onrender.com"
+ORIGIN = "https://cipher.onrender.com"
 BASE = {"NETSEC_ENV": "production", "NETSEC_CORS_ORIGINS": ORIGIN}
 RUN = {"scenario_id": "S1"}
 

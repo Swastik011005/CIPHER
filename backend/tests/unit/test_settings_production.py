@@ -122,8 +122,8 @@ def test_summary_describes_the_exposure_without_secrets(tmp_path) -> None:
 
 
 def test_cors_origins_are_parsed_deduplicated_and_cleaned(tmp_path) -> None:
-    s = settings(tmp_path, **PRODUCTION, NETSEC_CORS_ORIGINS=" https://netsec-3d.onrender.com/ , https://netsec-3d.onrender.com,https://other.example.com:8443 ")
-    assert s.cors_origins == ("https://netsec-3d.onrender.com", "https://other.example.com:8443")
+    s = settings(tmp_path, **PRODUCTION, NETSEC_CORS_ORIGINS=" https://cipher.onrender.com/ , https://cipher.onrender.com,https://other.example.com:8443 ")
+    assert s.cors_origins == ("https://cipher.onrender.com", "https://other.example.com:8443")
 
 
 def test_an_explicit_cors_list_replaces_the_development_default(tmp_path) -> None:
@@ -160,7 +160,7 @@ def test_the_example_env_files_load_through_the_real_reader() -> None:
 
     production = load_settings(env={}, dotenv_path=BACKEND_DIR / ".env.production.example")
     assert production.production and production.public_bind and production.host == "0.0.0.0"
-    assert production.cors_origins == ("https://netsec-3d.onrender.com",)
+    assert production.cors_origins == ("https://cipher.onrender.com",)
     assert (production.rules_read_only, production.enable_docs, production.rate_limit_enabled, production.trust_proxy) == (True, False, True, False)  # proxy trust is off until verified
     assert (production.rate_run_per_min, production.rate_validate_per_min, production.rate_api_per_min) == (20, 3, 240)
 

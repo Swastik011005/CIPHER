@@ -35,7 +35,7 @@ def env(service: dict) -> dict[str, str]:
 
 def test_there_are_exactly_two_services_a_python_api_and_a_static_site(blueprint, api, site) -> None:
     assert len(blueprint["services"]) == 2
-    assert (api["name"], site["name"]) == ("netsec-3d-api", "netsec-3d")  # the preferred names; the other tests follow whatever they are
+    assert (api["name"], site["name"]) == ("cipher-api", "cipher")  # the preferred names; the other tests follow whatever they are
     assert (api["type"], api["runtime"], site["type"], site["runtime"]) == ("web", "python", "web", "static")
 
 

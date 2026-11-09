@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """HTTP checks against a deployed CIPHER API and static site (run this after deploying, see docs/DEPLOYMENT_RENDER.md).
 
-    python scripts/tasks.py check-deployed --api https://netsec-3d-api.onrender.com/api --site https://netsec-3d.onrender.com [--spoof-test]
+    python scripts/tasks.py check-deployed --api https://cipher-api.onrender.com/api --site https://cipher.onrender.com [--spoof-test]
 
 These are the same checks the local two-origin simulation runs (scripts/check_split_origin.py), pointed at real addresses:
 CORS for the site's origin and none for another, no wildcard, the preflight, docs not served, a run working and compressed,
@@ -32,15 +32,15 @@ ROOT = Path(__file__).resolve().parent.parent
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--api", required=True, help="the API URL including /api, e.g. https://netsec-3d-api.onrender.com/api")
-    parser.add_argument("--site", help="the front end's address, e.g. https://netsec-3d.onrender.com (omit to check the API only)")
+    parser.add_argument("--api", required=True, help="the API URL including /api, e.g. https://cipher-api.onrender.com/api")
+    parser.add_argument("--site", help="the front end's address, e.g. https://cipher.onrender.com (omit to check the API only)")
     parser.add_argument("--spoof-test", action="store_true", help="also probe the rate limit with invented client addresses")
     args = parser.parse_args()
 
     api = args.api.rstrip("/")
     site = args.site.rstrip("/") if args.site else None
     parts = urlsplit(site) if site else None
-    site_origin = f"{parts.scheme}://{parts.netloc}" if parts else "https://netsec-3d.onrender.com"
+    site_origin = f"{parts.scheme}://{parts.netloc}" if parts else "https://cipher.onrender.com"
 
     print(f"Waiting for the API at {api} (a sleeping free instance takes about a minute) ...", flush=True)
     deadline = time.monotonic() + 90
