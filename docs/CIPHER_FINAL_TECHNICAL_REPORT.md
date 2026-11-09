@@ -10,7 +10,7 @@
 ## 1. Executive summary
 CIPHER is a teaching and demonstration application. A Python backend runs a deterministic discrete-event simulation of a campus network (30 devices plus an abstract Internet segment, 32 links, 4 VLANs, 7 IP subnets) and returns a time-stamped trace. A React and Three.js front end replays that trace as a 3D campus with moving packets, device panels, a SIEM console and an endpoint CLI. The backend decides what happens to every packet; the front end only draws it.
 
-The project demonstrates five security capabilities (IDS, IPS, Zero Trust, SIEM, EDR) through nine presentation scenarios (P1 to P9) plus the original seven scenarios (S1 to S7). The last full verification: 1214 backend tests, 93 of 93 scenario checks across 12 runs, 369 frontend tests, a production build, 69 of 70 browser interaction checks (the automated pointer could not hover one device, DNS-SRV; not yet investigated), 39 of 39 browser demonstration checks, the split-origin checks (20 of 20 and 34 of 34) and the offline recovery check (8 of 8).
+The project demonstrates five security capabilities (IDS, IPS, Zero Trust, SIEM, EDR) through nine presentation scenarios (P1 to P9) plus the original seven scenarios (S1 to S7). The last full verification: 1214 backend tests, 93 of 93 scenario checks across 12 runs, 369 frontend tests, a production build, 70 of 70 browser interaction checks, 39 of 39 browser demonstration checks, a 60-check application audit in Chrome and in Edge, the split-origin checks (20 of 20 and 34 of 34) and the offline recovery check (8 of 8).
 
 **Known weakness:** on the integrated Intel UHD GPU used for testing, High quality runs at 26 to 33 fps (the idle overview, at 26 fps, is below the 30 fps target); Low quality runs at 60 fps (section 19).
 
@@ -122,7 +122,13 @@ Last full run on the final build:
 | Scenario checks S1 to S7 (shipped rules) | 12 of 12 runs, 93 of 93 checks |
 | Frontend tests (Vitest) | 31 files, 369 tests passed |
 | Production build | succeeded |
-| Browser interaction check (`scripts/check_interactions.mjs`) | 69 of 70 (DNS-SRV could not be hovered by the automated pointer; not yet investigated) |
+| Browser interaction check (`scripts/check_interactions.mjs`) | 70 of 70 (an earlier 69 of 70 was the check aiming at the box centre of a lower rack unit, which the unit above shadows; over the visible face the app picked the right device every time, so the check now also aims at the front face) |
+| Pan check (`scripts/check_pan.mjs`) | 13 of 13 |
+| Rules page check (`scripts/check_rules_ui.mjs`) | 22 of 22 |
+| Application audit (`scripts/check_app_audit.mjs`) | 60 of 60 in Chrome and 60 of 60 in Edge: every page loads with the CIPHER title, no old product name, no console error and no failed request; no sideways scroll at 1920, 1440, 1366 and 1024 px; keyboard shortcuts and sidebar navigation; Simulation, Monitoring and Threat Centre numbers equal the backend summary; charts are drawn |
+| Click-through crawler (`scripts/check_click_through.mjs`) | every visible control on every page clicked with real mouse events, plus text fuzzing: no console error, no failed request |
+| API fuzzing (one-off, in-process) | 861 malformed or hostile requests across all 18 endpoints: no server error and no traceback |
+| `npm audit --omit=dev` | 0 vulnerabilities |
 | Browser demonstration check (`scripts/check_demo_scenarios.mjs`) | 39 of 39 (including the progressive ping output, the sequential requests and Stop) |
 | Split-origin check (`python scripts/tasks.py split-check`) | 20 of 20 checks, and the 34-step demo rehearsal 34 of 34, with the API on another origin (local only; nothing was run on Render) |
 | Offline recovery check (`scripts/check_offline_recovery.mjs`) | 8 of 8: the backend alone serves the app, "Engine offline" shows within 15 s, the loaded run is kept and scrubbable offline, the page recovers by itself, a new run works, and no request leaves 127.0.0.1 |

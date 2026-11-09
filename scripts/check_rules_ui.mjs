@@ -3,9 +3,9 @@
  * edit a detector, see invalid input refused, apply, run checks and watch them fail for the edited rule,
  * reset, run all checks, manage restricted addresses. Prints each step with PASS or FAIL, writes screenshots.
  *
- *   node scripts/check_rules_ui.mjs [--out docs/screenshots] [--width 1440 --height 900]
+ *   node scripts/check_rules_ui.mjs [--base http://localhost:5173] [--out docs/screenshots] [--width 1440 --height 900]
  *
- * Needs the backend and the Vite dev server. It resets the server's rules at the start and the end.
+* Needs the backend and either the Vite dev server (default) or the demo-mode server (--base). It resets the server's rules at the start and the end.
  */
 import { mkdirSync } from 'node:fs'
 import { join } from 'node:path'
@@ -16,6 +16,7 @@ const args = Object.fromEntries(
   process.argv.slice(2).reduce((acc, a, i, all) => (a.startsWith('--') ? [...acc, [a.slice(2), all[i + 1]]] : acc), []),
 )
 const out = args.out ?? 'docs/screenshots'
+const base = args.base ?? 'http://localhost:5173' // the Vite dev server by default; pass --base http://127.0.0.1:8000 for the demo-mode server
 const width = Number(args.width ?? 1440)
 const height = Number(args.height ?? 900)
 mkdirSync(out, { recursive: true })
@@ -39,9 +40,9 @@ const setInput = (label, value) =>
 
 try {
   await browser.setViewport(width, height)
-  await browser.navigate('http://localhost:5173/rules')
+  await browser.navigate(`${base}/rules`)
   await api('POST', '/rules/reset')
-  await browser.navigate('http://localhost:5173/rules')
+  await browser.navigate(`${base}/rules`)
   await waitText('Detection (IDS)')
   await waitText('Port scan')
 
@@ -52,12 +53,18 @@ try {
   record('shipped rules are labelled as such', (await text()).includes('Shipped rules'))
   await browser.screenshot(join(out, `${width}x${height}-rules-detection.png`))
 
+  // 1b. with nothing to apply there is no floating bar over the cards, only a quiet note; the bar appears with an edit
+  const idleBar = await ev(`({ bar: Boolean(document.querySelector('.apply-bar')), hint: document.querySelector('.apply-hint')?.textContent ?? '' })`)
+  record('nothing to apply: no floating Apply bar, a quiet "No unsaved changes" note instead', !idleBar.bar && idleBar.hint.includes('No unsaved changes'), JSON.stringify(idleBar))
+
   // 2. invalid input is refused next to the field, and cannot be applied
   await setInput('D1 MEDIUM at', '1')
   await sleep(300)
   const invalid = await text()
   const applyDisabled = await ev(`[...document.querySelectorAll('button')].find((b) => b.textContent.trim() === 'Apply').disabled`)
   record('an out-of-range threshold shows its reason and disables Apply', invalid.includes('Between 2 and 50.') && applyDisabled)
+  const bar = await ev(`(() => { const b = document.querySelector('.apply-bar'); return b ? { marginTop: getComputedStyle(b).marginTop, position: getComputedStyle(b).position } : null })()`)
+  record('an invalid value brings up the Apply bar, which no longer overlaps the cards (no negative margin)', Boolean(bar) && !bar.marginTop.startsWith('-') && bar.position === 'sticky', JSON.stringify(bar))
   await setInput('D1 MEDIUM at', '20')
   await sleep(300)
   record('thresholds out of order are flagged', (await text()).includes('Must be lower than the HIGH value'))

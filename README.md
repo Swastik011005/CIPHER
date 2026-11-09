@@ -5,7 +5,7 @@ campus network. You can watch a port scan get detected, mirrored, flagged and bl
 decision.
 
 > CIPHER is the project's official name (formerly NetSec 3D). Technical identifiers keep their original names so that nothing
-> breaks: the Python package `netsec`, the `NETSEC_*` environment variables, the health-check service name `netsec-ids-engine`,
+> breaks: the Python package `netsec`, the `NETSEC_*` environment variables,
 > the `window.__netsec*` debug handles and the repository folder.
 
 ![CIPHER 3D simulation: a port scan from PC-2 is blocked by IPS-1 in Enforce mode](docs/screenshots/cipher/cipher-overview.png)
@@ -187,9 +187,12 @@ Latest verified results on the development machine (Windows 11, integrated Intel
 | Scenario checks (S1 to S7 across the shipped rules, 12 runs) | 93 of 93 passed |
 | Frontend tests (Vitest, 31 files) | 369 passed |
 | Production build (Vite) | succeeds |
-| Browser checks in real Chrome (Chrome DevTools Protocol) | demonstration 39 of 39, offline recovery 8 of 8, middle-button pan 13 of 13, interactions 69 of 70 (DNS-SRV could not be hovered by the automated pointer; open), split-origin 20 of 20 and 34 of 34 |
+| Browser checks in real Chrome (Chrome DevTools Protocol) | demonstration 39 of 39, interactions 70 of 70, Rules page 22 of 22, demo rehearsal 34 of 34, offline recovery 8 of 8, middle-button pan 13 of 13, split-origin 20 of 20 and 34 of 34 |
+| Application audit (`scripts/check_app_audit.mjs`) | 60 of 60 in Chrome and 60 of 60 in Microsoft Edge: every page loads clean, no sideways scroll from 1024 px up, keyboard shortcuts, and Simulation, Monitoring and Threat Centre numbers equal the backend's |
+| Click-through crawler (`scripts/check_click_through.mjs`) | every control on every page clicked, plus text fuzzing: no console error or failed request |
+| API fuzzing and dependency audit | 861 hostile requests, no server error; `npm audit` reports 0 vulnerabilities |
 
-The browser checks are run with `node scripts/check_*.mjs`. The complete record, including what was **not** verified, is in
+The browser checks are run with `node scripts/check_*.mjs --base http://127.0.0.1:8000` against `python scripts/tasks.py demo`. The complete record, including what was **not** verified, is in
 [docs/CIPHER_FINAL_TECHNICAL_REPORT.md](docs/CIPHER_FINAL_TECHNICAL_REPORT.md) (section 18) and
 [docs/LIMITATIONS.md](docs/LIMITATIONS.md).
 

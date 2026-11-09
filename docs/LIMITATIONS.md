@@ -24,7 +24,7 @@ This page lists, without softening, what the project does not do and which claim
 | Editing the IPS action table, the allowlist, the firewall rules or the core ACL | Shown, not editable, because they are the design. What is editable: each detector's switch and numeric settings (within validated limits) and the restricted outside addresses. The firewall/ACL tables can be exported as Cisco IOS text (export only; it was not loaded on any device). |
 | Run history / database | Runs are kept in memory only. |
 | NAT, IPv6, real routing protocols, wireless | Out of scope. Routing is static. |
-| Light theme, mobile layout | Not built. The UI targets desktop widths (1366 and up were checked). |
+| Light theme, mobile layout | Not built. The UI targets desktop widths. `scripts/check_app_audit.mjs` checks that no page scrolls sideways at 1920, 1440, 1366 and 1024 px; at 768 px the pages still fit, and at phone width (390 px) they scroll sideways. Browsers tried: Chrome and Edge. Firefox and Safari were not tested. |
 
 ## 3. Performance: what was measured and what was not
 Measured on the development laptop in a real Chrome window, S4 (heaviest scenario) at its peak, using `scripts/measure_fps.mjs`:

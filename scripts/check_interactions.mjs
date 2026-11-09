@@ -64,7 +64,12 @@ async function findDevice(id) {
   const spec = DEVICE_SPECS[keyOf(node)]
   const [x, z] = layout.position
   const baseY = PLATFORM_TOP + (layout.y ?? 0)
-  const candidates = id === 'INET' ? [[x, baseY + 0.3, z]] : [0.5, 0.3, 0.7, 0.15, 0.85].map((f) => [x, baseY + spec.height * f, z])
+  // Aim at the box centre first, then at the VISIBLE front face (just inside the front plane). Units stacked in a rack shadow each other's
+  // centre as seen from the camera, so for a lower unit only the front face is reliably under the pointer; a user points at what they see.
+  const frontZ = z + spec.half[1] * 0.9
+  const candidates = id === 'INET'
+    ? [[x, baseY + 0.3, z]]
+    : [...[0.5, 0.3, 0.7, 0.15, 0.85].map((f) => [x, baseY + spec.height * f, z]), ...[0.5, 0.3, 0.7].map((f) => [x, baseY + spec.height * f, frontZ])]
   for (const [wx, wy, wz] of candidates) {
     const p = await toPage(wx, wy, wz)
     if (!p) continue

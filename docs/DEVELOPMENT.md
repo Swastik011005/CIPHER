@@ -71,8 +71,20 @@ validated at start-up and an unsafe combination stops the server with a message.
 every command in it was run on this Windows machine. The action versions (`checkout@v4`, `setup-python@v5`, `setup-node@v4`)
 are referenced by version tag and were not looked up online.
 
-Not in CI: the real-browser tools (`scripts/rehearse_demo.mjs`, `check_offline_recovery.mjs`, `measure_fps.mjs`). They drive a
-visible Chrome or Edge window; set `NETSEC_BROWSER_PATH` if the browser is installed somewhere unusual.
+Not in CI: the real-browser tools. They drive a visible Chrome or Edge window (`--browser edge` where a script takes it); set
+`NETSEC_BROWSER_PATH` if the browser is installed somewhere unusual. Run them against demo mode (`python scripts/tasks.py demo`),
+one at a time, with `--base http://127.0.0.1:8000` and `--out <scratch folder>` so the tracked screenshots stay untouched:
+
+| Script | What it checks |
+|---|---|
+| `check_demo_scenarios.mjs` | the nine presentation scenarios, the terminal, EDR isolation and the SIEM view |
+| `check_interactions.mjs` | picking every device, zone and cable with real clicks, the device viewer, Low quality |
+| `check_pan.mjs` | middle-button panning and that the other mouse controls still work |
+| `check_rules_ui.mjs` | the Rules page end to end (needs `--base` for demo mode) |
+| `check_app_audit.mjs` | every page: title, branding, console, network, widths, shortcuts, numbers equal the backend's |
+| `check_click_through.mjs` | clicks every control on every page and fuzzes the text fields |
+| `rehearse_demo.mjs`, `check_offline_recovery.mjs`, `python scripts/tasks.py split-check` | the demo rehearsal, offline recovery and the two-origin layout |
+| `measure_fps.mjs`, `measure_matrix.mjs`, `measure_memory.mjs` | frame rate and memory |
 
 ## What "unchanged behaviour" means here
 

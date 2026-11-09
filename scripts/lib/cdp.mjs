@@ -89,6 +89,13 @@ export async function openBrowser({ browser = 'chrome', width = 1920, height = 1
     send,
     /** URLs of every network request the page has made so far. */
     requests: () => events.filter((e) => e.method === 'Network.requestWillBeSent').map((e) => e.params.request.url),
+    /** Requests that failed (network error) or were answered with an HTTP error status (400 and above), as "status-or-error url". */
+    failedRequests: () => {
+      const urls = new Map(events.filter((e) => e.method === 'Network.requestWillBeSent').map((e) => [e.params.requestId, e.params.request.url]))
+      const http = events.filter((e) => e.method === 'Network.responseReceived' && e.params.response.status >= 400).map((e) => `${e.params.response.status} ${e.params.response.url}`)
+      const failed = events.filter((e) => e.method === 'Network.loadingFailed' && !e.params.canceled).map((e) => `${e.params.errorText} ${urls.get(e.params.requestId) ?? ''}`)
+      return [...http, ...failed]
+    },
     /** Console errors and uncaught exceptions seen so far. */
     errors: () =>
       events
