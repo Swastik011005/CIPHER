@@ -51,7 +51,7 @@ export const materials = {
   cloud: standard('#f1f6ff', 0.9, 0, { flatShading: true }),
   plate: standard(PALETTE.plate, 0.85),
   island: standard(PALETTE.island, 0.85),
-  plateUnder: standard('#27406f', 0.9),
+  plateUnder: standard('#16264a', 0.9),
 }
 
 /** Floor status ring under each device. Idle until a simulation gives it something to show. */

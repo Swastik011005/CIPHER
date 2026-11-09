@@ -27,7 +27,7 @@ const BASE_SPECS = Object.freeze({
   'switch-l3': { half: [0.95, 0.5], height: 0.5, portY: 0.35, labelY: 1.2, ring: 1.5, glyph: 'switch-l3' },
   'switch-l2': { half: [0.5, 0.4], height: 0.95, portY: 0.5, labelY: 1.5, ring: 0.8, glyph: 'switch' },
   'switch-rack': { half: [0.45, 0.4], height: 0.2, portY: 0.1, labelY: 0.7, ring: null, glyph: 'switch' },
-  firewall: { half: [0.4, 1.65], height: 2.25, portY: 0.55, labelY: 2.8, ring: 1.9, glyph: 'shield' },
+  firewall: { half: [0.4, 1.65], height: 2.45, portY: 0.55, labelY: 3.0, ring: 1.9, glyph: 'shield' },
   'ids-sensor': { half: [0.5, 0.5], height: 1.7, portY: 0.4, labelY: 2.3, ring: 0.95, glyph: 'radar' },
   'ips-appliance': { half: [0.4, 1.2], height: 1.5, portY: 0.45, labelY: 2.2, ring: 1.4, glyph: 'shield-gate' },
   'rack-server': { half: [0.45, 0.4], height: 0.4, portY: 0.2, labelY: 0.9, ring: null, glyph: 'server' },

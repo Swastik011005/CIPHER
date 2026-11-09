@@ -5,8 +5,8 @@
 export const PALETTE = Object.freeze({
   void: '#1d3a6e',
   /** The continuous steel-blue campus ground, and the slightly darker off-campus island. */
-  plate: '#566e9a',
-  island: '#4c6389',
+  plate: '#1f3358',
+  island: '#243b63',
   plateEdge: '#2a5bc0',
 
   /** Zone slab colours, keyed by zone id from the topology. Outside is desaturated (untrusted). */

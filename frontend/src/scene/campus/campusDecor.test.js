@@ -7,6 +7,7 @@ import {
 } from './campusDecor.js'
 import * as decor from './campusDecor.js'
 import { ARCHITECTURE_FOOTPRINTS, frontPosts } from './campusBuildings.js'
+import { dataCentreFootprints } from './campusDataCentre.js'
 import { STRUCTURES, allPlatforms, cableSegments, deviceRect } from './campusLayout.js'
 
 const topology = loadBackendTopology()
@@ -103,5 +104,20 @@ describe('campus decoration is visual only and stays out of the way', () => {
       for (const d of devices) expect(overlapsRect(r, d, 0.2), `cabinet at ${x} on a device`).toBe(false)
       expect(cableDistance(r), `cabinet at ${x} near a cable`).toBeGreaterThanOrEqual(0.3)
     }
+  })
+
+  it('keeps the data centre equipment inside the building, clear of the real servers, every device and every cable, with no topology id', () => {
+    const dc = STRUCTURES.find((q) => q.id === 'datacentre').r
+    const devices = topology.nodes.filter((n) => NODE_LAYOUT[n.id]).map((n) => deviceRect(n))
+    const items = dataCentreFootprints()
+    expect(items.length).toBeGreaterThanOrEqual(9)
+    for (const it of items) {
+      const r = it.rect
+      expect(r.x0 >= dc.x0 && r.x1 <= dc.x1 && r.z0 >= dc.z0 && r.z1 <= dc.z1, `${it.id} inside the data centre`).toBe(true)
+      for (const d of devices) expect(overlapsRect(r, d, 0.2), `${it.id} on a device`).toBe(false)
+      expect(cableDistance(r), `${it.id} near a cable`).toBeGreaterThanOrEqual(0.3)
+      expect(topology.nodes.some((n) => n.id === it.id), it.id).toBe(false)
+    }
+    for (let i = 0; i < items.length; i++) for (let j = i + 1; j < items.length; j++) expect(overlapsRect(items[i].rect, items[j].rect, 0), `${items[i].id} against ${items[j].id}`).toBe(false)
   })
 })

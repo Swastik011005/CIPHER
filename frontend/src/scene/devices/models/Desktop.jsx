@@ -7,6 +7,9 @@ function Chair({ z = 0.62 }) {
     <group position={[0, 0, z]}>
       <Block size={[0.44, 0.07, 0.44]} position={[0, 0.46, 0]} material="trim" radius={0.03} />
       <Block size={[0.4, 0.4, 0.06]} position={[0, 0.72, 0.22]} material="trim" radius={0.03} />
+      {[-1, 1].map((sx) => (
+        <Block key={sx} size={[0.04, 0.03, 0.3]} position={[sx * 0.23, 0.62, 0.05]} material="dark" radius={0.01} />
+      ))}
       <Block size={[0.04, 0.2, 0.04]} position={[0, 0.56, 0.2]} material="dark" radius={0.01} />
       <Cyl radius={0.035} height={0.3} position={[0, 0.28, 0]} material="dark" segments={10} shadow={false} />
       {[0, 1, 2, 3, 4].map((i) => (
@@ -52,6 +55,13 @@ export function Desktop() {
         <Slab key={z} size={[0.5, 0.005, 0.03]} position={[-0.1, 0.782, z]} material="dark" />
       ))}
       <Block size={[0.065, 0.026, 0.1]} position={[0.36, 0.772, 0.2]} material="trim" radius={0.012} />
+      {/* desk lamp, mug and a notepad */}
+      <Cyl radius={0.07} height={0.02} position={[-0.72, 0.76, -0.3]} material="dark" segments={14} shadow={false} />
+      <Slab size={[0.025, 0.4, 0.025]} position={[-0.72, 0.96, -0.3]} material="trim" />
+      <Block size={[0.2, 0.03, 0.07]} position={[-0.64, 1.16, -0.3]} material="trim" radius={0.012} />
+      <Cyl radius={0.04} height={0.09} position={[0.52, 0.8, 0.25]} material="clay" segments={12} shadow={false} />
+      <Block size={[0.16, 0.012, 0.22]} position={[0.3, 0.757, 0.3]} material="clay" radius={0.004} />
+      <Slab size={[0.1, 0.004, 0.012]} position={[0.3, 0.765, 0.26]} material="dark" />
       <Chair />
     </group>
   )

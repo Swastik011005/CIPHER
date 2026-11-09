@@ -15,6 +15,8 @@ export const campusMaterials = {
   plinth: standard('#aebdd6', 0.85),
   /** The darker mounting pad under each device: a blue-grey the pale clay stands out from. */
   pad: standard('#9fb0cc', 0.9),
+  /** Dark equipment faces: blank panels, port rows, vents, monitor bezels. */
+  dark: standard('#141c2e', 0.6, 0.2),
   /** Cabinets and monitor frames. */
   cabinet: standard('#3d4c68', 0.55, 0.35),
   /** Grey roads between the zones. */

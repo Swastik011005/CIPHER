@@ -28,7 +28,7 @@ const nearestCable = (p) => Math.min(...campus.segments.map((s) => distToSeg(p, 
 describe('the logical layout is untouched by the campus', () => {
   it('has the fingerprint recorded for the expanded campus layout: no device, cable route, zone rectangle or plate moved by accident', () => {
     const fingerprint = createHash('sha256').update(JSON.stringify({ nodes: NODE_LAYOUT, links: LINK_LAYOUT, zones: ZONE_LAYOUT, plates: PLATES })).digest('hex')
-    expect(fingerprint).toBe('fdcce50b07d2eba2539acac2e29407b4fd7917a36f1de14b2300e2d631618849')
+    expect(fingerprint).toBe('1a3788172664b4ca37cec15b1a69dd996834e842057a7559170acc80ce7f0013')
   })
 
   it('keeps all 17 original nodes and 18 original links inside the 31 nodes and 32 links', () => {
@@ -152,16 +152,22 @@ describe('platforms and frames keep clear of each other and of the cables', () =
 })
 
 describe('signs, balustrade and subtitles', () => {
-  it('place every sign on the plate, clear of platforms, devices and cables', () => {
-    const plate = PLATES.find((p) => p.id === 'campus')
+  it('stand every building sign on posts above the back wall of its building (the Internet sign on the island), readable and clear of cables', () => {
     const island = PLATES.find((p) => p.id === 'island')
-    const onPlate = (x, z, p) => Math.abs(x - p.center[0]) <= p.size[0] / 2 - 0.3 && Math.abs(z - p.center[1]) <= p.size[1] / 2 - 0.3
+    const own = { staff: 'staff', admin: 'admin', datacentre: 'datacentre', soc: 'soc', gate: 'edge' }
     for (const sign of SIGNS) {
-      expect(onPlate(sign.x, sign.z, plate) || onPlate(sign.x, sign.z, island), sign.zone).toBe(true)
-      const box = { x0: sign.x - sign.w / 2 - 0.3, x1: sign.x + sign.w / 2 + 0.3, z0: sign.z - sign.w / 2 - 0.3, z1: sign.z + sign.w / 2 + 0.3 }
-      for (const p of allPlatforms()) if (sign.zone !== 'offcampus' || p.id !== 'island') expect(overlap({ x0: sign.x - 0.4, x1: sign.x + 0.4, z0: sign.z - 0.4, z1: sign.z + 0.4 }, p.rect), `${sign.zone} sign on ${p.id}`).toBe(0)
-      expect(nearestCable([sign.x, sign.z]), `${sign.zone} sign near a cable`).toBeGreaterThan(0.8)
-      expect(box.x1 > box.x0).toBe(true)
+      expect(sign.w, sign.zone).toBeGreaterThanOrEqual(4.8)
+      if (sign.zone === 'offcampus') {
+        expect(Math.abs(sign.x - island.center[0]) <= island.size[0] / 2 - 0.3 && Math.abs(sign.z - island.center[1]) <= island.size[1] / 2 - 0.3).toBe(true)
+        expect(nearestCable([sign.x, sign.z]), 'island sign near a cable').toBeGreaterThan(0.8)
+        continue
+      }
+      expect(sign.base, `${sign.zone} posts stand on the building`).toBeGreaterThan(2)
+      expect(sign.y, `${sign.zone} board above its posts' foot`).toBeGreaterThan(sign.base)
+      if (own[sign.zone]) {
+        const r = STRUCTURES.find((q) => q.id === own[sign.zone]).r
+        expect(sign.x >= r.x0 && sign.x <= r.x1 && Math.abs(sign.z - r.z0) < 0.5, `${sign.zone} sign on the back wall`).toBe(true)
+      }
     }
     expect(SIGNS.map((s) => s.zone).sort()).toEqual(CAMPUS_ZONES.map((z) => z.id).sort())
   })

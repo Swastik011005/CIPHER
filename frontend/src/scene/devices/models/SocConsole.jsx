@@ -1,9 +1,9 @@
 import { Block, Cyl, Decal, Screen, Slab } from '../parts/parts.jsx'
-import { screenMaterial } from '../parts/screenTextures.js'
+import { liveScreenMaterial } from '../parts/liveScreens.js'
 
 /** Security operations workstation: a desk with three monitors showing dashboards, a keyboard, a mouse and an operator chair. Faces +z. */
 export function SocConsole({ node }) {
-  const centre = node?.id === 'SEC-LOG' ? 'alerts' : 'dash'
+  const centre = node?.id === 'SEC-LOG' ? 'live-alerts' : 'live-stats'
   return (
     <group>
       <Block size={[1.8, 0.06, 0.9]} position={[0, 0.72, 0]} material="clayMid" radius={0.02} />
@@ -13,11 +13,11 @@ export function SocConsole({ node }) {
       <Slab size={[0.02, 0.02, 0.012]} position={[0.62, 0.62, 0.255]} material="accentGlow" />
 
       <Block size={[0.7, 0.44, 0.04]} position={[0, 1.13, -0.22]} material="trim" radius={0.015} />
-      <Screen width={0.62} height={0.36} position={[0, 1.13, -0.198]} material={screenMaterial(centre)} />
+      <Screen width={0.62} height={0.36} position={[0, 1.13, -0.198]} material={liveScreenMaterial(centre)} />
       {[-1, 1].map((side) => (
         <group key={side} position={[side * 0.72, 1.1, -0.1]} rotation={[0, side * -0.5, 0]}>
           <Block size={[0.6, 0.4, 0.04]} material="trim" radius={0.015} />
-          <Screen width={0.52} height={0.32} position={[0, 0, 0.022]} material={screenMaterial(side < 0 ? 'terminal' : 'map')} />
+          <Screen width={0.52} height={0.32} position={[0, 0, 0.022]} material={liveScreenMaterial(side < 0 ? 'live-endpoints' : 'live-traffic')} />
         </group>
       ))}
       <Block size={[0.07, 0.3, 0.06]} position={[0, 0.9, -0.22]} material="trim" radius={0.015} />

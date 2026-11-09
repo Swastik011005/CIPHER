@@ -64,15 +64,23 @@ const slab = (id) => {
 }
 export const ISLAND = Object.freeze({ id: 'island', zone: 'offcampus', platform: slab('OUTSIDE'), holds: ['INET', 'EXT-USR', 'EXT-ATK'] })
 
-/** Raised signs: a small tilted plaque on the ground in front of a platform, facing the default camera. */
+/**
+ * Building signs: a readable board standing on two posts above the back wall of its building (the core's above its glass cylinder),
+ * facing the default camera. `y` is the underside of the board, `base` the level the posts stand on. The Internet sign stands on the
+ * island, on the ground.
+ */
+const aboveWall = (zone, structureId, w) => {
+  const s = STRUCTURES.find((q) => q.id === structureId)
+  return { zone, x: (s.r.x0 + s.r.x1) / 2, z: s.r.z0 - 0.2, y: PLATFORM_TOP + s.h + 0.7, base: PLATFORM_TOP + s.h, w }
+}
 export const SIGNS = Object.freeze([
-  { zone: 'staff', x: 9.0, z: -5.4, w: 5.0 },
-  { zone: 'admin', x: 40.5, z: -5.4, w: 4.4 },
-  { zone: 'datacentre', x: 31.0, z: 29.2, w: 5.0 },
-  { zone: 'soc', x: -5.0, z: 27.2, w: 6.0 },
-  { zone: 'core', x: -5.4, z: 3.8, w: 3.2 },
-  { zone: 'gate', x: -20.0, z: -8.0, w: 4.6 },
-  { zone: 'offcampus', x: -42.0, z: 13.2, w: 4.6 },
+  aboveWall('staff', 'staff', 8),
+  aboveWall('admin', 'admin', 6.6),
+  aboveWall('datacentre', 'datacentre', 8),
+  aboveWall('soc', 'soc', 9),
+  { zone: 'core', x: 0, z: -2.9, y: PLATFORM_TOP + CORE_PAVILION.h + 0.6, base: PLATFORM_TOP + CORE_PAVILION.h, w: 4.8 },
+  aboveWall('gate', 'edge', 5.6),
+  { zone: 'offcampus', x: -42, z: 12.5, y: 1.6, base: 0, w: 5.6 },
 ])
 
 /** The low glass balustrade that replaces the opaque perimeter wall (same line, with the gate gap). */

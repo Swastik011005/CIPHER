@@ -10,9 +10,9 @@
 ## 1. Executive summary
 NetSec 3D is a teaching and demonstration application. A Python backend runs a deterministic discrete-event simulation of a campus network (30 devices plus an abstract Internet segment, 32 links, 4 VLANs, 7 IP subnets) and returns a time-stamped trace. A React and Three.js front end replays that trace as a 3D campus with moving packets, device panels, a SIEM console and an endpoint CLI. The backend decides what happens to every packet; the front end only draws it.
 
-The project demonstrates five security capabilities (IDS, IPS, Zero Trust, SIEM, EDR) through nine presentation scenarios (P1 to P9) plus the original seven scenarios (S1 to S7). The last full verification passed: 1176 backend tests, 93 of 93 scenario checks across 12 runs, 349 frontend tests, a production build, 70 of 70 browser interaction checks and 35 of 35 browser demonstration checks.
+The project demonstrates five security capabilities (IDS, IPS, Zero Trust, SIEM, EDR) through nine presentation scenarios (P1 to P9) plus the original seven scenarios (S1 to S7). The last full verification passed: 1176 backend tests, 93 of 93 scenario checks across 12 runs, 350 frontend tests, a production build, 70 of 70 browser interaction checks, 35 of 35 browser demonstration checks, the split-origin checks (20 of 20 and 34 of 34) and the offline recovery check (8 of 8).
 
-**Known weakness:** on the integrated Intel UHD GPU used for testing, High quality runs at 27 to 35 fps (below the 30 fps target in the idle overview); Low quality runs at 44 to 55 fps (section 19).
+**Known weakness:** on the integrated Intel UHD GPU used for testing, High quality runs at 26 to 33 fps (the idle overview, at 26 fps, is below the 30 fps target); Low quality runs at 60 fps (section 19).
 
 ## 2. Objectives
 1. Show how a firewall, ACLs, IDS, IPS, Zero Trust, SIEM and EDR cooperate, and which component makes each decision.
@@ -91,16 +91,17 @@ Status: **Implemented and tested** (`backend/tests/security/test_campus_security
 Status: **Implemented and tested** (`backend/tests/security/test_device_cli.py`).
 
 ## 16. 3D campus
-- Compact composition: the facilities stand close together around the core hub on one ground plate (about 80 by 60 units) with no roads, paths or bridges; only thin cyan cables join them. Each of the seven zones has a recognisable glass-and-steel building: continuous blue-tinted reflective glass on all four sides, steel-blue frames with a top band and corner posts, a defined entrance in the south wall, no roof, and a different height per building. A glass cylinder surrounds the core switch. The laboratory and administration building have wall cabinets inside; the data centre has a row of server cabinets and the operations centre a monitoring wall. There are no car parks, vehicles, vegetation or footpaths.
-- Detailed procedural models: desks with drawer units, monitors that show drawn desktop screens, towers, keyboards, mice and office chairs; rack servers with bezels, handles, vents, drive bays and status lights (different for APP-SRV, DB-SRV, FILE-SRV, EDR-MGMT-1 and ZT-POLICY-1); a core switch with two port rows on a stepped plinth; a router with two interface rows; operator workstations with three dashboard monitors; and a SOC monitoring wall that shows a world map, charts, an alert table and a terminal. The screen pictures are drawn on small canvases at run time (no image files) and show no live data. FW1's model is unchanged.
-- Devices are drawn 1.8 times their original model size so that they stay distinguishable from the default camera. The overview camera frames the campus so that it fills most of the viewport.
-- Decoration is pure data plus merged geometry; it adds no node, link or cable (a test pins this).
+- **Composition:** the facilities stand close together around the core hub on one dark navy ground plate (about 80 by 60 units) with no roads, paths or bridges; only thin cyan cables join them. Each of the seven zones has a recognisable glass-and-steel building: continuous blue-tinted reflective glass on all four sides, steel-blue frames with a top band and corner posts, a defined entrance in the south wall and no roof, so the interiors stay visible. Buildings differ in height (Administration is the tallest). A glass cylinder surrounds the core switch. Each building has a large sign on posts above its back wall. There are no car parks, vehicles, vegetation or footpaths.
+- **Devices** are drawn 1.8 times their original model size. Procedural models: desks with drawer units, lamps, mugs and notepads, monitors showing drawn desktop screens, towers, keyboards, mice and office chairs with armrests; rack servers with bezels, handles, vents, drive bays and status lights (different for APP-SRV, DB-SRV, FILE-SRV, EDR-MGMT-1 and ZT-POLICY-1); server racks with rack-unit marks; a core switch with two port rows on a stepped plinth; a router with two interface rows; and FW1 as a gateway built from three appliances with interface rows, vents, status lights and a shield emblem.
+- **Data centre interior (decoration only, no topology device):** the five servers and SRV-SW3 stand in three racks close together; a row of network cabinets (patch panels, rack switches, cable management), a NAS storage cabinet and two backup units stand along the north wall; two cooling units stand against the east wall; perforated floor tiles, overhead cable trays with drops to the racks, spare cabinets, labelled equipment and a monitoring desk with monitor and chair fill the rest. A test checks that none of it overlaps a device, a cable or the walls.
+- **Other interiors:** wall cabinets in the laboratory and the administration building, a reception desk with two screens in the visitor reception, and the operations centre's monitoring wall and operator stations.
+- **Live screens:** the monitoring wall, the SOC operator desks, the reception and the data-centre monitor draw the loaded run, up to the playhead: SIEM events, packet counters (clean, flagged, blocked, alerts, incidents), endpoint status from the EDR agents, and run status (scenario, IPS mode, time, blocks, Zero Trust decisions). They are redrawn about twice a second from the same trace state the SIEM console uses; with no run loaded they say so. They show simulated data only. The small text on the wall is hard to read at the overview zoom.
 - Picking: devices first, then cables, then zones. A browser check clicks every one of the 31 devices, every one of the 32 cables and all 7 zones.
 Status: **Implemented and tested.**
 
 ## 17. Front end features
 Scenario launcher, endpoint panel (Overview, CLI, Security tabs), device panel, packet panel, playback bar with event markers, camera presets, High/Low quality with automatic fall-back, SIEM console, Monitoring and Threats pages, and a banner that says the traffic is synthetic.
-Not done: a final UI polish pass (Stage 7 in `docs/FINAL_EXECUTION_PROGRESS.md`).
+UI polish done in this stage: the quality notice moved out of the scene. Other items remain minor (see section 22).
 
 ## 18. Testing and validation
 Last full run on the final build:
@@ -109,31 +110,31 @@ Last full run on the final build:
 |---|---|
 | Backend tests (pytest) | 1176 passed |
 | Scenario checks S1 to S7 (shipped rules) | 12 of 12 runs, 93 of 93 checks |
-| Frontend tests (Vitest) | 28 files, 349 tests passed |
+| Frontend tests (Vitest) | 28 files, 350 tests passed |
 | Production build | succeeded |
 | Browser interaction check (`scripts/check_interactions.mjs`) | 70 of 70 |
 | Browser demonstration check (`scripts/check_demo_scenarios.mjs`) | 35 of 35 |
 | Split-origin check (`python scripts/tasks.py split-check`) | 20 of 20 checks, and the 34-step demo rehearsal 34 of 34, with the API on another origin (local only; nothing was run on Render) |
-| Offline recovery check | not re-run in this session |
+| Offline recovery check (`scripts/check_offline_recovery.mjs`) | 8 of 8: the backend alone serves the app, "Engine offline" shows within 15 s, the loaded run is kept and scrubbable offline, the page recovers by itself, a new run works, and no request leaves 127.0.0.1 |
 
-Shipped-rules trace hashes (from the verification log): S1 monitor 57cf6670ce8a, S1 enforce 0faa2b791f6e, S2 monitor 307190852d2a, S2 enforce 44dd9e4738d8, S3 monitor bf20f361e402, S3 enforce ac6bc5d49145, S4 monitor 3ad9ecd2b964, S4 enforce 3c3d85f3f55b, S5 monitor 85dc9ea334fa, S6 enforce e1b4b9c05cc5, S7 monitor fabf892d87b9, S7 enforce bc1b9cbdbeb2 (rules hash 79c0676ad9f6).
-The tests ran on one Windows machine; no other platform was tested in this session.
+Shipped-rules trace hashes (from the verification log): S1 monitor 57cf6670ce8a, S1 enforce 0faa2b791f6e, S2 monitor 307190852d2a, S2 enforce 44dd9e4738d8, S3 monitor bf20f361e402, S3 enforce ac6bc5d49145, S4 monitor 3ad9ecd2b964, S4 enforce 3c3d85f3f55b, S5 monitor 85dc9ea334fa, S6 enforce e1b4b9c05cc5, S7 monitor fabf892d87b9, S7 enforce bc1b9cbdbeb2 (rules hash 79c0676ad9f6). They are unchanged by the visual work, which touches no backend code.
+The tests ran on one Windows machine; no other platform was tested.
 
 ## 19. Performance
-Measured with `scripts/measure_matrix.mjs` (results in `docs/perf/final-matrix.json`) on an Intel UHD Graphics laptop GPU through the app's built-in browser. The scene draws 327 to 338 calls and 86k to 89k triangles. No console errors were seen.
+Measured with `scripts/measure_matrix.mjs` (results in `docs/perf/final-matrix.json`) on an Intel UHD Graphics laptop GPU through the app's built-in browser, with the scene drawing 355 to 365 calls and about 101k to 103k triangles. No console errors were seen. Frame rates vary by a few fps between runs on this machine (earlier runs of the same build gave 24.5 to 26.5 fps for the High idle overview).
 
 | Quality | Case | Frame rate | Worst 1% frame |
 |---|---|---|---|
-| High | idle, overview | 25.7 fps | 100.1 ms |
-| High | idle, staff close-up | 31.4 fps | 50 ms |
-| High | scenario 7 playing | 29.6 fps | 50.3 ms |
-| High | S4 flood peak | 30.4 fps | 50.2 ms |
+| High | idle, overview | 26.3 fps | 117 ms |
+| High | idle, staff close-up | 33.0 fps | 50 ms |
+| High | scenario 7 playing | 32.6 fps | 50.2 ms |
+| High | S4 flood peak | 33.1 fps | 50 ms |
 | Low | idle, overview | 60.1 fps | 17 ms |
-| Low | idle, staff close-up | 60.1 fps | 17 ms |
-| Low | scenario 7 playing | 60.2 fps | 17 ms |
+| Low | idle, staff close-up | 60.1 fps | 17.1 ms |
+| Low | scenario 7 playing | 60.2 fps | 17.3 ms |
 | Low | S4 flood peak | 60.2 fps | 17.1 ms |
 
-**Assessment:** the 30 fps target is met on Low and in two of four High cases, and **missed in the High idle overview (25.7 fps) and in the scenario 7 case (29.6 fps)** on this integrated GPU. The application lowers quality automatically when the frame rate stays low and tells the user. A discrete GPU was not available for measurement, so no claim is made about one. Frame rates vary between runs on this machine by a few fps.
+**Assessment:** the 30 fps target is met on Low and in three of four High cases, and **missed in the High idle overview (26.3 fps)** on this integrated GPU. Low quality runs at 60 fps with the same geometry, so the High cost is post-processing and fill rate, not geometry. Changes made to reduce it without removing visual detail: the outline pass exists only while a device is selected, bloom uses five mip levels and ambient occlusion fewer samples. These gave a gain within the run-to-run noise. The application lowers quality automatically when the frame rate stays low and tells the user (the notice sits at the top right of the scene). A discrete GPU was not available, so no claim is made about one.
 
 ## 20. Security design principles
 - Backend authority: the front end never decides an outcome.
@@ -145,7 +146,7 @@ Measured with `scripts/measure_matrix.mjs` (results in `docs/perf/final-matrix.j
 The same scenario, seed and rules give the same trace hash. Mid-run changes leave everything before the playhead identical. This is what makes every scenario repeatable in front of an audience.
 
 ## 22. Limitations
-Listed in `docs/LIMITATIONS.md`. Principally: simulated traffic only, simplified protocol behaviour, no machine learning, no persistence beyond a run, High-quality frame rate on integrated GPUs, and no multi-platform test in this session.
+Listed in `docs/LIMITATIONS.md`. Principally: simulated traffic only, simplified protocol behaviour, no machine learning, no persistence beyond a run, a High-quality idle-overview frame rate of 26 fps on the integrated GPU tested, no multi-platform test, the small text on the SOC wall being hard to read at the overview zoom, and building interiors that are less dense than the supplied reference image.
 
 ## 23. Risks and how they are handled
 | Risk | Handling |
@@ -164,7 +165,7 @@ python scripts/tasks.py verify      # all automated checks
 See `docs/DEVELOPMENT.md` and `docs/DEMO_SCRIPT.md`.
 
 ## 25. Future work (not done)
-A final UI polish pass; High-quality optimisation for integrated GPUs; measuring on other machines; more device CLI commands; persisted run history.
+Further High-quality optimisation for integrated GPUs; measuring on other machines; more interior detail; more device CLI commands; persisted run history.
 
 ## 26. Conclusion
-The five security capabilities, the nine presentation scenarios, both CLIs and the expanded 3D campus are implemented and pass the automated checks listed above. The two open items that matter are the High-quality idle frame rate on an integrated GPU (27 fps) and the missing polish pass. Nothing here claims real network behaviour: it is a deterministic simulation built to explain how the defences work together.
+The five security capabilities, the nine presentation scenarios, both CLIs and the expanded 3D campus are implemented and pass the automated checks listed above. The open items that matter are the High-quality idle-overview frame rate on an integrated GPU (26 fps), the small text on the SOC wall at overview zoom, and interiors that are less dense than the supplied reference image. Nothing here claims real network behaviour: it is a deterministic simulation built to explain how the defences work together.

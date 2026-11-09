@@ -289,8 +289,17 @@
 .viewport__hint {
   bottom: 6px !important;
 }
+/* The quality notice sits at the top right, under the View button, so it never covers the scene or the playback bar. */
 .viewport__bottom-banner {
-  bottom: 150px !important;
+  top: 64px !important;
+  bottom: auto !important;
+  left: auto !important;
+  right: var(--space-3) !important;
+  max-width: 340px;
+  pointer-events: none;
+}
+.viewport__bottom-banner button {
+  pointer-events: auto;
 }
 
 .playback {

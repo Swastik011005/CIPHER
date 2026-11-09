@@ -4,7 +4,8 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 import { BALUSTRADE, CAMPUS_ZONES, GATE_COURT, ISLAND, PLATFORM_TOP, PLINTH_TOP, SIGNS, campusGeometry, devicePads, roadRects, signSubtitle, zoneVolumes } from './campusLayout.js'
 import { campusMaterials } from './campusMaterials.js'
 import { buildArchitecture } from './campusBuildings.js'
-import { CABINETS, ENTRANCE, SERVER_CABINETS, SOC_STATIONS, SOC_WALL, WALL_CABINETS } from './campusDecor.js'
+import { DC_LABELS, buildDataCentre } from './campusDataCentre.js'
+import { CABINETS, ENTRANCE, RECEPTION_DESK, SERVER_CABINETS, SOC_STATIONS, SOC_WALL, WALL_CABINETS } from './campusDecor.js'
 
 /**
  * Turns the campus layout into three.js meshes, merged to one mesh per material: every platform top, every plinth, all the
@@ -21,9 +22,34 @@ const plane = (w, h, x, y, z, rotY = 0) => {
   return g.translate(x, y, z)
 }
 
-const SIGN_TILT = 0.55
+/** Equipment labels of the data centre: one texture, a row per label, one draw call. */
+const LABEL_ROWS = 16
+function labelTexture() {
+  const canvas = document.createElement('canvas')
+  canvas.width = 512
+  canvas.height = 64 * LABEL_ROWS
+  const ctx = canvas.getContext('2d')
+  DC_LABELS.forEach((text, i) => {
+    ctx.fillStyle = '#0d1d3a'
+    ctx.fillRect(0, i * 64, 512, 64)
+    ctx.strokeStyle = '#4d78b8'
+    ctx.lineWidth = 4
+    ctx.strokeRect(3, i * 64 + 3, 506, 58)
+    ctx.fillStyle = '#cfe0f8'
+    ctx.font = 'bold 34px Consolas, monospace'
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillText(text, 256, i * 64 + 33)
+  })
+  const texture = new THREE.CanvasTexture(canvas)
+  texture.colorSpace = THREE.SRGBColorSpace
+  texture.anisotropy = 4
+  return texture
+}
+
+const SIGN_TILT = 0.2
 const SIGN_YAW = Math.PI / 4 // towards the default camera, which looks from the south-east
-const SIGN_SCALE = 1.2
+const SIGN_SCALE = 1
 const ATLAS_W = 1024
 const ROW_H = 256
 const ATLAS_ROWS = 8 // seven signs, rounded up to a power of two
@@ -100,7 +126,7 @@ export function buildCampus(topology) {
     if (!screenBuckets.has(kind)) screenBuckets.set(kind, [])
     screenBuckets.get(kind).push(geometry)
   }
-  const WALL_KINDS = ['map', 'dash', 'alerts', 'terminal']
+  const WALL_KINDS = ['live-alerts', 'live-stats', 'live-endpoints', 'live-traffic']
 
   /** A raised platform: a plinth step, the platform, and a thin edge light in the zone's colour. */
   const platform = (zone, r, inlay) => {
@@ -184,12 +210,30 @@ export function buildCampus(topology) {
     put('staff', 'cabinet', box(w, 2.1, d, x, 1.05, z))
     put('staff', 'lights', box(w > d ? 0.5 : 0.04, 1.2, w > d ? 0.04 : 0.5, x + (w > d ? 0 : (w / 2 + 0.01) * (x > 30 ? -1 : 1)), 1.2, z + (w > d ? d / 2 + 0.01 : 0)))
   }
+  {
+    const d = RECEPTION_DESK
+    put('gate', 'cabinet', box(d.w, 1.1, d.d, d.x, T + 0.55, d.z))
+    put('gate', 'frame', box(d.w + 0.1, 0.06, d.d + 0.1, d.x, T + 1.13, d.z))
+    put('gate', 'lights', box(d.w - 0.3, 0.03, 0.03, d.x, T + 0.9, d.z + d.d / 2 + 0.02))
+    for (const dx of [-1.0, 1.0]) {
+      put('gate', 'cabinet', box(0.7, 0.05, 0.1, d.x + dx, T + 1.15, d.z - 0.15))
+      screen('live-stats', new THREE.PlaneGeometry(0.62, 0.4).translate(d.x + dx, T + 1.45, d.z - 0.08))
+    }
+  }
   for (const [zone, x, z] of WALL_CABINETS) {
     put(zone, 'cabinet', box(1.6, 2.2, 0.5, x, T + 1.1, z))
     for (const dx of [-0.4, 0.4]) put(zone, 'frame', box(0.7, 0.04, 0.02, x + dx, T + 1.5, z + 0.26))
     for (const dy of [0.7, 1.9]) put(zone, 'lights', box(0.1, 0.04, 0.02, x + 0.55, T + dy, z + 0.26))
   }
+  const labelFaces = []
+  const label = (index, geometry) => {
+    const uv = geometry.attributes.uv
+    for (let k = 0; k < uv.count; k++) uv.setY(k, 1 - (index + 1 - uv.getY(k)) / LABEL_ROWS)
+    labelFaces.push(geometry)
+  }
+  buildDataCentre(put, screen, label)
   for (const [x, z] of SERVER_CABINETS) {
+    label(9, new THREE.PlaneGeometry(1.2, 0.3).translate(x, T + 3.05, z + 0.7))
     put('datacentre', 'cabinet', box(1.5, 3.3, 1.35, x, T + 1.65, z))
     for (const dx of [-0.4, 0, 0.4]) put('datacentre', 'lights', box(0.12, 2.4, 0.04, x + dx, T + 1.65, z + 0.69))
   }
@@ -204,7 +248,7 @@ export function buildCampus(topology) {
       for (const dx of [-1.4, 1.4]) put('soc', 'frame', box(0.1, 1.0, 1.3, x + dx, T + 0.5, z))
       for (const dx of [-0.85, 0.85]) {
         put('soc', 'cabinet', box(1.4, 0.95, 0.1, x + dx, T + 1.65, z - 0.45))
-        screen(dx < 0 ? 'terminal' : 'dash', new THREE.PlaneGeometry(1.25, 0.8).translate(x + dx, T + 1.65, z - 0.34))
+        screen(dx < 0 ? 'live-alerts' : 'live-stats', new THREE.PlaneGeometry(1.25, 0.8).translate(x + dx, T + 1.65, z - 0.34))
       }
     }
   }
@@ -246,10 +290,10 @@ export function buildCampus(topology) {
     const sign = { ...raw, w: raw.w * SIGN_SCALE } // a little larger than first drawn: readable from the default camera
     const hb = sign.w / 4
     const place = (g) => g.rotateY(SIGN_YAW).translate(sign.x, 0, sign.z)
-    const lift = Math.cos(SIGN_TILT) * (hb / 2) + 0.2
+    const lift = raw.y + Math.cos(SIGN_TILT) * (hb / 2)
     // the board is unlit, in the zone's accent colour: a lit back that faces away from the sky and the key light looks black
     put(sign.zone, 'lights', place(new THREE.BoxGeometry(sign.w + 0.08, hb + 0.06, 0.04).rotateX(-SIGN_TILT).translate(0, lift, 0)))
-    for (const lx of [-sign.w / 3, sign.w / 3]) put(sign.zone, 'frame', place(new THREE.BoxGeometry(0.06, lift, 0.06).translate(lx, lift / 2 - 0.03, -0.12)))
+    for (const lx of [-sign.w / 3, sign.w / 3]) put(sign.zone, 'frame', place(new THREE.BoxGeometry(0.1, raw.y - raw.base + hb * 0.3, 0.1).translate(lx, (raw.y - raw.base + hb * 0.3) / 2 + raw.base, -0.1)))
     const face = new THREE.PlaneGeometry(sign.w, hb)
     const uv = face.attributes.uv
     for (let k = 0; k < uv.count; k++) uv.setY(k, 1 - (i + 1 - uv.getY(k)) / ATLAS_ROWS) // this sign's row of the atlas
@@ -269,6 +313,14 @@ export function buildCampus(topology) {
     return { kind, geometry }
   })
 
+  const labelAtlas = labelTexture()
+  const labels = {
+    geometry: mergeGeometries(labelFaces, false),
+    texture: labelAtlas,
+    material: new THREE.MeshBasicMaterial({ map: labelAtlas, toneMapped: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }),
+  }
+  for (const g of labelFaces) g.dispose()
+
   const parts = []
   for (const [kind, geometries] of buckets) {
     const geometry = mergeGeometries(geometries, false)
@@ -281,6 +333,7 @@ export function buildCampus(topology) {
   return {
     parts,
     screens,
+    labels,
     signs,
     zoneGeometry,
     dispose() {
@@ -290,6 +343,9 @@ export function buildCampus(topology) {
         g.floor.dispose()
         g.outline.dispose()
       }
+      labels.geometry.dispose()
+      labels.texture.dispose()
+      labels.material.dispose()
       signs.geometry.dispose()
       signs.texture.dispose()
       signs.material.dispose()

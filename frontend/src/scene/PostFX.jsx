@@ -1,6 +1,8 @@
 import { Bloom, EffectComposer, N8AO, Outline, SMAA, ToneMapping } from '@react-three/postprocessing'
 import { ToneMappingMode } from 'postprocessing'
 
+import { useStore } from '../state/store.js'
+
 /**
  * Post-processing chain.
  *
@@ -12,6 +14,8 @@ import { ToneMappingMode } from 'postprocessing'
  * @param {{quality: 'high' | 'low'}} props
  */
 export function PostFX({ quality }) {
+  // the outline pass only exists while something is selected: with nothing selected it would still cost a full-screen pass every frame
+  const anySelected = useStore((st) => st.selection.selectedId !== null)
   if (quality === 'low') {
     return (
       <EffectComposer key="low" multisampling={0}>
@@ -24,10 +28,10 @@ export function PostFX({ quality }) {
     <EffectComposer key="high" multisampling={0} enableNormalPass={false}>
       {/* Full-resolution AO on purpose: N8AO's half-resolution mode builds a multi-target polyfill
           that is incompatible with three r187 (see docs/STAGE1_ISSUES.md). */}
-      <N8AO aoRadius={1.6} distanceFalloff={1.2} intensity={2.4} quality="performance" halfRes={false} />
+      <N8AO aoRadius={1.6} distanceFalloff={1.2} intensity={2.4} quality="performance" aoSamples={6} denoiseSamples={3} denoiseRadius={8} halfRes={false} />
       {/* The silhouette of the selected device (see DeviceNode: only a selected device is in the selection). */}
-      <Outline blur edgeStrength={3.5} width={900} visibleEdgeColor={0x9fd0ff} hiddenEdgeColor={0x4da3ff} />
-      <Bloom mipmapBlur luminanceThreshold={1.05} luminanceSmoothing={0.2} intensity={0.3} radius={0.7} />
+      {anySelected && <Outline blur edgeStrength={3.5} width={900} visibleEdgeColor={0x9fd0ff} hiddenEdgeColor={0x4da3ff} />}
+      <Bloom mipmapBlur levels={5} luminanceThreshold={1.05} luminanceSmoothing={0.2} intensity={0.3} radius={0.7} />
       <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
       <SMAA />
     </EffectComposer>

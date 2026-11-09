@@ -26,6 +26,9 @@ export const CABINETS = Object.freeze([
   [-23.2, 12, 1.0, 1.6], [-23.2, 21, 1.0, 1.6], // security operations, west side
 ])
 
+/** The reception desk inside the visitor reception pavilion: a counter and two visitor screens. [x, z] is the centre of the counter. */
+export const RECEPTION_DESK = Object.freeze({ x: -20.5, z: -13.2, w: 4.4, d: 0.9 })
+
 /** Storage and equipment cabinets along the north wall inside the laboratory and the administration building: [zone, x, z]; each is 1.6 wide, 0.5 deep, 2.2 high. */
 export const WALL_CABINETS = Object.freeze([
   ...[5.5, 9.7, 13.9, 18.1, 22.3].map((x) => ['staff', x, -23.55]),
@@ -33,7 +36,7 @@ export const WALL_CABINETS = Object.freeze([
 ])
 
 /** Empty server cabinets standing in a row along the south wall of the data centre. [x, z]; each is 1.5 wide, 1.35 deep, 3.3 high. */
-export const SERVER_CABINETS = Object.freeze([24, 28, 32, 36, 40, 44].map((x) => [x, 24.6]))
+export const SERVER_CABINETS = Object.freeze([24, 25.8, 27.6, 29.4].map((x) => [x, 24.6]))
 
 /** The security monitoring wall (screens on the west wall of the operations centre) and the monitoring stations in front of it. */
 export const SOC_WALL = Object.freeze({ x: -20.2, z0: 18.4, z1: 24, screens: 4 })

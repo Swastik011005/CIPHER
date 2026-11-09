@@ -70,12 +70,12 @@ export const NODE_LAYOUT = Object.freeze({
   'EDR-MGMT-1': { position: [5, 15], y: 1.15 * S, labelOffset: [1.9 * S, 0.55 * S, 0.4 * S] },
   'ZT-POLICY-1': { position: [5, 15], y: 0.65 * S, labelOffset: [0.5 * S, -0.1 * S, 1.9 * S] },
   'IPS-1': { position: [17, 14] },
-  'SRV-SW3': { position: [25, 18], y: 1.75 * S, model: 'switch-rack', labelOffset: [0 * S, 0.95 * S, 0 * S] },
-  'APP-SRV': { position: [25, 18], y: 1.15 * S, labelOffset: [1.9 * S, 0.55 * S, 0.4 * S] },
-  'DB-SRV': { position: [25, 18], y: 0.65 * S, labelOffset: [0.5 * S, -0.1 * S, 1.9 * S] },
-  'WEB-SRV': { position: [33, 18], y: 1.15 * S, labelOffset: [1.9 * S, 0.55 * S, 0.4 * S] },
-  'DNS-SRV': { position: [33, 18], y: 0.65 * S, labelOffset: [0.5 * S, -0.1 * S, 1.9 * S] },
-  'FILE-SRV': { position: [41, 18], y: 1.15 * S, labelOffset: [1.9 * S, 0.55 * S, 0.4 * S] },
+  'SRV-SW3': { position: [26, 18], y: 1.75 * S, model: 'switch-rack', labelOffset: [0 * S, 0.95 * S, 0 * S] },
+  'APP-SRV': { position: [26, 18], y: 1.15 * S, labelOffset: [1.9 * S, 0.55 * S, 0.4 * S] },
+  'DB-SRV': { position: [26, 18], y: 0.65 * S, labelOffset: [0.5 * S, -0.1 * S, 1.9 * S] },
+  'WEB-SRV': { position: [32, 18], y: 1.15 * S, labelOffset: [1.9 * S, 0.55 * S, 0.4 * S] },
+  'DNS-SRV': { position: [32, 18], y: 0.65 * S, labelOffset: [0.5 * S, -0.1 * S, 1.9 * S] },
+  'FILE-SRV': { position: [38, 18], y: 1.15 * S, labelOffset: [1.9 * S, 0.55 * S, 0.4 * S] },
 })
 
 /** The device model of every node (the topology's form factor, or the layout override). Checked against the topology by the tests. */
@@ -93,9 +93,9 @@ export const NODE_FORM = Object.freeze({
  * `holds` names the nodes that stand in each rack.
  */
 export const RACKS = Object.freeze([
-  { id: 'A', position: [25, 18], size: [1.0 * S, 2.2 * S, 0.9 * S], holds: ['SRV-SW3', 'APP-SRV', 'DB-SRV'] },
-  { id: 'B', position: [33, 18], size: [1.0 * S, 2.2 * S, 0.9 * S], holds: ['WEB-SRV', 'DNS-SRV'] },
-  { id: 'C', position: [41, 18], size: [1.0 * S, 2.2 * S, 0.9 * S], holds: ['FILE-SRV'] },
+  { id: 'A', position: [26, 18], size: [1.0 * S, 2.2 * S, 0.9 * S], holds: ['SRV-SW3', 'APP-SRV', 'DB-SRV'] },
+  { id: 'B', position: [32, 18], size: [1.0 * S, 2.2 * S, 0.9 * S], holds: ['WEB-SRV', 'DNS-SRV'] },
+  { id: 'C', position: [38, 18], size: [1.0 * S, 2.2 * S, 0.9 * S], holds: ['FILE-SRV'] },
   { id: 'D', position: [5, 15], size: [1.0 * S, 2.2 * S, 0.9 * S], holds: ['EDR-MGMT-1', 'ZT-POLICY-1'] },
 ])
 /** The rack of SRV-SW3, APP-SRV and DB-SRV (kept for code that knew a single rack). */
@@ -188,8 +188,8 @@ export const LINK_LAYOUT = Object.freeze({
   L17: { a: { side: '-x', lateral: 0.25 }, b: { side: '-x', lateral: 0.25 }, outA: 0.3, outB: 0.3, internal: true },
   L18: { a: { side: '-x', lateral: 0.0 }, b: { side: '-x', lateral: 0.0 }, outA: 0.55, outB: 0.55, internal: true },
   L27: { a: { side: '+x', lateral: -0.2 }, b: { side: '-x' }, outA: 0.8, outB: 0.6 },
-  L28: { a: { side: '+x', lateral: 0.2 }, b: { side: '-x' }, outA: 1.0, outB: 0.6, via: [[28.5, 20.2], [30, 20.2], [30, 18.2]] },
-  L29: { a: { side: '+x', lateral: 0.0 }, b: { side: '+z' }, outA: 1.2, outB: 0.9, via: [[28, 21.5], [41, 21.5]] },
+  L28: { a: { side: '+x', lateral: 0.2 }, b: { side: '-x' }, outA: 1.0, outB: 0.6, via: [[29, 20.2], [29.5, 20.2], [29.5, 18.2]] },
+  L29: { a: { side: '+x', lateral: 0.0 }, b: { side: '+z' }, outA: 1.2, outB: 0.9, via: [[28, 21.5], [38, 21.5]] },
 })
 
 /** Camera presets: look at `target` from a given azimuth/elevation (degrees) and distance. */
