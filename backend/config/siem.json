@@ -8,8 +8,8 @@
     "FW1": ["policy_deny"],
     "CORE-SW1": ["policy_deny"],
     "IDS-1": ["alert"],
-    "IPS-1": ["alert", "action"],
-    "EDR": ["alert", "state"],
+    "IPS-1": ["alert", "action", "block"],
+    "EDR": ["alert", "state", "send_blocked"],
     "ZERO-TRUST": ["deny", "restricted"]
   },
   "severity": {
@@ -19,6 +19,8 @@
     "zt_deny": "medium",
     "zt_restricted": "low",
     "ips_action_applied": "high",
-    "ips_action_monitor": "medium"
+    "ips_action_monitor": "medium",
+    "ips_block": "high",
+    "edr_send_blocked": "medium"
   }
 }

@@ -114,6 +114,28 @@ def test_record_run_accumulates_rule_hits_and_history(graph) -> None:
     assert s.rule_hits["CORE-SW1:STAFF-IN:20:deny"] == 8 and s.runs == 2 and s.siem_history
 
 
+
+def test_the_event_history_holds_each_run_once_and_a_replay_replaces_it(graph) -> None:
+    """Regression: re-running a scenario, or re-simulating it after a mid-run change, used to append a second copy of its SIEM events."""
+    from netsec.sim.engine import run_scenario
+    from netsec.traffic.scenarios import load_scenario
+
+    s = make_state()
+    first = run_scenario(graph, load_scenario("P7"), scripted_operator=True)
+    s.record_run(first.events)
+    count = len(s.siem_history)
+    assert count > 0 and len({e["event_id"] for e in s.siem_history}) == count
+    s.record_run(run_scenario(graph, load_scenario("P7"), scripted_operator=True).events)  # the same run again
+    assert len(s.siem_history) == count and len({e["event_id"] for e in s.siem_history}) == count
+    edr_count = len(s.edr_history)
+    s.record_run(first.events)
+    assert len(s.edr_history) == edr_count and s.runs == 3  # the rule-hit and run counters stay cumulative
+    s.record_run(run_scenario(graph, load_scenario("P9")).events)  # a different run adds to the history
+    assert len(s.siem_history) > count and len({e["event_id"] for e in s.siem_history}) == len(s.siem_history)
+    s.reset()
+    assert s.siem_history == [] and s.edr_history == []
+
+
 # -- topology extension -------------------------------------------------------------------------
 
 

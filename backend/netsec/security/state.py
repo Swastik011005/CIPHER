@@ -58,8 +58,10 @@ class SecurityState:
     _roles: dict[str, str] = field(default_factory=dict)
     _revoked: set[str] = field(default_factory=set)
     rule_hits: dict[str, int] = field(default_factory=dict)
-    siem_history: list[dict[str, Any]] = field(default_factory=list)
-    edr_history: list[dict[str, Any]] = field(default_factory=list)
+    # The SIEM and EDR event history, kept per run: running the same scenario again (or re-simulating it after a mid-run change)
+    # replaces that run's events instead of adding a second copy of them. Insertion order is the order the runs were last recorded.
+    _siem_runs: dict[str, list[dict[str, Any]]] = field(default_factory=dict, repr=False)
+    _edr_runs: dict[str, list[dict[str, Any]]] = field(default_factory=dict, repr=False)
     runs: int = 0
     _lock: threading.Lock = field(default_factory=threading.Lock, repr=False)
 
@@ -81,8 +83,8 @@ class SecurityState:
             self._roles.clear()
             self._revoked.clear()
             self.rule_hits.clear()
-            self.siem_history.clear()
-            self.edr_history.clear()
+            self._siem_runs.clear()
+            self._edr_runs.clear()
             self.runs = 0
 
     def apply(self, snapshot: SecuritySnapshot) -> None:
@@ -137,21 +139,51 @@ class SecurityState:
 
     # -- counters and history ------------------------------------------------------------
 
+    @property
+    def siem_history(self) -> list[dict[str, Any]]:
+        """Every event SIEM-1 received, oldest run first (the latest version of each run)."""
+        return [e for events in list(self._siem_runs.values()) for e in events]
+
+    @property
+    def edr_history(self) -> list[dict[str, Any]]:
+        return [e for events in list(self._edr_runs.values()) for e in events]
+
+    @staticmethod
+    def _remember(store: dict[str, list[dict[str, Any]]], run_key: str, events: list[dict[str, Any]]) -> None:
+        """Keep ``events`` as the history of ``run_key``, replacing an earlier recording of the same run, and stay within the limit."""
+        store.pop(run_key, None)
+        if events:
+            store[run_key] = events
+        while sum(len(v) for v in store.values()) > HISTORY_LIMIT and len(store) > 1:
+            store.pop(next(iter(store)))
+        for key, kept in list(store.items()):  # a single run bigger than the limit keeps its newest events
+            if len(kept) > HISTORY_LIMIT:
+                store[key] = kept[-HISTORY_LIMIT:]
+
     def record_run(self, events: Iterable[dict[str, Any]]) -> None:
-        """Add a finished run's rule hits and SIEM/EDR events to the cumulative counters and history."""
+        """Add a finished run's rule hits and SIEM/EDR events to the cumulative counters and history.
+
+        The rule-hit counters are cumulative (every run counts). The event history is not: it holds each distinct run once, so replaying
+        a scenario, or re-simulating it from the playhead after an IPS-mode change, does not duplicate its SIEM or EDR events.
+        """
         with self._lock:
             self.runs += 1
+            siem: list[dict[str, Any]] = []
+            edr: list[dict[str, Any]] = []
+            run_key = ""
             for event in events:
                 kind = event["type"]
-                if kind == "policy.decision" and not event["via_conntrack"]:
+                if kind == "run.meta":
+                    run_key = str(event.get("run_id", ""))
+                elif kind == "policy.decision" and not event["via_conntrack"]:
                     key = f"{event['node']}:{event['rule_id']}:{event['action']}"
                     self.rule_hits[key] = self.rule_hits.get(key, 0) + 1
                 elif kind == "siem.event":
-                    self.siem_history.append(event)
+                    siem.append(event)
                 elif kind in ("edr.alert", "edr.state"):
-                    self.edr_history.append(event)
-            del self.siem_history[:-HISTORY_LIMIT]
-            del self.edr_history[:-HISTORY_LIMIT]
+                    edr.append(event)
+            self._remember(self._siem_runs, run_key, siem)
+            self._remember(self._edr_runs, run_key, edr)
 
     def to_dict(self) -> dict[str, Any]:
         snap = self.snapshot()

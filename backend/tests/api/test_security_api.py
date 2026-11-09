@@ -114,3 +114,23 @@ def test_production_makes_the_security_state_read_only(monkeypatch) -> None:
     assert post(c, "/state/action", {"action": "isolate", "node": "PC-2"}).status_code == 403
     assert post(c, "/cli/exec", {"node": "PC-1", "command": "ping APP-SRV", "animate": False}).json()["ok"]  # reading is fine
     assert c.get("/api/state").json()["runs"] == 0  # and a shared state is never written
+
+
+def test_replaying_or_resimulating_a_scenario_does_not_duplicate_the_siem_history(client) -> None:
+    """Regression: the History tab showed every re-run again, with repeated event ids."""
+    post(client, "/sim/run", {"scenario_id": "P7", "ips_mode": "enforce"})
+    once = client.get("/api/siem/events").json()["events"]
+    post(client, "/sim/run", {"scenario_id": "P7", "ips_mode": "enforce"})
+    post(client, "/sim/run", {"scenario_id": "P7", "ips_mode": "enforce", "controls": [{"type": "ips_mode", "t": 3.0, "mode": "monitor"}]})
+    post(client, "/sim/run", {"scenario_id": "P7", "ips_mode": "enforce"})
+    again = client.get("/api/siem/events").json()
+    assert len(again["events"]) == len(once) and len({e["event_id"] for e in again["events"]}) == len(again["events"])
+    assert len(again["incidents"]) == 1
+
+
+def test_a_run_says_which_campus_security_features_it_used(client) -> None:
+    """The console needs this to tell "the SIEM is not part of this scenario" from "nothing has reached the SIEM yet"."""
+    assert post(client, "/sim/run", {"scenario_id": "S2"}).json()["features"] == {"zero_trust": False, "edr": False, "siem": False}
+    assert post(client, "/sim/run", {"scenario_id": "P7"}).json()["features"]["siem"] is True
+    cli = post(client, "/cli/exec", {"node": "PC-1", "command": "ping 10.0.30.10"}).json()
+    assert cli["run"]["features"]["siem"] is True

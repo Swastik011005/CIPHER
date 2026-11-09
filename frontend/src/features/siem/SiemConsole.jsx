@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import { api } from '../../api/client.js'
-import { siemIncidents } from '../../playback/securityView.js'
+import { siemEmptyState, siemIncidents } from '../../playback/securityView.js'
 import { useStore } from '../../state/store.js'
 import { Banner, Card, Chip, EmptyState, Segmented } from '../../ui/index.js'
 
@@ -53,6 +53,7 @@ function EventDetail({ event }) {
 export function SiemConsole() {
   const live = useStore((s) => s.playback.state?.siem ?? NONE)
   const loaded = useStore((s) => s.playback.state?.meta != null)
+  const siemEnabled = useStore((s) => s.run.meta?.features?.siem) // false for the baseline scenarios S1 to S7; undefined when the server does not say
   const [view, setView] = useState('run')
   const [history, setHistory] = useState({ events: [], error: null })
   const [open, setOpen] = useState(null)
@@ -69,17 +70,16 @@ export function SiemConsole() {
   const incidents = useMemo(() => siemIncidents(events), [events])
   const shown = incident ? events.filter((e) => e.incident_id === incident) : events
   const chosen = events.find((e) => e.event_id === open) ?? null
+  const empty = siemEmptyState({ view, loaded, siemEnabled })
 
   return (
     <Card eyebrow="SIEM" title="SIEM-1 event console" actions={<Segmented label="SIEM view" value={view} onChange={(v) => { setView(v); setOpen(null); setIncident(null) }} options={VIEWS} />}>
       <p className="muted device-description">
-        SIEM-1 receives simulated events from FW1, CORE-SW1, IDS-1, IPS-1, EDR and the Zero Trust decision point, only when that component really took part in the run, and groups the events about one device into incidents. Synthetic telemetry only.
+        SIEM-1 receives simulated events from FW1, CORE-SW1, IDS-1, IPS-1, EDR and the Zero Trust decision point, only when that component really took part in the run, and groups the events about one device into incidents. It is part of the presentation scenarios P1 to P9, not of the baseline scenarios S1 to S7. Synthetic telemetry only.
       </p>
       {view === 'history' && history.error && <Banner tone="danger" title="Cannot load the SIEM history">{history.error}</Banner>}
       {events.length === 0 ? (
-        <EmptyState title={view === 'run' ? (loaded ? 'No SIEM event yet' : 'No run loaded') : 'The SIEM history is empty'}>
-          {view === 'run' ? 'Run one of the nine scenarios, for example scenario 7 or 9, and the events appear here as they happen.' : 'Events are kept here after each run on this server.'}
-        </EmptyState>
+        <EmptyState title={empty.title}>{empty.body}</EmptyState>
       ) : (
         <>
           <h3 className="panel-heading">Incidents</h3>

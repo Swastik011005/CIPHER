@@ -88,6 +88,21 @@ export function recentConnections(state, ip, limit = 8) {
 }
 
 /**
+ * What the SIEM console says when it has no event to list, so that "nothing yet", "not part of this scenario" and "no run" are never
+ * confused. ``siemEnabled`` is whether the loaded scenario sends events to the SIEM (the baseline scenarios S1 to S7 do not).
+ * @param {{view: 'run' | 'history', loaded: boolean, siemEnabled: boolean | undefined}} input
+ * @returns {{title: string, body: string}}
+ */
+export function siemEmptyState({ view, loaded, siemEnabled }) {
+  if (view === 'history') return { title: 'The SIEM history is empty', body: 'Events are kept here after each run on this server. Run P7 or P9 and they will appear.' }
+  if (!loaded) return { title: 'No run loaded', body: 'Run one of the presentation scenarios P1 to P9, for example P7 (a compromised endpoint) or P9 (an XMAS scan), and the events appear here as they happen.' }
+  if (siemEnabled === false) {
+    return { title: 'SIEM-1 is not part of this scenario', body: 'The baseline scenarios S1 to S7 do not send events to the SIEM, even when IDS-1 or IPS-1 raise alerts. Run one of P1 to P9, for example P7, to see SIEM events.' }
+  }
+  return { title: 'No SIEM event yet', body: 'Nothing has reached SIEM-1 up to the playhead. Press play or move the playhead forward. In P1 and P5 (normal traffic, nothing forbidden) nothing ever does.' }
+}
+
+/**
  * The SIEM events grouped into incidents, newest first.
  * @param {{incident_id: string, node: string, severity: string, t: number, source: string}[]} events
  */

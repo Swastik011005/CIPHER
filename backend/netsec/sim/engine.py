@@ -72,6 +72,8 @@ class RunResult:
     stats: RunStats
     #: Endpoints isolated when the run ended; None when the scenario does not use EDR.
     final_isolated: Optional[tuple[str, ...]] = None
+    #: The campus security features the scenario turned on (zero_trust, edr, siem). The baseline scenarios S1 to S7 turn none on.
+    features: Optional[dict[str, bool]] = None
 
 
 class Engine:
@@ -217,6 +219,7 @@ class Engine:
             events=self.trace.events,
             stats=stats,
             final_isolated=tuple(sorted(n for n in self._edr_endpoints if self._edr.is_isolated(n))) if self._edr is not None else None,
+            features=scenario.features.model_dump(),
         )
 
     def rule_description(self, rule_id: str) -> str:

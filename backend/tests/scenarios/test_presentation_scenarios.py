@@ -153,7 +153,8 @@ def test_p8_recovery_restores_permitted_connectivity(graph) -> None:
     assert after and any(p in delivered for p in after)
     states = [(e["state"], e["cause"]) for e in events(r, "edr.state")]
     assert states == [("isolated", "scenario"), ("healthy", "operator")]
-    assert [e["kind"] for e in events(r, "siem.event")] == ["state", "state"] and r.final_isolated == ()
+    # the SIEM hears about the isolation, about the isolated endpoint being stopped from sending, and about the restore
+    assert [e["kind"] for e in events(r, "siem.event")] == ["state", "send_blocked", "state"] and r.final_isolated == ()
 
 
 def test_p9_siem_receives_the_events_from_the_sensors_that_produced_them(graph) -> None:
@@ -175,7 +176,7 @@ def test_the_siem_never_invents_an_event(graph) -> None:
         r = run(graph, pid, "enforce", scripted_operator=True)
         by_ref: dict[tuple[str, str], dict] = {}
         for e in r.events:
-            ref = e.get("alert_id") or (str(e["pid"]) if "pid" in e else None) or e.get("node")
+            ref = e.get("alert_id") or (str(e["pid"]) if "pid" in e else None) or e.get("node") or (e["incident_id"] if e["type"] == "block.added" else None)
             if ref is not None:
                 by_ref[(e["type"], str(ref))] = e
         for s in events(r, "siem.event"):
@@ -186,7 +187,9 @@ def test_the_siem_never_invents_an_event(graph) -> None:
             if s["source"] in ("FW1", "CORE-SW1"):
                 assert origin["node"] == s["source"] and origin["action"] == "deny"
             if s["source"] == "EDR":
-                assert origin["type"] in ("edr.alert", "edr.state")
+                assert origin["type"] in ("edr.alert", "edr.state", "edr.send_blocked")
+            if s["kind"] == "block":
+                assert s["source"] == "IPS-1" and origin["type"] == "block.added" and origin["src"] == s["src"]
 
 
 def test_baseline_scenarios_emit_no_campus_security_events(graph) -> None:
@@ -209,3 +212,17 @@ def test_a_committed_isolation_applies_to_the_next_run(graph) -> None:
     assert [(e["node"], e["flow"]) for e in events(r, "edr.send_blocked")][:1] == [("PC-1", events(r, "edr.send_blocked")[0]["flow"])]
     assert r.stats.delivered_clean == 0 and r.stats.data_packets == 0
     assert r.config_hash != run_scenario(graph, load_scenario("P1"), security_state=EMPTY_SNAPSHOT).config_hash
+
+
+def test_the_siem_describes_ips_actions_and_hears_about_blocks_and_stopped_sends(graph) -> None:
+    r = run(graph, "P7", "enforce", scripted_operator=True)
+    siem = events(r, "siem.event")
+    actions = [e for e in siem if e["kind"] == "action"]
+    assert actions and all(e["reason"].startswith("D1: ") and "10.0.10.12 to 10.0.30.10:" in e["reason"] for e in actions)  # not just "D1"
+    blocks = [e for e in siem if e["kind"] == "block"]
+    assert len(blocks) == 1 and blocks[0]["source"] == "IPS-1" and blocks[0]["node"] == "PC-2" and "blocked until" in blocks[0]["reason"]
+    stopped = [e for e in siem if e["kind"] == "send_blocked"]
+    assert len(stopped) == 1 and stopped[0]["source"] == "EDR" and stopped[0]["node"] == "PC-2" and stopped[0]["src"] is None
+    assert len({e["incident_id"] for e in siem}) == 1  # still one PC-2 incident
+    monitor = run(graph, "P7", "monitor", scripted_operator=True)
+    assert not [e for e in events(monitor, "siem.event") if e["kind"] == "block"]  # Monitor mode blocks nothing, so the SIEM hears of no block

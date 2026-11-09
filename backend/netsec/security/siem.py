@@ -84,6 +84,15 @@ class SiemCollector:
             "origin_ref": origin_ref,
         }
 
+    @staticmethod
+    def _action_reason(rule: str, action: str, packet: Optional[tuple[str, str, str, Optional[int]]]) -> str:
+        """What the IPS did and to which packet, e.g. ``D1: drop TCP 10.0.10.12 to 10.0.30.10:22`` (not just the rule id)."""
+        verb = action.replace("_", " ")
+        if not packet:
+            return f"{rule}: {verb}"
+        src, dst, proto, dport = packet
+        return f"{rule}: {verb} {proto.upper()} {src} to {dst}{f':{dport}' if dport else ''}"
+
     # -- the trace -----------------------------------------------------------------------
 
     def observe(self, event: dict[str, Any]) -> list[dict[str, Any]]:
@@ -127,7 +136,16 @@ class SiemCollector:
                 severity, action = sev["ips_action_applied"], f"IPS-1 applied {event['action']} (Enforce mode)"
             else:
                 severity, action = sev["ips_action_monitor"], f"IPS-1 would {event['action']} (Monitor mode: recorded, not applied)"
-            return [self._make(t, "IPS-1", "action", severity, affected, packet, f"{event['rule']}", action, kind, str(event["pid"]))]
+            return [self._make(t, "IPS-1", "action", severity, affected, packet, self._action_reason(event["rule"], event["action"], packet), action, kind, str(event["pid"]))]
+
+        if kind == "block.added" and self._forwards("IPS-1", "block"):
+            affected = self._node_of_ip(event["src"]) or event["src"]
+            reason = f"{event['rule']}: source {event['src']} blocked until T+{event['until']:.1f} s"
+            return [self._make(t, "IPS-1", "block", sev["ips_block"], affected, (event["src"], None, None, None), reason, "IPS-1 added the source to its block table (Enforce mode)", kind, event["incident_id"])]
+
+        if kind == "edr.send_blocked" and self._forwards("EDR", "send_blocked"):
+            reason = f"{event['node']} tried to send {event['proto'].upper()} to {event['dst']} and the EDR agent stopped it: the endpoint is isolated"
+            return [self._make(t, "EDR", "send_blocked", sev["edr_send_blocked"], event["node"], None, reason, f"No packet was created by {event['node']}", kind, event["node"])]
 
         if kind == "edr.alert" and self._forwards("EDR", "alert"):
             return [self._make(t, "EDR", "alert", event["severity"], event["node"], None, event["reason"], f"EDR agent on {event['node']} reported {event['state']} to {event['manager']}", kind, event["alert_id"])]

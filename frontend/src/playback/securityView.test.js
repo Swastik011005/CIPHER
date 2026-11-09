@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { applyEvent, initialState } from './reducers.js'
-import { describeOutcome, endpointHealth, recentConnections, siemIncidents } from './securityView.js'
+import { describeOutcome, endpointHealth, recentConnections, siemEmptyState, siemIncidents } from './securityView.js'
 
 const meta = { type: 'run.meta', seq: 0, t: 0, run_id: 'r', scenario_id: 'P7', seed: 1, ips_mode: 'enforce', duration: 10, config_hash: 'h' }
 const created = (seq, pid, src, dst, flow, extra = {}) => ({ type: 'packet.created', seq, t: seq, pid, flow, proto: 'icmp', src, sport: null, dst, dport: null, flags: [], ttl: 64, len: 60, icmp: null, app: null, mirror_of: null, ...extra })
@@ -57,5 +57,24 @@ describe('the reducer folds the campus security events', () => {
     expect(endpointHealth('PC-2', state, false)).toBe('isolated')
     expect(endpointHealth('PC-1', state, false)).toBe('healthy')
     expect(endpointHealth('PC-1', null, true)).toBe('isolated')
+  })
+})
+
+describe('the SIEM console empty states', () => {
+  it('tells "no run", "not part of this scenario" and "nothing yet" apart', () => {
+    expect(siemEmptyState({ view: 'run', loaded: false, siemEnabled: undefined }).title).toBe('No run loaded')
+    const baseline = siemEmptyState({ view: 'run', loaded: true, siemEnabled: false })
+    expect(baseline.title).toBe('SIEM-1 is not part of this scenario')
+    expect(baseline.body).toMatch(/S1 to S7/)
+    expect(siemEmptyState({ view: 'run', loaded: true, siemEnabled: true }).title).toBe('No SIEM event yet')
+    expect(siemEmptyState({ view: 'run', loaded: true, siemEnabled: undefined }).title).toBe('No SIEM event yet') // an older server that does not say
+  })
+
+  it('names the presentation scenarios P7 and P9, never the ambiguous "scenario 7 or 9"', () => {
+    for (const state of [{ loaded: false }, { loaded: true, siemEnabled: false }, { loaded: true, siemEnabled: true }]) {
+      expect(siemEmptyState({ view: 'run', ...state }).body).not.toMatch(/scenario 7 or 9/)
+    }
+    expect(siemEmptyState({ view: 'run', loaded: false }).body).toMatch(/P7/)
+    expect(siemEmptyState({ view: 'history', loaded: true }).title).toBe('The SIEM history is empty')
   })
 })

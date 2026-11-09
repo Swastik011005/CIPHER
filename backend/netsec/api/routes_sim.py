@@ -79,6 +79,7 @@ def run(body: RunRequest, request: Request) -> dict[str, Any]:
         "rules_customised": state.rules.customised,
         "summary": result.stats.model_dump(),
         "final_isolated": list(result.final_isolated) if result.final_isolated is not None else None,
+        "features": result.features,
         "events": result.events,
     }
 
