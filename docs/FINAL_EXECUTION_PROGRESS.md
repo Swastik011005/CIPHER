@@ -69,7 +69,7 @@ What existed (verified in the code, not assumed):
 - [x] Stage 4 endpoint panel (Overview/CLI/Security) and endpoint CLI API
 - [x] Stage 4b read-only device CLI for R1-EDGE, CORE-SW1, FW1
 - [x] Stage 5 expanded campus (layout, roads, racks, decoration, larger devices)
-- [x] Stage 6 performance measured; High idle overview on an integrated GPU is 27 fps (below target), Low is 44-55 fps
+- [x] Stage 6 performance measured; High idle overview on an integrated GPU is 28 fps (below target), Low is 60 fps
 - [ ] Stage 7 UI polish (not done)
 - [x] Stage 8 verify, interaction (70/70), demonstration (35/35) and split-check (20/20 + 34/34); offline recovery not re-run
 - [x] Stage 9 technical report: docs/NETSEC_3D_FINAL_TECHNICAL_REPORT.md and .pdf (PDF layout not visually inspected)
