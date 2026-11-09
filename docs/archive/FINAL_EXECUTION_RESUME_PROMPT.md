@@ -9,4 +9,4 @@ Everything in the master prompt and the later design revisions is done and commi
 4. The device models are procedural and simpler than the reference.
 
 Last verified state: backend 1210, scenario checks 93/93, frontend 367, interaction 70/70, demonstration 39/39, split-check 20/20 and 34/34, offline recovery 8/8.
-See `docs/FINAL_EXECUTION_PROGRESS.md` and `docs/CIPHER_FINAL_TECHNICAL_REPORT.md`.
+See `docs/archive/FINAL_EXECUTION_PROGRESS.md` and `docs/CIPHER_FINAL_TECHNICAL_REPORT.md`.

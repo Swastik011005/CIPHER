@@ -15,7 +15,7 @@ const shot = (p) => path.join(REPO, p)
 const OUT = path.join(__dirname, 'CIPHER-final-presentation.pptx')
 
 // Executed results (see docs/STAGE7_PROGRESS.md). Update these only from a real run of scripts\verify.cmd.
-const RESULTS = { backendTests: '937', frontendTests: '277', checks: '93/93', rehearsal: '34/34', offline: '8/8' }
+const RESULTS = { backendTests: '1214', frontendTests: '369', checks: '93/93', rehearsal: '39/39', offline: '8/8' }
 
 const C = {
   bg: '060D1F', panel: '0C1A36', panel2: '11234A', line: '27406E',
@@ -79,7 +79,7 @@ const picture = (slide, p, x, y, w, h, alt) => {
     ]),
     { x: 0.5, y: 2.8, w: 4.6, h: 2.35, fontSize: 14 },
   )
-  picture(s, 'docs/demo/01-overview.png', 5.35, 0.65, 4.15, 2.6, 'Overview page of the app')
+  picture(s, 'docs/screenshots/cipher/cipher-home.png', 5.35, 0.65, 4.15, 2.64, 'Overview page of the app')
   card(s, 5.35, 3.45, 4.15, 1.45, 'scope card')
   text(s, 'Our answer', { x: 5.55, y: 3.55, w: 3.8, h: 0.3, fontSize: 16, bold: true, color: C.cyan })
   text(s, 'A 3D simulation of one campus network that shows who detects, who prevents, and why. Synthetic traffic only: nothing real is captured or blocked.', {
@@ -159,7 +159,7 @@ const picture = (slide, p, x, y, w, h, alt) => {
 {
   const s = pres.addSlide({ masterName: 'CONTENT' })
   title(s, 'Four VLANs, seven subnets, one campus', 'Network topology')
-  picture(s, 'docs/screenshots/1920x1080-simulation-overview.png', 0.5, 1.35, 5.3, 2.98, 'The 3D campus in the Simulation page')
+  picture(s, 'docs/screenshots/cipher/cipher-overview.png', 0.5, 1.35, 5.3, 2.76, 'The 3D campus in the Simulation page')
   const head = (t) => ({ text: t, options: { bold: true, color: C.cyan, fill: { color: C.panel2 }, fontSize: 12, fontFace: FONT } })
   const cell = (t, o = {}) => ({ text: t, options: { color: C.text, fontSize: 12, fontFace: FONT, fill: { color: C.panel }, ...o } })
   s.addTable(
@@ -176,7 +176,7 @@ const picture = (slide, p, x, y, w, h, alt) => {
   text(
     s,
     bullets([
-      '17 nodes (16 devices + Internet), 18 links, 7 zones',
+      '30 devices + the Internet segment, 32 links, 7 zones',
       'Static routes; TTL 64 becomes 63 at CORE-SW1',
     ]),
     { x: 6.05, y: 3.4, w: 3.45, h: 0.95, fontSize: 12, color: C.muted },
@@ -200,7 +200,7 @@ const picture = (slide, p, x, y, w, h, alt) => {
   title(s, 'Plain, testable technologies', 'Technologies')
   const cols = [
     ['Backend: the engine', C.cyan, ['Python 3.13', 'FastAPI 0.162 + Uvicorn 0.54', 'Pydantic 2.14 (validation)', 'Scapy 2.8 (packet codec in tests)', 'pytest 9.2 + httpx']],
-    ['Frontend: the replay', C.accent, ['React 19 + Vite 8', 'Three.js 0.187 with react-three-fiber', 'Zustand (one shared store)', 'Vitest 5 (277 tests)', 'Fonts bundled: works offline']],
+    ['Frontend: the replay', C.accent, ['React 19 + Vite 8', 'Three.js 0.187 with react-three-fiber', 'Zustand (one shared store)', 'Vitest 5 (369 tests)', 'Fonts bundled: works offline']],
     ['Tooling', C.violet, ['Windows .cmd scripts: setup, run, verify', 'Chrome DevTools scripts for the rehearsal', 'Git: tracks per area, tagged milestones', 'Not used: WebSocket, database, machine learning']],
   ]
   cols.forEach(([h, col, list], i) => {
@@ -278,11 +278,11 @@ const picture = (slide, p, x, y, w, h, alt) => {
     ],
     { x: 0.5, y: 1.35, w: 5.75, colW: [1.3, 2.35, 2.1], rowH: 0.5, border: { type: 'solid', pt: 0.5, color: C.line }, margin: [0.04, 0.08, 0.04, 0.08], objectName: 'scenario table' },
   )
-  picture(s, 'docs/demo/04-s2-enforce-blocked.png', 6.5, 1.35, 3.0, 1.88, 'S2 in Enforce mode: PC-2 blocked at IPS-1')
-  text(s, 'S2, Enforce: PC-2 blocked at IPS-1, 23 dropped so far.', { x: 6.5, y: 3.3, w: 3.0, h: 0.5, fontSize: 11, color: C.muted })
+  picture(s, 'docs/screenshots/cipher/cipher-overview.png', 6.5, 1.35, 3.0, 1.56, 'A compromised PC-2 isolated and its packets dropped at IPS-1')
+  text(s, 'Compromised PC-2 blocked: its packets are dropped at IPS-1.', { x: 6.5, y: 2.98, w: 3.0, h: 0.5, fontSize: 11, color: C.muted })
   card(s, 6.5, 3.95, 3.0, 1.0, 'custom traffic card', C.panel2)
   text(s, 'Custom traffic', { x: 6.65, y: 4.02, w: 2.7, h: 0.28, fontSize: 13, bold: true, color: C.accent })
-  text(s, 'Inject your own packet at the playhead; the engine re-simulates.', { x: 6.65, y: 4.32, w: 2.7, h: 0.6, fontSize: 11, color: C.muted })
+  text(s, 'Inject your own packet at the playhead; the engine re-simulates. Nine more presentation scenarios, P1 to P9, cover Zero Trust, EDR and SIEM.', { x: 6.65, y: 4.3, w: 2.7, h: 0.65, fontSize: 10, color: C.muted })
   s.addNotes(
     'These are the exact outcomes with the shipped rules; the demo checks them. S2 shows Monitor against Enforce with identical traffic: the traces are the same until the HIGH alert, then in Enforce 24 packets are dropped and PC-2 is blocked for 20 seconds. S3 shows defence in depth: two ACL denials, one firewall drop that no sensor sees, and an IPS reject for the admin PC. S4 shows the token-bucket rate limit and then a block, while the legitimate outside user keeps getting through. Custom traffic lets the audience try their own packet.',
   )
@@ -308,13 +308,13 @@ const picture = (slide, p, x, y, w, h, alt) => {
   s.addChart(
     pres.charts.BAR,
     [
-      { name: 'Low quality', labels: ['1350x673', '1424x805', '1904x985'], values: [59.3, 59.2, 31.1] },
-      { name: 'High quality', labels: ['1350x673', '1424x805', '1904x985'], values: [31.3, 27.2, 15.2] },
+      { name: 'Low quality', labels: ['Idle overview', 'Staff close-up', 'Scenario P7', 'S4 flood peak'], values: [60.2, 60, 60.2, 59.9] },
+      { name: 'High quality', labels: ['Idle overview', 'Staff close-up', 'Scenario P7', 'S4 flood peak'], values: [26.4, 33, 32.2, 32.6] },
     ],
     {
       x: 0.5, y: 2.7, w: 5.2, h: 2.4, barDir: 'col', barGrouping: 'clustered',
       chartColors: [C.accent, C.warn], showLegend: true, legendPos: 'b', legendColor: C.muted, legendFontSize: 11, legendFontFace: FONT,
-      showTitle: true, title: 'Frames per second at the S4 peak (Intel UHD GPU)', titleColor: C.text, titleFontSize: 12, titleFontFace: FONT,
+      showTitle: true, title: 'Frames per second at 1904x985 (Intel UHD GPU)', titleColor: C.text, titleFontSize: 12, titleFontFace: FONT,
       showValue: true, dataLabelColor: C.text, dataLabelFontSize: 10, dataLabelFontFace: FONT, dataLabelPosition: 'outEnd',
       catAxisLabelColor: C.muted, catAxisLabelFontSize: 10, catAxisLabelFontFace: FONT,
       valAxisLabelColor: C.muted, valAxisLabelFontSize: 10, valAxisLabelFontFace: FONT, valAxisMaxVal: 70, valAxisMinVal: 0,
@@ -327,13 +327,14 @@ const picture = (slide, p, x, y, w, h, alt) => {
     s,
     bullets([
       'The 55 fps target on the RTX 4050 is not verified. Chrome used the Intel GPU.',
+      'High quality idle overview: 26 fps, below the 30 fps target.',
       'Clean install: 9.4 min on one laptop. The second laptop was not tested.',
       'No real network, no real IDS/IPS product.',
     ], {}),
     { x: 6.15, y: 3.15, w: 3.2, h: 1.9, fontSize: 12 },
   )
   s.addNotes(
-    'Everything here was executed, not assumed. Backend and frontend test suites, the 93 scenario checks across 12 runs, a 34-check rehearsal of the whole demo in a real Chrome window, and an 8-check test that kills the backend while the page is open and checks it recovers. Frame rates were measured on the laptop Intel integrated GPU at the heaviest moment of S4; the Low preset reaches the 30 fps target at all three window sizes. Be explicit about what was not measured: the 55 fps RTX 4050 target is not verified, because Chrome rendered on the Intel GPU; the second laptop was not available; and nothing was tested on a real network.',
+    'Everything here was executed, not assumed. Backend and frontend test suites, the 93 scenario checks across 12 runs, a 39-check demonstration of the scenarios in a real Chrome window, and an 8-check test that kills the backend while the page is open and checks it recovers. Frame rates were measured on the laptop Intel integrated GPU; the Low preset holds 60 fps in every case, and the High preset is 26 to 33 fps. Be explicit about what was not measured: the 55 fps RTX 4050 target is not verified, because Chrome rendered on the Intel GPU; the second laptop was not available; and nothing was tested on a real network.',
   )
 }
 

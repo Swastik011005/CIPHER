@@ -183,11 +183,11 @@ Latest verified results on the development machine (Windows 11, integrated Intel
 
 | Check | Result |
 |---|---|
-| Backend tests (pytest) | 1210 passed |
+| Backend tests (pytest) | 1214 passed |
 | Scenario checks (S1 to S7 across the shipped rules, 12 runs) | 93 of 93 passed |
-| Frontend tests (Vitest, 31 files) | 367 passed |
+| Frontend tests (Vitest, 31 files) | 369 passed |
 | Production build (Vite) | succeeds |
-| Browser checks in real Chrome (Chrome DevTools Protocol) | demonstration 39 of 39, offline recovery 8 of 8, middle-button pan 13 of 13, interactions 70 of 70, split-origin 20 of 20 and 34 of 34 |
+| Browser checks in real Chrome (Chrome DevTools Protocol) | demonstration 39 of 39, offline recovery 8 of 8, middle-button pan 13 of 13, interactions 69 of 70 (DNS-SRV could not be hovered by the automated pointer; open), split-origin 20 of 20 and 34 of 34 |
 
 The browser checks are run with `node scripts/check_*.mjs`. The complete record, including what was **not** verified, is in
 [docs/CIPHER_FINAL_TECHNICAL_REPORT.md](docs/CIPHER_FINAL_TECHNICAL_REPORT.md) (section 18) and

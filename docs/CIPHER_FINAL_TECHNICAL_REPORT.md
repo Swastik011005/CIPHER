@@ -10,7 +10,7 @@
 ## 1. Executive summary
 CIPHER is a teaching and demonstration application. A Python backend runs a deterministic discrete-event simulation of a campus network (30 devices plus an abstract Internet segment, 32 links, 4 VLANs, 7 IP subnets) and returns a time-stamped trace. A React and Three.js front end replays that trace as a 3D campus with moving packets, device panels, a SIEM console and an endpoint CLI. The backend decides what happens to every packet; the front end only draws it.
 
-The project demonstrates five security capabilities (IDS, IPS, Zero Trust, SIEM, EDR) through nine presentation scenarios (P1 to P9) plus the original seven scenarios (S1 to S7). The last full verification passed: 1210 backend tests, 93 of 93 scenario checks across 12 runs, 363 frontend tests, a production build, 70 of 70 browser interaction checks, 39 of 39 browser demonstration checks, the split-origin checks (20 of 20 and 34 of 34) and the offline recovery check (8 of 8).
+The project demonstrates five security capabilities (IDS, IPS, Zero Trust, SIEM, EDR) through nine presentation scenarios (P1 to P9) plus the original seven scenarios (S1 to S7). The last full verification: 1214 backend tests, 93 of 93 scenario checks across 12 runs, 369 frontend tests, a production build, 69 of 70 browser interaction checks (the automated pointer could not hover one device, DNS-SRV; not yet investigated), 39 of 39 browser demonstration checks, the split-origin checks (20 of 20 and 34 of 34) and the offline recovery check (8 of 8).
 
 **Known weakness:** on the integrated Intel UHD GPU used for testing, High quality runs at 26 to 33 fps (the idle overview, at 26 fps, is below the 30 fps target); Low quality runs at 60 fps (section 19).
 
@@ -118,11 +118,11 @@ Last full run on the final build:
 
 | Check | Result |
 |---|---|
-| Backend tests (pytest) | 1210 passed |
+| Backend tests (pytest) | 1214 passed |
 | Scenario checks S1 to S7 (shipped rules) | 12 of 12 runs, 93 of 93 checks |
-| Frontend tests (Vitest) | 31 files, 367 tests passed |
+| Frontend tests (Vitest) | 31 files, 369 tests passed |
 | Production build | succeeded |
-| Browser interaction check (`scripts/check_interactions.mjs`) | 70 of 70 |
+| Browser interaction check (`scripts/check_interactions.mjs`) | 69 of 70 (DNS-SRV could not be hovered by the automated pointer; not yet investigated) |
 | Browser demonstration check (`scripts/check_demo_scenarios.mjs`) | 39 of 39 (including the progressive ping output, the sequential requests and Stop) |
 | Split-origin check (`python scripts/tasks.py split-check`) | 20 of 20 checks, and the 34-step demo rehearsal 34 of 34, with the API on another origin (local only; nothing was run on Render) |
 | Offline recovery check (`scripts/check_offline_recovery.mjs`) | 8 of 8: the backend alone serves the app, "Engine offline" shows within 15 s, the loaded run is kept and scrubbable offline, the page recovers by itself, a new run works, and no request leaves 127.0.0.1 |
@@ -167,7 +167,7 @@ Listed in `docs/LIMITATIONS.md`. Principally: simulated traffic only, simplified
 
 ## 24. How to run
 ```
-cd C:\dev\NetSec-3D
+cd <the CIPHER repository folder>
 python scripts/tasks.py setup
 python scripts/tasks.py demo        # builds and serves everything on one port
 python scripts/tasks.py verify      # all automated checks

@@ -170,7 +170,11 @@ Counters and charts for the run you are playing, up to the timeline position. Wi
 - **Four counters:** Incidents, Alerts, Active blocks (sources IPS-1 is blocking now) and Packets blocked.
 - **IDS-1 and IPS-1 cards:** reminds you what each can do (IDS: alerts only; IPS: can block) and how each is connected.
 - **Detections so far:** a table of alerts: time, sensor (IDS-1 or IPS-1), severity (LOW/MEDIUM/HIGH), rule (D1 to D6), source, target, evidence and incident. Blocks show as chips with a countdown.
-- **SIEM-1 event console:** *Incidents* (click one to filter), the *Event timeline*, and a detail view when you click an event (source component, time, device, reason, response, incident and which event of the trace it came from). **This run** shows the current run; **History** shows events from every run on this server.
+- **SIEM-1 event console:** *Incidents* (click one to filter), the *Event timeline*, and a detail view when you click an event (source component, time, device, reason, response, incident and which event of the trace it came from). **This run** shows the current run, up to the playhead; **History** shows the latest version of every run on this server (running the same scenario again replaces its events instead of adding them twice).
+  - The SIEM is part of the presentation scenarios **P1 to P9** only. In **S1 to S7** the console says *SIEM-1 is not part of this scenario*, even when IDS-1 and IPS-1 raise alerts. In P1 and P5 (normal traffic, nothing forbidden) nothing reaches the SIEM, so *No SIEM event yet* is correct.
+  - Best scenarios to see it: **P7** (EDR alert, IDS-1 and IPS-1 detections, IPS-1 block, operator isolation, and EDR stopping the isolated PC-2 from sending, all in one PC-2 incident), **P9** (an XMAS scan seen by both sensors), **P2/P3/P4** (a CORE-SW1 denial plus an IDS-1 alert) and **P6** (a FW1 denial). **P8** shows the isolation and the restore.
+  - Zero Trust events appear only when a decision is a denial or a restriction. Select ADMIN-PC → Security, set **Device trust** to *Untrusted* (or demote the user's role), then run **P4**.
+  - A command typed in an endpoint terminal that gets denied (for example `ping 10.0.99.21` from PC-1) also sends events to the SIEM.
 
 ### 4.5 Rules
 Four tabs. Changes apply to the **next** run (not the one playing). A chip **custom rules** marks runs that used your changes; **Reset to shipped** restores everything. On a shared server the page is read-only; run CIPHER on your own computer to edit.

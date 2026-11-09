@@ -139,7 +139,7 @@ All pages derive counters from the same trace up to the playhead with one shared
 
 ## G. Testing
 **Q. How did you test it?**
-Backend pytest (1210 tests: topology, routing, policy, each detector's thresholds, scenarios across seeds, determinism and prefix stability, API contracts, rules validation), frontend Vitest (367 tests: player seeking equals sequential replay, counters equal the backend's statistics, panels, rules editor), the 93 scenario checks, a production build, plus a real-Chrome rehearsal of the demo (34 checks) and an offline-recovery test (8 checks). `scripts\verify.cmd` runs the first four in one command.
+Backend pytest (1214 tests: topology, routing, policy, each detector's thresholds, scenarios across seeds, determinism and prefix stability, API contracts, rules validation), frontend Vitest (367 tests: player seeking equals sequential replay, counters equal the backend's statistics, panels, rules editor), the 93 scenario checks, a production build, plus a real-Chrome rehearsal of the demo (34 checks) and an offline-recovery test (8 checks). `scripts\verify.cmd` runs the first four in one command.
 
 **Q. What did the testing find?**
 For example, the offline test found that stopping the backend replaced the scenario list with an error and left the page unusable; fixed so the loaded run and the scenario list stay visible while the engine is offline.
