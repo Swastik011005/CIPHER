@@ -11,7 +11,7 @@ from netsec.traffic.scenarios import list_scenarios
 
 router = APIRouter(tags=["health"])
 
-SERVICE_NAME = "netsec-ids-engine"
+SERVICE_NAME = "cipher-engine"
 STAGE = 7
 
 

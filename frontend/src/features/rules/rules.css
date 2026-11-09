@@ -217,6 +217,10 @@ fieldset.field {
   z-index: 5;
 }
 
+.apply-bar--static {
+  position: static;
+}
+
 .apply-hint {
   margin: 16px 0 0;
   font-size: 13px;

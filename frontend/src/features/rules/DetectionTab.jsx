@@ -140,21 +140,26 @@ export function DetectionTab({ rules, busy, onApply, readOnly = false }) {
           ))}
         </div>
       </fieldset>
-      {/* The floating Apply bar appears only when there is something to apply or to fix; otherwise a quiet line in the page flow, so nothing is covered. */}
-      {readOnly || (count === 0 && !blocked) ? (
+      {/* Nothing to apply: a quiet line in the page flow, so nothing is covered. Unsaved or invalid edits get the floating Apply bar. A read-only server
+          (a hosted deployment) keeps the Apply and Discard buttons, disabled, beside the explanation, but not floating. */}
+      {!readOnly && count === 0 && !blocked ? (
         <p className="apply-hint muted" role="status">
-          {readOnly ? 'Read-only: these settings are shown but cannot be changed on this server.' : 'No unsaved changes. Edits apply to the next run.'}
+          No unsaved changes. Edits apply to the next run.
         </p>
       ) : (
-        <div className="apply-bar glass" role="region" aria-label="Pending detector changes" data-pending={count > 0}>
+        <div className={`apply-bar glass${readOnly ? ' apply-bar--static' : ''}`} role="region" aria-label="Pending detector changes" data-pending={count > 0 && !readOnly}>
           <span>
-            {blocked ? `${Object.keys(errors).length} value${Object.keys(errors).length === 1 ? '' : 's'} to fix before applying` : `${count} unsaved change${count === 1 ? '' : 's'}`}
+            {readOnly
+              ? 'Read-only: these settings are shown but cannot be changed on this server.'
+              : blocked
+                ? `${Object.keys(errors).length} value${Object.keys(errors).length === 1 ? '' : 's'} to fix before applying`
+                : `${count} unsaved change${count === 1 ? '' : 's'}`}
           </span>
           <span className="apply-bar__buttons">
-            <Button size="small" variant="ghost" onClick={() => setDraft(initialDraft(rules.detectors))}>
+            <Button size="small" variant="ghost" disabled={readOnly} onClick={() => setDraft(initialDraft(rules.detectors))}>
               Discard
             </Button>
-            <Button variant="primary" size="small" disabled={count === 0 || blocked || busy} onClick={() => onApply(changes)}>
+            <Button variant="primary" size="small" disabled={readOnly || count === 0 || blocked || busy} onClick={() => onApply(changes)}>
               Apply
             </Button>
           </span>

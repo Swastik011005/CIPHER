@@ -31,7 +31,7 @@ export function RulesScenarios() {
   return (
     <div className="page rules-page">
       <div className="rules-head">
-        <Segmented label="Rules sections" value={tab} onChange={setTab} options={TABS} />
+        <Segmented label="Rules sections" value={tab} onChange={(next) => { setTab(next); rules.clearFeedback() }} options={TABS} />
         {rules.rules && (
           <div className="rules-status" data-customised={status.customised}>
             <Chip tone={status.customised ? 'warn' : 'ok'}>{status.customised ? 'Custom rules' : 'Shipped rules'}</Chip>

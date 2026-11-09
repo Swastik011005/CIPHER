@@ -99,7 +99,7 @@ export function CliTerminal({ node }) {
           spellCheck={false}
           autoComplete="off"
           autoCapitalize="off"
-          placeholder={online ? (device ? 'e.g. show access-lists' : 'type a command, e.g. ping 10.0.30.10') : 'engine offline'}
+          placeholder={online ? (device ? 'e.g. show access-lists' : 'e.g. ping APP-SRV') : 'engine offline'}
         />
       </form>
       <div className="cli__tools">

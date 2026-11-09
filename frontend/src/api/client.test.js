@@ -14,7 +14,7 @@ function fakeFetch(respond) {
 
 const json = (body, status = 200) => new Response(JSON.stringify(body), { status })
 
-const HEALTH = { status: 'ok', service: 'netsec-ids-engine', topology: { loaded: true } }
+const HEALTH = { status: 'ok', service: 'cipher-engine', topology: { loaded: true } }
 const TOPOLOGY = {
   nodes: [], links: [], zones: [], vlans: [], subnets: [], summary: {}, validation: { passed: true },
 }
