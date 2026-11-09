@@ -1,11 +1,11 @@
 /**
- * Campus infrastructure that is only there to make the campus look inhabited: car parks, an entrance gate and guard booth, covered
+ * Campus infrastructure that is only there to make the campus look inhabited: car parks (empty bays: the traffic in the scene is network traffic, not vehicles), an entrance gate and guard booth, covered
  * walkways along the roads, networking cabinets, empty server cabinets in the data centre and a security monitoring wall and
  * stations in the operations centre. Pure data and rules, no three.js, so the placement is cheap to test.
  *
  * It is decoration, like the rest of the campus layer: it adds no topology node, no link and no cable, and it never stands on a
  * platform, a road, another piece of decoration or a cable (the tests check each of those). Everything repeated is drawn from
- * shared geometry: merged meshes for the static parts and one instanced mesh for the cars.
+ * shared geometry: merged meshes for the static parts and merged meshes.
  */
 import { PLATES } from '../layout.js'
 import { PLATFORM_TOP, allPlatforms, cableSegments, roadRects } from './campusLayout.js'
@@ -22,7 +22,6 @@ export const PARKING = Object.freeze([
 const BAY_WIDTH = 2.6
 const BAY_DEPTH = 5.2
 const AISLE_MARGIN = 0.5
-const CAR_COLOURS = Object.freeze(['#dfe6f2', '#2b3a57', '#7e93b8', '#c9d3e3', '#3f6fa8', '#8d99ad'])
 
 /**
  * Every parking bay of a lot, as {x, z, w, d, row, index}: `w` across the bay, `d` along it. Bays are laid out from the lot's corner.
@@ -43,19 +42,6 @@ export function parkingBays(lot) {
     }
   }
   return bays
-}
-
-/** The cars: roughly four bays in five are taken, by a fixed pattern (never random, so the scene is the same every time). */
-export function parkedCars() {
-  const cars = []
-  for (const lot of PARKING) {
-    for (const bay of parkingBays(lot)) {
-      if ((bay.index * 7 + bay.row * 3 + lot.seed) % 5 >= 4) continue
-      const yaw = (bay.rotated ? Math.PI / 2 : 0) + (bay.row === 1 ? Math.PI : 0)
-      cars.push({ x: bay.x, z: bay.z, yaw, colour: CAR_COLOURS[(bay.index * 3 + bay.row + lot.seed) % CAR_COLOURS.length] })
-    }
-  }
-  return cars
 }
 
 /** The campus entrance: a gate arch over the west end of the main avenue, with a barrier arm and a glass guard booth. */

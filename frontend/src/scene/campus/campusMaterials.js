@@ -57,5 +57,3 @@ campusMaterials.blob = new THREE.MeshBasicMaterial({ map: blobTexture(), transpa
 campusMaterials.marking = new THREE.MeshBasicMaterial({ color: new THREE.Color('#eef3fb').multiplyScalar(0.85), toneMapped: false })
 /** Monitor wall and station screens: a cool blue glow below the bloom threshold. */
 campusMaterials.screen = new THREE.MeshBasicMaterial({ color: new THREE.Color('#5aa9ff').multiplyScalar(0.9), toneMapped: false })
-/** The parked cars (colour per instance). */
-export const carMaterial = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.5, metalness: 0.25 })

@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { NODE_LAYOUT, PLATES } from '../layout.js'
 import { loadBackendTopology } from '../testSupport.js'
 import {
-  CABINETS, ENTRANCE, PARKING, SERVER_CABINETS, SOC_STATIONS, SOC_WALL, WALKWAYS, decorFootprints, overlapsRect, parkedCars, parkingBays, roadRects, walkwayPosts,
+  CABINETS, ENTRANCE, PARKING, SERVER_CABINETS, SOC_STATIONS, SOC_WALL, WALKWAYS, decorFootprints, overlapsRect, parkingBays, roadRects, walkwayPosts,
 } from './campusDecor.js'
 import { STRUCTURES, allPlatforms, cableSegments, deviceRect } from './campusLayout.js'
 
@@ -70,11 +70,7 @@ describe('campus decoration is visual only and stays out of the way', () => {
     for (const w of WALKWAYS) expect(onPlate(w.rect, 0.1), w.id).toBe(true)
   })
 
-  it('fills the car parks with a fixed pattern of cars, every one inside its lot', () => {
-    const cars = parkedCars()
-    expect(cars.length).toBeGreaterThanOrEqual(15)
-    expect(parkedCars()).toEqual(cars)
-    for (const c of cars) expect(PARKING.some((l) => c.x >= l.rect.x0 && c.x <= l.rect.x1 && c.z >= l.rect.z0 && c.z <= l.rect.z1), `car at ${c.x},${c.z}`).toBe(true)
+  it('lays out marked bays in every car park, inside its lot, with no vehicles drawn', () => {
     for (const lot of PARKING) {
       const bays = parkingBays(lot)
       expect(bays.length).toBeGreaterThanOrEqual(6)

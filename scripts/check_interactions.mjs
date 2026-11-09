@@ -123,6 +123,8 @@ try {
   await browser.navigate(`${base}/simulation?debug=1`)
   await waitFor(() => ev('window.__netsecStore && window.__netsecStore.getState().topology.status === "ready" && window.__netsecScene && window.__netsecScene.meshes > 100 && !!window.__netsecProbe'), 'the scene', 60000)
   await ev('window.__netsecStore.setState({ autoLowered: true }); window.__netsecStore.getState().setSetting("quality", "high")')
+  // a slow test GPU can raise the auto-quality banner over the scene; it is not under test here, so keep it from covering devices
+  await ev(`(() => { const e = document.createElement('style'); e.textContent = '.viewport__bottom-banner{display:none !important}'; document.head.appendChild(e) })()`)
   await sleep(1500)
   const topology = await st('topology.data')
   const nodes = topology.nodes
@@ -188,15 +190,20 @@ try {
 
     // -- zone and device selections do not conflict
     await ev('window.__netsecStore.getState().clearEverything()')
+    // the device pointer positions are found first (from the fixed per-device view), then the zone is selected and the same views are restored
+    const pc1 = await pointFor('PC-1')
+    const adminPc0 = await pointFor('ADMIN-PC')
     await view(...zoneCentre('staff'))
     const staff = await findZoneFloor('staff')
     await click(staff.x, staff.y)
     await sleep(1800) // the zone selection animates the camera; let it finish before moving the view
-    const pc1 = await pointFor('PC-1')
+    await nodeView('PC-1')
+    await sleep(500)
     await click(pc1.x, pc1.y)
     check('selecting a device keeps the selected zone', (await st('selection.selectedId')) === 'PC-1' && (await st('zone.selectedId')) === 'staff')
-    const adminPc = await pointFor('ADMIN-PC')
-    await click(adminPc.x, adminPc.y)
+    await nodeView('ADMIN-PC')
+    await sleep(500)
+    await click(adminPc0.x, adminPc0.y)
     check('selecting a device in another zone keeps the zone', (await st('selection.selectedId')) === 'ADMIN-PC' && (await st('zone.selectedId')) === 'staff')
     await shot(`zone-and-device${q}`)
 
