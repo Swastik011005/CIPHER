@@ -49,29 +49,41 @@ What existed (verified in the code, not assumed):
   (`scene/devices/bakeStatic.js`), far-zoom endpoint label hiding. The 31-device scene: 272 draw calls and 73k triangles
   (first expanded build: 355 draw calls, 213k triangles; the 17-device scene before: 202 draw calls, 80k triangles).
 
+- Device CLI: read-only `show` commands for R1-EDGE, CORE-SW1 and FW1 (`backend/netsec/cli/device.py`, tests in `backend/tests/security/test_device_cli.py`).
+- Visual proportions: devices drawn 1.5x (`DEVICE_SCALE` in `scene/devices/specs.js`), taller pavilions, a reception pavilion, empty
+  car parks with marked bays (the parked cars were removed on request), an entrance arch and guard booth, glass-roofed walkways, networking
+  cabinets, server cabinets, a SOC monitoring wall and stations (`scene/campus/campusDecor.js`; decoration only: no node, link or cable).
+  The overview camera frames the campus (`target [14,0,10]`, distance 160). The Internet cloud sits west of the two external hosts so its
+  pick box no longer hides EXT-USR.
+- Full verification on the final build (`python scripts/tasks.py verify`): 1176 backend tests, 12/12 scenario runs and 93/93 checks, 349 frontend
+  tests, production build. Browser checks: interactions 70/70, demonstration 35/35.
+- Frame rate (`scripts/measure_matrix.mjs`, `docs/perf/final-matrix.json`; Intel UHD Graphics, 276-287 draw calls, 76-78k triangles):
+  High: idle overview 27.3 fps, staff close-up 31.4, scenario 7 (traffic, scan, EDR) 33.3, S4 flood peak 34.7.
+  Low: 54.4, 54.9, 55.3 and 43.7 fps. The High idle overview is below the 30 fps target on this integrated GPU; the app switches to Low
+  automatically when the frame rate stays low, and tells the user. No console errors.
+
 ## Checklist
 - [x] Stage 1 audit
 - [x] Stage 2 security engine
 - [x] Stage 3 nine scenarios P1-P9 and their tests
 - [x] Stage 4 endpoint panel (Overview/CLI/Security) and endpoint CLI API
-- [ ] Stage 4b read-only device CLI for R1-EDGE, CORE-SW1, FW1 (priority 3, only if time)
-- [x] Stage 5 expanded campus (layout, roads, racks)
-- [ ] Stage 5b visual review of every camera preset and fixes
-- [ ] Stage 6 performance: measure High/Low x idle/scenario/packets with `scripts/measure_fps.mjs`, record, optimise further if below 30 fps
-- [ ] Stage 7 UI polish
-- [ ] Stage 8 full validation: backend, frontend, scenarios 93/93 + P1-P9, split-check, offline recovery, interaction checks (70), demo check (32)
-- [ ] Stage 9 technical report (Markdown + PDF)
+- [x] Stage 4b read-only device CLI for R1-EDGE, CORE-SW1, FW1
+- [x] Stage 5 expanded campus (layout, roads, racks, decoration, larger devices)
+- [x] Stage 6 performance measured; High idle overview on an integrated GPU is 27 fps (below target), Low is 44-55 fps
+- [ ] Stage 7 UI polish (not done)
+- [x] Stage 8 verify, interaction and demonstration checks (split-check and offline recovery: see the final summary)
+- [ ] Stage 9 technical report (Markdown + PDF): not written yet
 - [ ] Stage 10 final delivery
 
 ## Exact next action
-Run the full verification (`python scripts/tasks.py verify`), measure performance, review the presets visually, then write the report.
+Write `docs/NETSEC_3D_FINAL_TECHNICAL_REPORT.md` and its PDF. See `docs/FINAL_EXECUTION_RESUME_PROMPT.md`.
 
 ## Exact commands to continue
 ```
 cd C:\dev\NetSec-3D
 python scripts/tasks.py verify
-set NETSEC_PORT=8071 && backend\.venv\Scripts\python.exe backend\app.py        (serves the built frontend/dist)
+python scripts/tasks.py split-check
 node scripts/check_demo_scenarios.mjs --base http://127.0.0.1:8071
 node scripts/check_interactions.mjs --base http://127.0.0.1:8071
-node scripts/measure_fps.mjs --url "http://127.0.0.1:8071/simulation?debug=1" --scenario S4 --mode enforce --start 12 --seconds 10 --quality high
+node scripts/measure_matrix.mjs --base http://127.0.0.1:8071 --out docs/perf/final-matrix.json
 ```
