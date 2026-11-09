@@ -140,22 +140,26 @@ export function DetectionTab({ rules, busy, onApply, readOnly = false }) {
           ))}
         </div>
       </fieldset>
-      <div className="apply-bar glass" role="region" aria-label="Pending detector changes" data-pending={count > 0 && !readOnly}>
-        <span>
-          {readOnly && 'Read-only: these settings are shown but cannot be changed on this server.'}
-          {!readOnly && count === 0 && !blocked && 'No unsaved changes. Edits apply to the next run.'}
-          {!readOnly && count > 0 && !blocked && `${count} unsaved change${count === 1 ? '' : 's'}`}
-          {!readOnly && blocked && `${Object.keys(errors).length} value${Object.keys(errors).length === 1 ? '' : 's'} to fix before applying`}
-        </span>
-        <span className="apply-bar__buttons">
-          <Button size="small" variant="ghost" disabled={readOnly || (count === 0 && !blocked)} onClick={() => setDraft(initialDraft(rules.detectors))}>
-            Discard
-          </Button>
-          <Button variant="primary" size="small" disabled={readOnly || count === 0 || blocked || busy} onClick={() => onApply(changes)}>
-            Apply
-          </Button>
-        </span>
-      </div>
+      {/* The floating Apply bar appears only when there is something to apply or to fix; otherwise a quiet line in the page flow, so nothing is covered. */}
+      {readOnly || (count === 0 && !blocked) ? (
+        <p className="apply-hint muted" role="status">
+          {readOnly ? 'Read-only: these settings are shown but cannot be changed on this server.' : 'No unsaved changes. Edits apply to the next run.'}
+        </p>
+      ) : (
+        <div className="apply-bar glass" role="region" aria-label="Pending detector changes" data-pending={count > 0}>
+          <span>
+            {blocked ? `${Object.keys(errors).length} value${Object.keys(errors).length === 1 ? '' : 's'} to fix before applying` : `${count} unsaved change${count === 1 ? '' : 's'}`}
+          </span>
+          <span className="apply-bar__buttons">
+            <Button size="small" variant="ghost" onClick={() => setDraft(initialDraft(rules.detectors))}>
+              Discard
+            </Button>
+            <Button variant="primary" size="small" disabled={count === 0 || blocked || busy} onClick={() => onApply(changes)}>
+              Apply
+            </Button>
+          </span>
+        </div>
+      )}
     </>
   )
 }

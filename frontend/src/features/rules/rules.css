@@ -210,11 +210,16 @@ fieldset.field {
   justify-content: space-between;
   gap: 12px;
   padding: 10px 16px;
-  margin-top: calc(-1 * 64px);
+  margin-top: 16px; /* in the page flow: it floats at the bottom while scrolling but never covers the last cards */
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-card, 12px);
   font-size: 13px;
   z-index: 5;
+}
+
+.apply-hint {
+  margin: 16px 0 0;
+  font-size: 13px;
 }
 
 .apply-bar[data-pending='true'] {
