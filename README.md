@@ -53,6 +53,8 @@ backend (FastAPI)                         frontend (React + Three.js)
 The backend decides every packet's fate and the frontend never does, so the 3D effects, counters and tables cannot disagree.
 More detail: `docs/ARCHITECTURE.md` and `docs/SECURITY_ENGINE.md`.
 
+**New to CIPHER?** Start with the user manual: [docs/CIPHER_USER_MANUAL.md](docs/CIPHER_USER_MANUAL.md). It explains every page, the security tools, the scenarios and the rules in plain language.
+
 ## Run it locally
 
 Requirements: Python 3.12 or newer (developed on 3.13), Node.js 20.19 or newer (developed on 24), and a current Chromium-based
