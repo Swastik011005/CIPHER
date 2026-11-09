@@ -35,40 +35,6 @@ export const SERVER_CABINETS = Object.freeze([27, 31, 35, 39, 43, 47].map((x) =>
 export const SOC_WALL = Object.freeze({ x: -17.2, z0: 25.4, z1: 31, screens: 4 })
 export const SOC_STATIONS = Object.freeze([[-8, 27.6], [-2, 27.6], [4, 27.6]])
 
-/** Covered walkways along the three roads: a roof of tinted glass on slim posts. */
-export const WALKWAYS = Object.freeze([
-  { id: 'avenue', rect: rect([-12, -9.0, 54, -7.0]), axis: 'x' },
-  { id: 'spine', rect: rect([13.6, -5.0, 16.0, 13.0]), axis: 'z' },
-  { id: 'west', rect: rect([-16.6, -8.6, -14.4, 12.8]), axis: 'z' },
-])
-export const WALKWAY_HEIGHT = 3.6
-
-/**
- * The posts of every walkway: along both long edges, about every 6 units, skipping any place within 0.8 of a cable (a cable may run
- * under a roof, but no post may stand on one).
- * @param {{nodes: any[], links: any[]}} topology
- */
-export function walkwayPosts(topology) {
-  const cables = cableSegments(topology)
-  const posts = []
-  for (const w of WALKWAYS) {
-    const r = w.rect
-    const alongX = w.axis === 'x'
-    const length = alongX ? r.x1 - r.x0 : r.z1 - r.z0
-    const n = Math.max(1, Math.round(length / 6))
-    for (let i = 0; i <= n; i++) {
-      for (const side of [0, 1]) {
-        const along = (alongX ? r.x0 : r.z0) + (length * i) / n
-        const across = alongX ? (side ? r.z1 : r.z0) : side ? r.x1 : r.x0
-        const p = alongX ? [along, across] : [across, along]
-        if (cables.some((s) => distanceToSegment(p, s.a, s.b) < 0.8)) continue
-        posts.push({ walkway: w.id, x: p[0], z: p[1] })
-      }
-    }
-  }
-  return posts
-}
-
 function distanceToSegment(p, a, b) {
   const [dx, dz] = [b[0] - a[0], b[1] - a[1]]
   const len2 = dx * dx + dz * dz

@@ -18,14 +18,14 @@ export const campusMaterials = {
   /** Cabinets and monitor frames. */
   cabinet: standard('#3d4c68', 0.55, 0.35),
   /** Grey roads between the zones. */
-  road: standard('#7d8aa0', 0.95),
+  road: standard('#5f6f8c', 0.95),
   /** Slim steel posts and beams. */
-  frame: standard('#6d93c9', 0.45, 0.25),
+  frame: standard('#2e4468', 0.45, 0.35),
   /**
    * Glass: a light blue tint at 20% opacity, matte enough (roughness 0.15, weak environment reflection) not to mirror the
    * studio lights. It never writes depth, so what is behind it is never culled, and it is one layer deep at most.
    */
-  glass: standard('#86bdff', 0.15, 0, { transparent: true, opacity: 0.3, depthWrite: false, side: THREE.DoubleSide, envMapIntensity: 0.5 }),
+  glass: standard('#78b0f0', 0.55, 0, { transparent: true, opacity: 0.16, depthWrite: false, side: THREE.DoubleSide, envMapIntensity: 0.12 }),
 }
 
 /**

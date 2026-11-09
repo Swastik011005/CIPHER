@@ -27,7 +27,7 @@ export function PostFX({ quality }) {
       <N8AO aoRadius={1.6} distanceFalloff={1.2} intensity={2.4} quality="performance" halfRes={false} />
       {/* The silhouette of the selected device (see DeviceNode: only a selected device is in the selection). */}
       <Outline blur edgeStrength={3.5} width={900} visibleEdgeColor={0x9fd0ff} hiddenEdgeColor={0x4da3ff} />
-      <Bloom mipmapBlur luminanceThreshold={1.05} luminanceSmoothing={0.2} intensity={0.55} radius={0.7} />
+      <Bloom mipmapBlur luminanceThreshold={1.05} luminanceSmoothing={0.2} intensity={0.3} radius={0.7} />
       <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
       <SMAA />
     </EffectComposer>

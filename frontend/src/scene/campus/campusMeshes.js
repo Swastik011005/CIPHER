@@ -4,7 +4,7 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 import { BALUSTRADE, CAMPUS_ZONES, GATE_COURT, ISLAND, PLATFORM_TOP, PLINTH_TOP, SIGNS, campusGeometry, devicePads, roadRects, signSubtitle, zoneVolumes } from './campusLayout.js'
 import { campusMaterials } from './campusMaterials.js'
 import { buildArchitecture } from './campusBuildings.js'
-import { CABINETS, ENTRANCE, SERVER_CABINETS, SOC_STATIONS, SOC_WALL, WALKWAYS, WALKWAY_HEIGHT, walkwayPosts } from './campusDecor.js'
+import { CABINETS, ENTRANCE, SERVER_CABINETS, SOC_STATIONS, SOC_WALL } from './campusDecor.js'
 
 /**
  * Turns the campus layout into three.js meshes, merged to one mesh per material: every platform top, every plinth, all the
@@ -89,10 +89,18 @@ export function buildCampus(topology) {
   const campus = campusGeometry(topology)
   const buckets = new Map()
   const put = (zone, kind, geometry) => {
-    if (kind === 'lights') paint(geometry, new THREE.Color(accentOf(zone)).multiplyScalar(0.8))
+    if (kind === 'lights') paint(geometry, new THREE.Color(accentOf(zone)).multiplyScalar(0.5))
     if (!buckets.has(kind)) buckets.set(kind, [])
     buckets.get(kind).push(geometry)
   }
+
+  /** Monitoring-wall and station screens, merged per picture so the wall costs one draw call per kind. */
+  const screenBuckets = new Map()
+  const screen = (kind, geometry) => {
+    if (!screenBuckets.has(kind)) screenBuckets.set(kind, [])
+    screenBuckets.get(kind).push(geometry)
+  }
+  const WALL_KINDS = ['map', 'dash', 'alerts', 'terminal']
 
   /** A raised platform: a plinth step, the platform, and a thin edge light in the zone's colour. */
   const platform = (zone, r, inlay) => {
@@ -133,7 +141,7 @@ export function buildCampus(topology) {
   }
 
   // the finish of the glass buildings (cyan rail lights, the administration canopy)
-  buildArchitecture(put, box, campus.structures)
+  buildArchitecture(put, box, campus.structures, campus.core, topology)
 
   // the round core pavilion
   {
@@ -163,7 +171,7 @@ export function buildCampus(topology) {
   // Grey roads between the zones: flat, on the ground, below the cables (one draw call).
   for (const r of roadRects()) put('gate', 'road', box(r.x1 - r.x0, 0.04, r.z1 - r.z0, (r.x0 + r.x1) / 2, 0.02, (r.z0 + r.z1) / 2))
 
-  // Campus infrastructure (decoration only): entrance, walkways, cabinets, server cabinets, monitoring wall and stations.
+  // Campus infrastructure (decoration only): entrance, cabinets, server cabinets, monitoring wall and stations.
   const T = PLATFORM_TOP
   {
     const a = ENTRANCE.arch
@@ -190,26 +198,17 @@ export function buildCampus(topology) {
     const w = SOC_WALL
     const span = w.z1 - w.z0
     put('soc', 'cabinet', box(0.22, 1.9, span, w.x, T + 2.4, (w.z0 + w.z1) / 2))
-    for (let k = 0; k < w.screens; k++) put('soc', 'screen', box(0.06, 1.45, span / w.screens - 0.25, w.x + 0.14, T + 2.4, w.z0 + (span * (k + 0.5)) / w.screens))
+    for (let k = 0; k < w.screens; k++) screen(WALL_KINDS[k % WALL_KINDS.length], new THREE.PlaneGeometry(span / w.screens - 0.25, 1.45).rotateY(Math.PI / 2).translate(w.x + 0.12, T + 2.4, w.z0 + (span * (k + 0.5)) / w.screens))
     put('soc', 'cabinet', box(1.0, 0.95, span - 0.6, w.x + 1.7, T + 0.48, (w.z0 + w.z1) / 2))
     for (const [x, z] of SOC_STATIONS) {
       put('soc', 'frame', box(3.2, 0.12, 1.5, x, T + 1.0, z))
       for (const dx of [-1.4, 1.4]) put('soc', 'frame', box(0.1, 1.0, 1.3, x + dx, T + 0.5, z))
       for (const dx of [-0.85, 0.85]) {
         put('soc', 'cabinet', box(1.4, 0.95, 0.1, x + dx, T + 1.65, z - 0.45))
-        put('soc', 'screen', box(1.25, 0.8, 0.03, x + dx, T + 1.65, z - 0.4))
+        screen(dx < 0 ? 'terminal' : 'dash', new THREE.PlaneGeometry(1.25, 0.8).translate(x + dx, T + 1.65, z - 0.34))
       }
     }
   }
-  const posts = walkwayPosts(topology)
-  for (const w of WALKWAYS) {
-    const r = w.rect
-    put('gate', 'glass', box(r.x1 - r.x0, 0.1, r.z1 - r.z0, (r.x0 + r.x1) / 2, WALKWAY_HEIGHT, (r.z0 + r.z1) / 2))
-    for (const z of [r.z0, r.z1]) if (w.axis === 'x') put('gate', 'frame', box(r.x1 - r.x0, 0.12, 0.12, (r.x0 + r.x1) / 2, WALKWAY_HEIGHT - 0.05, z))
-    for (const x of [r.x0, r.x1]) if (w.axis === 'z') put('gate', 'frame', box(0.12, 0.12, r.z1 - r.z0, x, WALKWAY_HEIGHT - 0.05, (r.z0 + r.z1) / 2))
-  }
-  for (const p of posts) put('gate', 'frame', box(0.14, WALKWAY_HEIGHT, 0.14, p.x, WALKWAY_HEIGHT / 2, p.z))
-
   // Darker mounting pads under the devices, and a soft contact shadow on them: the clay devices read against a darker ground,
   // in Low as well as High. Both are flat and merged: one draw call each.
   for (const pad of devicePads(topology)) {
@@ -265,6 +264,12 @@ export function buildCampus(topology) {
   }
   for (const g of faces) g.dispose()
 
+  const screens = [...screenBuckets].map(([kind, list]) => {
+    const geometry = mergeGeometries(list, false)
+    for (const g of list) g.dispose()
+    return { kind, geometry }
+  })
+
   const parts = []
   for (const [kind, geometries] of buckets) {
     const geometry = mergeGeometries(geometries, false)
@@ -276,10 +281,12 @@ export function buildCampus(topology) {
 
   return {
     parts,
+    screens,
     signs,
     zoneGeometry,
     dispose() {
       for (const p of parts) p.geometry.dispose()
+      for (const sc of screens) sc.geometry.dispose()
       for (const g of Object.values(zoneGeometry)) {
         g.floor.dispose()
         g.outline.dispose()

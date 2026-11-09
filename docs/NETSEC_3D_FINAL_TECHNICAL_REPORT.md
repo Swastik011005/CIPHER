@@ -91,7 +91,8 @@ Status: **Implemented and tested** (`backend/tests/security/test_campus_security
 Status: **Implemented and tested** (`backend/tests/security/test_device_cli.py`).
 
 ## 16. 3D campus
-- Seven zones, each with a recognisable glass-and-steel building: large blue-tinted glass walls on the two back sides, slim steel-blue posts, a thin cyan light on each top rail, open front sides and no roof, so every device stays visible. Buildings differ in height (the administration building is the tallest) and in content: server and network cabinets in the data centre, a monitoring wall and stations in the operations centre, a round open pavilion over the core switch, a checkpoint and entrance arch at the gate, a reception pavilion and an entrance canopy at the administration building. Covered glass walkways connect them along the roads. There are no car parks, vehicles, grass, trees, bushes, footpaths or landscaping.
+- Seven zones, each with a recognisable glass-and-steel building: continuous blue-tinted glass on all four sides, slim dark-steel posts and rails, no roof, so the interiors stay visible. The buildings differ in height (Administration is the tallest) and in content. A glass cylinder surrounds the core switch. There are no walkways, bridges, car parks, vehicles, vegetation or footpaths; the zones are connected only by thin cyan network cables.
+- Detailed procedural models: desks with drawer units, monitors that show drawn desktop screens, towers, keyboards, mice and office chairs; rack servers with bezels, handles, vents, drive bays and status lights (different for APP-SRV, DB-SRV, FILE-SRV, EDR-MGMT-1 and ZT-POLICY-1); a core switch with two port rows on a stepped plinth; a router with two interface rows; operator workstations with three dashboard monitors; and a SOC monitoring wall that shows a world map, charts, an alert table and a terminal. The screen pictures are drawn on small canvases at run time (no image files) and show no live data. FW1's model is unchanged.
 - Devices are drawn 1.5 times their original model size so that they stay distinguishable from the default camera. The overview camera frames the campus so that it fills most of the viewport.
 - Decoration is pure data plus merged geometry; it adds no node, link or cable (a test pins this).
 - Picking: devices first, then cables, then zones. A browser check clicks every one of the 31 devices, every one of the 32 cables and all 7 zones.
@@ -119,20 +120,20 @@ Shipped-rules trace hashes (from the verification log): S1 monitor 57cf6670ce8a,
 The tests ran on one Windows machine; no other platform was tested in this session.
 
 ## 19. Performance
-Measured with `scripts/measure_matrix.mjs` (results in `docs/perf/final-matrix.json`) on an Intel UHD Graphics laptop GPU through the app's built-in browser. The scene draws 275 to 285 calls and 75k to 78k triangles. No console errors were seen.
+Measured with `scripts/measure_matrix.mjs` (results in `docs/perf/final-matrix.json`) on an Intel UHD Graphics laptop GPU through the app's built-in browser. The scene draws 326 to 336 calls and 91k to 93k triangles. No console errors were seen.
 
 | Quality | Case | Frame rate | Worst 1% frame |
 |---|---|---|---|
-| High | idle, overview | 27.9 fps | 100 ms |
-| High | idle, staff close-up | 33.2 fps | 49.9 ms |
-| High | scenario 7 playing | 34.8 fps | 49.4 ms |
-| High | S4 flood peak | 36 fps | 33.6 ms |
+| High | idle, overview | 27.4 fps | 83.5 ms |
+| High | idle, staff close-up | 32.1 fps | 50.1 ms |
+| High | scenario 7 playing | 31.2 fps | 50.1 ms |
+| High | S4 flood peak | 31.1 fps | 50 ms |
 | Low | idle, overview | 60 fps | 17.1 ms |
 | Low | idle, staff close-up | 60.1 fps | 17 ms |
 | Low | scenario 7 playing | 60.1 fps | 17.1 ms |
 | Low | S4 flood peak | 60.1 fps | 17.3 ms |
 
-**Assessment:** the 30 fps target is met on Low and in three of four High cases, and **missed in the High idle overview (27.9 fps)** on this integrated GPU. The application lowers quality automatically when the frame rate stays low and tells the user. A discrete GPU was not available for measurement, so no claim is made about one. Frame rates vary between runs on this machine by a few fps.
+**Assessment:** the 30 fps target is met on Low and in three of four High cases, and **missed in the High idle overview (27.4 fps)** on this integrated GPU. The application lowers quality automatically when the frame rate stays low and tells the user. A discrete GPU was not available for measurement, so no claim is made about one. Frame rates vary between runs on this machine by a few fps.
 
 ## 20. Security design principles
 - Backend authority: the front end never decides an outcome.

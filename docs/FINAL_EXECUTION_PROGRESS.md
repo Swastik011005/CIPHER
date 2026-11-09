@@ -57,8 +57,8 @@ What existed (verified in the code, not assumed):
   pick box no longer hides EXT-USR.
 - Full verification on the final build (`python scripts/tasks.py verify`): 1176 backend tests, 12/12 scenario runs and 93/93 checks, 349 frontend
   tests, production build. Browser checks: interactions 70/70, demonstration 35/35.
-- Frame rate (`scripts/measure_matrix.mjs`, `docs/perf/final-matrix.json`; Intel UHD Graphics, 276-287 draw calls, 76-78k triangles):
-  High: idle overview 27.9 fps, staff close-up 33.2, scenario 7 (traffic, scan, EDR) 34.8, S4 flood peak 36.
+- Frame rate (`scripts/measure_matrix.mjs`, `docs/perf/final-matrix.json`; Intel UHD Graphics, 326-336 draw calls, 91-93k triangles):
+  High: idle overview 27.4 fps, staff close-up 32.1, scenario 7 (traffic, scan, EDR) 31.2, S4 flood peak 31.1.
   Low: 60 fps in all four cases. The High idle overview is below the 30 fps target on this integrated GPU; the app switches to Low
   automatically when the frame rate stays low, and tells the user. No console errors.
 

@@ -3,10 +3,10 @@ import { describe, expect, it } from 'vitest'
 import { NODE_LAYOUT, PLATES } from '../layout.js'
 import { loadBackendTopology } from '../testSupport.js'
 import {
-  CABINETS, ENTRANCE, SERVER_CABINETS, SOC_STATIONS, SOC_WALL, WALKWAYS, decorFootprints, overlapsRect, roadRects, walkwayPosts,
+  CABINETS, ENTRANCE, SERVER_CABINETS, SOC_STATIONS, SOC_WALL, decorFootprints, overlapsRect, roadRects,
 } from './campusDecor.js'
 import * as decor from './campusDecor.js'
-import { ARCHITECTURE_FOOTPRINTS } from './campusBuildings.js'
+import { ARCHITECTURE_FOOTPRINTS, frontPosts } from './campusBuildings.js'
 import { STRUCTURES, allPlatforms, cableSegments, deviceRect } from './campusLayout.js'
 
 const topology = loadBackendTopology()
@@ -62,16 +62,6 @@ describe('campus decoration is visual only and stays out of the way', () => {
     for (const z of [a.z0, a.z1]) expect(Math.min(...cables.map((s) => distToSeg([a.x, z], s.a, s.b)))).toBeGreaterThan(0.6)
   })
 
-  it('has walkway posts that stand on no platform and within 0.8 of no cable', () => {
-    const posts = walkwayPosts(topology)
-    expect(posts.length).toBeGreaterThan(10)
-    for (const p of posts) {
-      for (const pl of platforms) expect(overlapsRect({ x0: p.x - 0.1, x1: p.x + 0.1, z0: p.z - 0.1, z1: p.z + 0.1 }, pl.rect, 0.1), `${p.walkway} post at ${p.x},${p.z} on ${pl.id}`).toBe(false)
-      expect(Math.min(...cables.map((s) => distToSeg([p.x, p.z], s.a, s.b)))).toBeGreaterThanOrEqual(0.8)
-    }
-    for (const w of WALKWAYS) expect(onPlate(w.rect, 0.1), w.id).toBe(true)
-  })
-
   it('has no car park, no vehicle and no vegetation in the decoration data', () => {
     const names = Object.keys(decor)
     for (const n of names) expect(/park|car|tree|grass|bush|path/i.test(n), n).toBe(false)
@@ -98,5 +88,14 @@ describe('campus decoration is visual only and stays out of the way', () => {
     expect(r.zone).toBe('gate')
     expect(r.holds).toEqual([])
     expect(CABINETS.length).toBeGreaterThanOrEqual(8)
+  })
+
+  it('puts every front-wall post on no platform edge and within 0.8 of no cable, and has no walkway', () => {
+    expect(Object.keys(decor).some((n) => /walkway/i.test(n))).toBe(false)
+    for (const st of STRUCTURES) {
+      const posts = frontPosts(st, cables)
+      expect(posts.length, st.id).toBeGreaterThanOrEqual(1)
+      for (const p of posts) expect(Math.min(...cables.map((c) => distToSeg([p.x, p.z], c.a, c.b))), `${st.id} post at ${p.x},${p.z}`).toBeGreaterThanOrEqual(0.8)
+    }
   })
 })
