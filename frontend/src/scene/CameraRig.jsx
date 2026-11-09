@@ -23,7 +23,7 @@ const scratchPosition = new Vector3()
 
 /**
  * Orbit / pan / zoom with damping, limited so the camera stays over the campus.
- * Mouse: left-drag rotates, right-drag pans, wheel zooms toward the cursor. Touch: one finger
+ * Mouse: left-drag rotates, right-drag or middle-button drag (wheel click) pans, wheel zooms toward the cursor. Touch: one finger
  * rotates, two fingers zoom and pan. Presets and "focus on device" are requested through the
  * store and animated here.
  */
@@ -37,12 +37,31 @@ export function CameraRig() {
   const fitRef = useRef(fit)
   fitRef.current = fit
 
+  // A middle-button press on a page that can scroll starts the browser's autoscroll (the round scroll icon) unless it is cancelled:
+  // the canvas takes that button for panning, so cancel the default and the follow-up click.
+  const dom = useThree((st) => st.gl.domElement)
+  useEffect(() => {
+    const stop = (event) => {
+      if (event.button === 1) event.preventDefault()
+    }
+    dom.addEventListener('mousedown', stop)
+    dom.addEventListener('auxclick', stop)
+    return () => {
+      dom.removeEventListener('mousedown', stop)
+      dom.removeEventListener('auxclick', stop)
+    }
+  }, [dom])
+
   // Frame the overview before the first paint.
   useEffect(() => {
     const c = controls.current
     if (!c) return
     const preset = CAMERA_PRESETS.find((p) => p.id === DEFAULT_PRESET_ID)
     c.setBoundary(new Box3(new Vector3(...CAMERA_BOUNDARY.min), new Vector3(...CAMERA_BOUNDARY.max)))
+    // The middle button (wheel click) pans like the right button: the whole scene follows the drag left/right and up/down, in the screen plane.
+    // camera-controls keeps its action constants on the class, so the rig does not need to import the library itself.
+    const { ACTION } = c.constructor
+    c.mouseButtons.middle = ACTION.TRUCK
     c.setLookAt(...presetPosition(preset, fitRef.current), ...preset.target, false)
   }, [])
 

@@ -140,7 +140,7 @@ export function SimulationViewport({ layoutIssues }) {
         <PlaybackBar />
       </div>
       <div className="viewport__hint">
-        DRAG TO ROTATE · RIGHT-DRAG TO PAN · SCROLL TO ZOOM · CLICK A BUILDING, DEVICE OR CABLE · DOUBLE-CLICK A BUILDING TO FOCUS, A DEVICE TO INSPECT · R RESET · ESC DESELECT
+        DRAG TO ROTATE · RIGHT- OR MIDDLE-DRAG TO PAN · SCROLL TO ZOOM · CLICK A BUILDING, DEVICE OR CABLE · DOUBLE-CLICK A BUILDING TO FOCUS, A DEVICE TO INSPECT · R RESET · ESC DESELECT
       </div>
       {debug && <DebugStats />}
 

@@ -77,6 +77,12 @@ export function SceneStats() {
       },
       /** Where the campus camera is, so a check can see that it moved, or did not. */
       cameraPosition: () => camera.position.toArray(),
+      /** What the campus camera looks at (for automated checks of panning). */
+      cameraTarget: () => {
+        const v = new Vector3()
+        controls?.getTarget(v)
+        return v.toArray()
+      },
     }
     return () => {
       delete window.__netsecProbe
