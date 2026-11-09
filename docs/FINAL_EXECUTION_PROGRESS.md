@@ -87,3 +87,9 @@ node scripts/check_demo_scenarios.mjs --base http://127.0.0.1:8071
 node scripts/check_interactions.mjs --base http://127.0.0.1:8071
 node scripts/measure_matrix.mjs --base http://127.0.0.1:8071 --out docs/perf/final-matrix.json
 ```
+
+## Later change: packet animation, isolation fix and cables (done, verified)
+- EDR isolation is enforced at the source in the engine: an isolated endpoint creates no packet (`edr.send_blocked`, contract 1.2.0); packets in flight at the isolation are discarded before any switch, sensor or IPS; replies to it are dropped at its agent. Tests: `backend/tests/security/test_isolation_and_ping.py`.
+- Ping is four sequential journeys (`IcmpEchoSpec.sequential`); the CLI returns a per-line `timeline`; the terminal prints a line only when the playhead reaches it; Stop / Ctrl+C freezes the output. Envelope packets in four colours, green tick, red cross, thicker cables with route glow and pulses.
+- Verified on the final tree: backend 1210, scenario checks 93/93, frontend 363 (30 files), build, demonstration 39/39, interaction 70/70, offline 8/8, split-origin 20/20 and 34/34. Frame rate High 26.4 / 33.0 / 32.2 / 32.6 fps, Low 60 fps.
+- Not screenshotted: the red cross on a blocked ping and every scenario's cable animation.

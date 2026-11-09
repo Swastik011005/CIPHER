@@ -10,7 +10,7 @@
 ## 1. Executive summary
 NetSec 3D is a teaching and demonstration application. A Python backend runs a deterministic discrete-event simulation of a campus network (30 devices plus an abstract Internet segment, 32 links, 4 VLANs, 7 IP subnets) and returns a time-stamped trace. A React and Three.js front end replays that trace as a 3D campus with moving packets, device panels, a SIEM console and an endpoint CLI. The backend decides what happens to every packet; the front end only draws it.
 
-The project demonstrates five security capabilities (IDS, IPS, Zero Trust, SIEM, EDR) through nine presentation scenarios (P1 to P9) plus the original seven scenarios (S1 to S7). The last full verification passed: 1176 backend tests, 93 of 93 scenario checks across 12 runs, 350 frontend tests, a production build, 70 of 70 browser interaction checks, 35 of 35 browser demonstration checks, the split-origin checks (20 of 20 and 34 of 34) and the offline recovery check (8 of 8).
+The project demonstrates five security capabilities (IDS, IPS, Zero Trust, SIEM, EDR) through nine presentation scenarios (P1 to P9) plus the original seven scenarios (S1 to S7). The last full verification passed: 1210 backend tests, 93 of 93 scenario checks across 12 runs, 363 frontend tests, a production build, 70 of 70 browser interaction checks, 39 of 39 browser demonstration checks, the split-origin checks (20 of 20 and 34 of 34) and the offline recovery check (8 of 8).
 
 **Known weakness:** on the integrated Intel UHD GPU used for testing, High quality runs at 26 to 33 fps (the idle overview, at 26 fps, is below the 30 fps target); Low quality runs at 60 fps (section 19).
 
@@ -59,8 +59,15 @@ SIEM-1 receives events from the components that produced them (IDS, IPS, firewal
 Status: **Implemented and tested** (backend tests and browser demonstration check).
 
 ## 11. EDR with isolate and restore
-Each endpoint has a state (healthy, compromised, isolated). EDR-MGMT-1 receives agent reports over an out-of-band channel. Isolation drops all of that host's traffic in both directions (drop reason `edr_isolated`); restore removes the isolation. The operator can do this from the endpoint panel (Security tab) when the server allows it; scenarios P7 and P8 script the same actions.
-Status: **Implemented and tested.**
+Each endpoint has a state (healthy, compromised, isolated). EDR-MGMT-1 receives agent reports over an out-of-band channel (not simulated as packets). The operator isolates or restores an endpoint from the endpoint panel (Security tab) as a control at the playhead; the result is committed to the server state, so the engine, the terminal and the labels read one state.
+**What isolation does in the engine** (`backend/netsec/sim/engine.py`):
+1. An isolated endpoint creates **no packet**: no envelope leaves it, nothing reaches ACC-SW2, CORE-SW1, IDS-1 or IPS-1. One `edr.send_blocked` event per flow records the stopped attempt (the SIEM-style ticker shows it).
+2. A packet the endpoint sent *before* the isolation, still on a cable or inside a device when it takes effect, is discarded with reason `edr_isolated` on arrival or departure, before any policy, mirror, sensor or IPS looks at it. Events before the playhead keep their timestamps and outcomes.
+3. Packets sent *to* an isolated endpoint are dropped at its agent. Other endpoints are unaffected.
+4. Commands on an isolated endpoint (`ping`, `tracert`, `telnet`, `curl`) fail at once with "TRANSMIT FAILED: this endpoint is ISOLATED by EDR" and animate nothing.
+
+**Root cause of the bug that was fixed:** the scenario engine kept *generating* a flow's packets for an isolated source (it created each packet and dropped it at the endpoint), and packets sent just before the isolation kept crossing switches and being inspected by IDS-1 and IPS-1 (the code even documented that they "are delivered normally"). Drops and alerts after the isolation therefore looked like new traffic from PC-2. Regression tests: `backend/tests/security/test_isolation_and_ping.py` (isolations at 4, 5 and 9 s: zero packets created after, none inspected, no alerts from non-existent traffic, history unchanged, PC-1 unaffected, recovery restores communication, same state in the CLI and the engine).
+No malware or operating-system process is involved: it is a state machine plus the rules above. Status: **Implemented and tested.**
 
 ## 12. Presentation scenarios P1 to P9
 Every scenario has a name, objective, source, destination, protocol and port, a Run button, a Reset button, an animation, events, an expected outcome, an explanation and SIEM events, and can be repeated with the same result. The table lists the design values from `backend/config/scenarios/P*.json`; the outcomes are asserted by `backend/tests/scenarios/test_presentation_scenarios.py` and checked again in the browser (section 18).
@@ -83,8 +90,10 @@ Status: **Implemented and tested.**
 The original seven scenarios are unchanged. `test_extension_equivalence.py` shows that their events are identical to the golden traces apart from the run id and configuration hash, because the new security features are opt-in per scenario. The shipped-rules check passes 12 of 12 runs and 93 of 93 checks (S1 to S7, Monitor and Enforce).
 
 ## 14. Endpoint CLI
-An interactive terminal in the endpoint panel supports `help`, `ipconfig`, `ping`, `tracert`, `telnet`, `curl` and `clear`. Commands are whitelisted and validated by regular expressions; nothing is executed on any machine. Each network command runs the real simulation engine, so its output (replies, time-outs, the hop where it stopped) comes from the backend's decisions, not from a script.
-Status: **Implemented and tested** (`backend/tests/security/test_campus_security.py`, browser check).
+An interactive terminal in the endpoint panel supports `help`, `ipconfig`, `ping`, `tracert`, `telnet`, `curl` and `clear`. Commands are whitelisted and validated by regular expressions; nothing is executed on any machine. Each network command runs the real simulation engine, so its output (replies, time-outs, the hop where it stopped, the enforcing device and rule) comes from the backend's decisions, not from a script.
+**Ping is four sequential journeys.** The four echo requests (ICMP type 8) leave one after another: attempt *n+1* departs only after attempt *n* has ended (its reply, type 0, reached the source, or the request or the reply was stopped). Each attempt has its own colour for its whole journey, request and reply alike: cyan blue `#38BDF8`, purple `#A78BFA`, amber `#F59E0B`, green `#34D399`. The packet is drawn as a 3D envelope that follows the cable path of the route computed from the topology; a green tick appears when it reaches the destination and again when the reply reaches the source; a packet that is stopped shows a red cross at the enforcing device (CORE-SW1 for Staff to Security or Database, FW1 for the external user to the database or the Security network) and goes no further.
+**The terminal is synchronised with the packets.** The backend returns, with the output, a time for every line (`timeline`): a `Reply from ...` line is stamped with the moment its reply reached the source, a time-out with the moment the request was stopped. The terminal prints a line only when the playhead has reached that time (`frontend/src/features/simulation/cliTimeline.js`), so pausing, scrubbing and changing the playback speed move the lines with the animation. The time shown in `time=...ms` is a synthetic figure (0.4 ms per link crossed), independent of the animation speed. **Stop / Ctrl+C** keeps the lines already printed, adds `^C` and the statistics of what really happened (marked interrupted), unloads the run and leaves no animation or counter behind.
+Status: **Implemented and tested** (`backend/tests/security/test_isolation_and_ping.py`, `test_campus_security.py`; `cliTimeline.test.js`; the demonstration check asserts that no reply line is printed while the first request is still travelling, that the first reply line appears only after its reply packet was delivered, that the second request is not sent earlier, and that Stop works).
 
 ## 15. Device CLI (read-only)
 `show` commands for R1-EDGE, CORE-SW1 and FW1 produce output from the topology, the rules and the hit counters. They cannot change anything.
@@ -96,6 +105,7 @@ Status: **Implemented and tested** (`backend/tests/security/test_device_cli.py`)
 - **Data centre interior (decoration only, no topology device):** the five servers and SRV-SW3 stand in three racks close together; a row of network cabinets (patch panels, rack switches, cable management), a NAS storage cabinet and two backup units stand along the north wall; two cooling units stand against the east wall; perforated floor tiles, overhead cable trays with drops to the racks, spare cabinets, labelled equipment and a monitoring desk with monitor and chair fill the rest. A test checks that none of it overlaps a device, a cable or the walls.
 - **Other interiors:** wall cabinets in the laboratory and the administration building, a reception desk with two screens in the visitor reception, and the operations centre's monitoring wall and operator stations.
 - **Live screens:** the monitoring wall, the SOC operator desks, the reception and the data-centre monitor draw the loaded run, up to the playhead: SIEM events, packet counters (clean, flagged, blocked, alerts, incidents), endpoint status from the EDR agents, and run status (scenario, IPS mode, time, blocks, Zero Trust decisions). They are redrawn about twice a second from the same trace state the SIEM console uses; with no run loaded they say so. They show simulated data only. The small text on the wall is hard to read at the overview zoom.
+- **Cables and packets:** cables are thick navy-blue tubes with a cyan ridge of light, so they read on both the pale platforms and the dark ground. While a packet is in flight, the whole cable route it will take glows in the packet's colour and a pulse with a bright head and a fading tail travels along the cable it is on, in its direction (the return trip reverses it); a blocked packet lights its route only up to the enforcing device, where the red cross appears; the mirrored copy to IDS-1 is shown on the SPAN cable in violet, apart from the original path. This works for every scenario, not only ping (`frontend/src/scene/links/cableShader.js`, `routes.js`, `linkActivity.js`, `packets/PacketLayer.jsx`, `effects/MarkLayer.jsx`).
 - Picking: devices first, then cables, then zones. A browser check clicks every one of the 31 devices, every one of the 32 cables and all 7 zones.
 Status: **Implemented and tested.**
 
@@ -108,12 +118,12 @@ Last full run on the final build:
 
 | Check | Result |
 |---|---|
-| Backend tests (pytest) | 1176 passed |
+| Backend tests (pytest) | 1210 passed |
 | Scenario checks S1 to S7 (shipped rules) | 12 of 12 runs, 93 of 93 checks |
-| Frontend tests (Vitest) | 28 files, 350 tests passed |
+| Frontend tests (Vitest) | 30 files, 363 tests passed |
 | Production build | succeeded |
 | Browser interaction check (`scripts/check_interactions.mjs`) | 70 of 70 |
-| Browser demonstration check (`scripts/check_demo_scenarios.mjs`) | 35 of 35 |
+| Browser demonstration check (`scripts/check_demo_scenarios.mjs`) | 39 of 39 (including the progressive ping output, the sequential requests and Stop) |
 | Split-origin check (`python scripts/tasks.py split-check`) | 20 of 20 checks, and the 34-step demo rehearsal 34 of 34, with the API on another origin (local only; nothing was run on Render) |
 | Offline recovery check (`scripts/check_offline_recovery.mjs`) | 8 of 8: the backend alone serves the app, "Engine offline" shows within 15 s, the loaded run is kept and scrubbable offline, the page recovers by itself, a new run works, and no request leaves 127.0.0.1 |
 
@@ -121,20 +131,20 @@ Shipped-rules trace hashes (from the verification log): S1 monitor 57cf6670ce8a,
 The tests ran on one Windows machine; no other platform was tested.
 
 ## 19. Performance
-Measured with `scripts/measure_matrix.mjs` (results in `docs/perf/final-matrix.json`) on an Intel UHD Graphics laptop GPU through the app's built-in browser, with the scene drawing 355 to 365 calls and about 101k to 103k triangles. No console errors were seen. Frame rates vary by a few fps between runs on this machine (earlier runs of the same build gave 24.5 to 26.5 fps for the High idle overview).
+Measured with `scripts/measure_matrix.mjs` (results in `docs/perf/final-matrix.json`) on an Intel UHD Graphics laptop GPU through the app's built-in browser, with the scene drawing 358 to 368 calls and about 101k to 103k triangles. No console errors were seen. Frame rates vary by a few fps between runs on this machine (earlier runs of the same build gave 24.5 to 26.5 fps for the High idle overview).
 
 | Quality | Case | Frame rate | Worst 1% frame |
 |---|---|---|---|
-| High | idle, overview | 26.3 fps | 117 ms |
+| High | idle, overview | 26.4 fps | 116.7 ms |
 | High | idle, staff close-up | 33.0 fps | 50 ms |
-| High | scenario 7 playing | 32.6 fps | 50.2 ms |
-| High | S4 flood peak | 33.1 fps | 50 ms |
+| High | scenario 7 playing | 32.2 fps | 50.4 ms |
+| High | S4 flood peak | 32.6 fps | 50.2 ms |
 | Low | idle, overview | 60.1 fps | 17 ms |
 | Low | idle, staff close-up | 60.1 fps | 17.1 ms |
 | Low | scenario 7 playing | 60.2 fps | 17.3 ms |
 | Low | S4 flood peak | 60.2 fps | 17.1 ms |
 
-**Assessment:** the 30 fps target is met on Low and in three of four High cases, and **missed in the High idle overview (26.3 fps)** on this integrated GPU. Low quality runs at 60 fps with the same geometry, so the High cost is post-processing and fill rate, not geometry. Changes made to reduce it without removing visual detail: the outline pass exists only while a device is selected, bloom uses five mip levels and ambient occlusion fewer samples. These gave a gain within the run-to-run noise. The application lowers quality automatically when the frame rate stays low and tells the user (the notice sits at the top right of the scene). A discrete GPU was not available, so no claim is made about one.
+**Assessment:** the 30 fps target is met on Low and in three of four High cases, and **missed in the High idle overview (26.4 fps)** on this integrated GPU. Low quality runs at 60 fps with the same geometry, so the High cost is post-processing and fill rate, not geometry. Changes made to reduce it without removing visual detail: the outline pass exists only while a device is selected, bloom uses five mip levels and ambient occlusion fewer samples. These gave a gain within the run-to-run noise. The application lowers quality automatically when the frame rate stays low and tells the user (the notice sits at the top right of the scene). A discrete GPU was not available, so no claim is made about one.
 
 ## 20. Security design principles
 - Backend authority: the front end never decides an outcome.

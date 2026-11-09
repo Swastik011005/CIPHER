@@ -47,6 +47,10 @@ class IcmpEchoSpec(_Strict):
     count: int = Field(ge=1, le=100)
     interval: float = Field(gt=0)
     payload_bytes: int = Field(default=32, ge=0)
+    #: When true the requests are sent one after the other: attempt n+1 leaves only after attempt n has ended (its reply arrived, or it
+    #: was stopped), ``gap`` seconds later. ``interval`` is then unused. Used by the endpoint CLI's ping.
+    sequential: bool = False
+    gap: float = Field(default=0.6, ge=0, le=10)
 
 
 class PortScanSpec(_Strict):

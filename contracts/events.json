@@ -1,6 +1,6 @@
 {
   "contract": "c0-contracts",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Frozen trace event schema (Rev 3, A11). Every event also carries the base fields seq, t and type. Backend: backend/netsec/sim/events.py. Frontend: frontend/src/protocol/events.js. Both are tested against this file.",
   "base_fields": [
     "seq",
@@ -133,6 +133,12 @@
       "state",
       "cause",
       "reason"
+    ],
+    "edr.send_blocked": [
+      "node",
+      "flow",
+      "proto",
+      "dst"
     ],
     "siem.event": [
       "event_id",

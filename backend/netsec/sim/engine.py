@@ -116,6 +116,9 @@ class Engine:
         self.scheduler = Scheduler()
         self.trace = TraceRecorder()
         self._next_pid = 1
+        #: Sequential ping chains by ICMP id: {flow, spec, pending, advanced}. See _chain_note and _chain_advance.
+        self._chains: dict[int, dict] = {}
+        self._send_blocked_flows: set[str] = set()
         self._stacks: dict[str, HostStack] = {}
         for node in graph.hosts():
             ip = next((i.ip for i in node.interfaces if i.ip is not None), None)
@@ -376,7 +379,12 @@ class Engine:
                 icmp_id=rng.getrandbits(16),
             )
         self._stacks[spec.src].add_flow(flow)
-        for offset, packet_spec in flow.initial():
+        initial = flow.initial()
+        if isinstance(spec, IcmpEchoSpec) and spec.sequential:
+            # one attempt at a time: the first leaves now, each next one is scheduled when the previous attempt has ended
+            self._chains[flow.icmp_id] = {"flow": flow, "specs": initial, "gap": spec.gap, "next": 1, "pending": None}
+            initial = initial[:1]
+        for offset, packet_spec in initial:
             self._schedule_send(to_us(spec.start + offset), packet_spec)
 
     def _schedule_send(self, t_us: int, spec: PacketSpec) -> None:
@@ -425,22 +433,35 @@ class Engine:
             icmp=spec.icmp,
             app=spec.app,
         )
-        plan = compute_route(self.graph, self.tables, spec.src, spec.dst, DEFAULT_TTL)
-        self._emit_created(t_us, pkt)
         if self._edr is not None:
             src_node = self._node_of_ip(spec.src)
             if src_node is not None and self._edr.is_isolated(src_node):
-                self._drop(t_us, pkt, src_node, "edr_isolated")
+                # EDR network containment: the agent stops the endpoint from sending. No packet is created, nothing leaves the
+                # endpoint and nothing can reach a switch or a sensor. One event per flow records that the attempt was stopped.
+                self._next_pid -= 1
+                if spec.flow not in self._send_blocked_flows:
+                    self._send_blocked_flows.add(spec.flow)
+                    self.trace.emit("edr.send_blocked", t_us, node=src_node, flow=spec.flow, proto=spec.proto, dst=spec.dst)
                 return
+        plan = compute_route(self.graph, self.tables, spec.src, spec.dst, DEFAULT_TTL)
+        self._emit_created(t_us, pkt)
+        self._chain_note_sent(pkt, t_us)
         if not plan.hops:
             self.trace.emit(
                 "packet.dropped", t_us, pid=pkt.pid, node=plan.terminal_node, reason=plan.outcome
             )
+            self._chain_note_end(pkt, t_us)
             return
         self._depart(pkt, plan, 0, t_us)
 
     def _depart(self, pkt: Packet, plan: RoutePlan, index: int, t_us: int) -> None:
         hop = plan.hops[index]
+        if index > 0 and self._edr is not None and pkt.mirror_of is None:
+            # a packet that was inside a device when its sender was isolated does not leave it
+            src_node = self._node_of_ip(pkt.src)
+            if src_node is not None and src_node != hop.src and self._edr.is_isolated(src_node):
+                self._drop(t_us, pkt, hop.src, "edr_isolated")
+                return
         arrive_us = t_us + link_transit_us(self.graph.link(hop.link_id))
         self.trace.emit(
             "packet.hop",
@@ -462,6 +483,13 @@ class Engine:
     def _arrive(self, pkt: Packet, plan: RoutePlan, index: int, t_us: int) -> None:
         hop = plan.hops[index]
         node = self.graph.node(hop.dst)
+        if self._edr is not None and pkt.mirror_of is None:
+            # Quarantine: a packet an endpoint sent before it was isolated, still on a cable when the isolation took effect, is discarded
+            # on arrival, before any policy, mirror, sensor or IPS looks at it. Packets already inspected stay in the trace as they were.
+            src_node = self._node_of_ip(pkt.src)
+            if src_node is not None and src_node != node.id and self._edr.is_isolated(src_node):
+                self._drop(t_us, pkt, node.id, "edr_isolated")
+                return
         self._maybe_mirror(pkt, hop, t_us)
 
         if pkt.mirror_of is None:
@@ -486,6 +514,7 @@ class Engine:
             self.trace.emit(
                 "packet.dropped", t_us, pid=pkt.pid, node=plan.terminal_node, reason=plan.outcome
             )
+            self._chain_note_end(pkt, t_us)
             return
 
         if self._edr is not None and pkt.mirror_of is None and node.type == "host":
@@ -495,6 +524,7 @@ class Engine:
                 self._drop(t_us, pkt, node.id, "edr_isolated")
                 return
         self.trace.emit("packet.delivered", t_us, pid=pkt.pid, node=node.id)
+        self._chain_note_end(pkt, t_us, delivered=True)
         stack: Optional[HostStack] = self._stacks.get(node.id)
         if stack is not None and pkt.mirror_of is None:
             for reply in stack.handle(pkt):
@@ -509,6 +539,37 @@ class Engine:
 
     def _drop(self, t_us: int, pkt: Packet, node_id: str, reason: str) -> None:
         self.trace.emit("packet.dropped", t_us, pid=pkt.pid, node=node_id, reason=reason)
+        self._chain_note_end(pkt, t_us)
+
+    # -- sequential ping ---------------------------------------------------------------------
+
+    def _chain_note_sent(self, pkt: Packet, t_us: int) -> None:
+        if pkt.proto != "icmp" or pkt.icmp is None or pkt.icmp.type != 8:
+            return
+        chain = self._chains.get(pkt.icmp.id)
+        if chain is not None:
+            chain["pending"] = pkt.icmp.seq
+
+    def _chain_note_end(self, pkt: Packet, t_us: int, delivered: bool = False) -> None:
+        """An attempt of a sequential ping ends when its reply reaches the source, or when the request or the reply is stopped."""
+        if pkt.proto != "icmp" or pkt.icmp is None or pkt.mirror_of is not None:
+            return
+        chain = self._chains.get(pkt.icmp.id)
+        if chain is None:
+            return
+        if delivered and pkt.icmp.type == 8:
+            return  # the request reached the target: the attempt ends when the reply comes back (or is stopped)
+        self._chain_advance(chain, pkt.icmp.seq, t_us)
+
+    def _chain_advance(self, chain: dict, seq: int, t_us: int) -> None:
+        if chain["pending"] != seq:
+            return
+        chain["pending"] = None
+        index = chain["next"]
+        if index >= len(chain["specs"]):
+            return
+        chain["next"] = index + 1
+        self._schedule_send(t_us + to_us(chain["gap"]), chain["specs"][index][1])
 
     def _apply_policy(self, pkt: Packet, hop: Hop, node, t_us: int) -> bool:
         """Firewall / ACL. Returns True if the packet was dropped here. Independent of the IPS mode."""

@@ -1,3 +1,4 @@
+import { interruptedLines } from '../features/simulation/cliTimeline.js'
 import { create } from 'zustand'
 
 import { api } from '../api/client.js'
@@ -53,6 +54,7 @@ export const useStore = create((set, get) => ({
 
   /** Ask the engine to simulate a scenario and load its trace into the player (paused at T+0). */
   runScenario: async (scenarioId, ipsMode, controls = [], resume = null, customFlows = [], options = {}) => {
+    get().freezeCli() // a terminal that was still printing keeps what it had printed: its run is being replaced
     set({ run: { status: 'loading', meta: null, error: null, request: null } })
     try {
       const body = await api.runScenario({ scenario_id: scenarioId, ips_mode: ipsMode, controls, custom_flows: customFlows, ...(options.commitState ? { commit_state: true } : {}), ...(options.scriptedOperator ? { scripted_operator: true } : {}) })
@@ -203,6 +205,43 @@ export const useStore = create((set, get) => ({
   /** Endpoint CLI sessions: the lines of each endpoint's terminal, so they survive switching devices. */
   cli: {},
   /** Run one command in an endpoint's CLI. The output comes from the backend; with `animate` the packets replay in 3D. */
+  /** The terminal command whose packets are being replayed: {node, token}. Its lines print as the playhead reaches them. */
+  cliLive: null,
+  cliToken: 0,
+  /** Stop the printing of the terminal command whose run is loaded: the lines printed so far stay, the rest never appear. */
+  freezeCli: () => {
+    const { cliLive, cli, playback } = get()
+    if (!cliLive) return
+    const entries = cli[cliLive.node] ?? []
+    const index = entries.findIndex((e) => e.token === cliLive.token)
+    if (index < 0) {
+      set({ cliLive: null })
+      return
+    }
+    const entry = entries[index]
+    if (entry.frozen || playback.finished) {
+      set({ cliLive: null })
+      return
+    }
+    const time = playback.time
+    const packets = Object.values(playback.state?.packets ?? {})
+    const sent = packets.filter((p) => p.mirrorOf == null && p.proto === 'icmp' && p.icmp?.type === 8).length
+    const printed = entry.lines.filter((_, i) => entry.timeline[i] <= time + 1e-9)
+    const received = printed.filter((line) => line.startsWith('Reply from')).length
+    const frozen = interruptedLines(entry, time, { sent, received })
+    const next = entries.map((e, i) => (i === index ? { ...e, frozen, ok: false } : e))
+    set((st) => ({ cli: { ...st.cli, [cliLive.node]: next }, cliLive: null }))
+  },
+  /** The operator stops the command (Ctrl+C or the Stop button): its run is unloaded, nothing keeps animating, no counter is left behind. */
+  cancelCli: () => {
+    get().freezeCli()
+    session.clear()
+    set({
+      run: { status: 'idle', meta: null, error: null, request: null },
+      playback: { loaded: false, playing: false, speed: 1, time: 0, duration: 0, finished: false, state: null },
+      cliLive: null,
+    })
+  },
   runCli: async (node, command, animate = true) => {
     const input = command.trim()
     const push = (entry) => set((s) => ({ cli: { ...s.cli, [node]: [...(s.cli[node] ?? []), entry].slice(-80) } }))
@@ -213,11 +252,15 @@ export const useStore = create((set, get) => ({
         set((s) => ({ cli: { ...s.cli, [node]: [] } }))
         return
       }
-      push({ input, lines: result.lines, ok: result.ok, decision: result.decision })
+      get().freezeCli()
+      const timed = Boolean(result.run && animate && Array.isArray(result.timeline) && result.timeline.length === result.lines.length)
+      const token = get().cliToken + 1
+      set({ cliToken: token })
+      push({ input, lines: result.lines, ok: result.ok, decision: result.decision, timeline: timed ? result.timeline : null, animated: timed, token })
       if (result.run && animate) {
         const { events, ...meta } = result.run
         const player = session.load(result.run)
-        set({ run: { status: 'ready', meta, error: null, request: { scenarioId: 'CLI', ipsMode: meta.ips_mode, controls: [], customFlows: [] } } })
+        set({ run: { status: 'ready', meta, error: null, request: { scenarioId: 'CLI', ipsMode: meta.ips_mode, controls: [], customFlows: [] } }, cliLive: timed ? { node, token } : null })
         get().syncPlayback()
         player.play()
         get().syncPlayback()

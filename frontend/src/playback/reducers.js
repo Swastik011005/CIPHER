@@ -63,6 +63,7 @@ export function initialState() {
     // Campus security extension: what the EDR agents, the Zero Trust decision point and the SIEM reported in this run.
     edr: {},
     edrAlerts: [],
+    edrBlocked: [],
     zt: [],
     siem: [],
     packets: {},
@@ -110,6 +111,8 @@ export function describeEvent(e) {
       return `EDR ALERT ${e.severity.toUpperCase()} on ${e.node}: ${e.reason}`
     case 'edr.state':
       return `${e.node} is now ${e.state} (${e.cause === 'operator' ? 'operator action' : 'scenario'})`
+    case 'edr.send_blocked':
+      return `${e.node} tried to send (${e.proto.toUpperCase()} to ${e.dst}) and the EDR agent stopped it: the endpoint is isolated, no packet was sent`
     case 'siem.event':
       return `SIEM ${e.severity.toUpperCase()} from ${e.source}: ${e.reason}`
     case 'run.end':
@@ -120,7 +123,7 @@ export function describeEvent(e) {
 }
 
 /** Events worth showing in the ticker (hops and routine inspections would flood it). */
-const TICKER_TYPES = new Set(['zt.decision', 'edr.alert', 'edr.state', 'siem.event', 'alert.raised', 'ips.action', 'block.added', 'block.expired', 'packet.dropped', 'policy.decision', 'run.meta', 'run.end'])
+const TICKER_TYPES = new Set(['zt.decision', 'edr.alert', 'edr.state', 'edr.send_blocked', 'siem.event', 'alert.raised', 'ips.action', 'block.added', 'block.expired', 'packet.dropped', 'policy.decision', 'run.meta', 'run.end'])
 
 /** Copy of `nodes` with one counter of one device increased (and its last-activity time set). */
 function bumpNode(nodes, id, key, t) {
@@ -158,6 +161,7 @@ export function applyEvent(state, e) {
         dport: e.dport,
         flags: e.flags,
         mirrorOf: e.mirror_of,
+        icmp: e.icmp ?? null,
         createdAt: e.t,
         sport: e.sport,
         ttl: e.ttl,
@@ -297,6 +301,10 @@ export function applyEvent(state, e) {
 
     case 'edr.state':
       next.edr = { ...state.edr, [e.node]: { state: e.state, since: e.t, cause: e.cause, reason: e.reason } }
+      break
+
+    case 'edr.send_blocked':
+      next.edrBlocked = [...state.edrBlocked, e]
       break
 
     case 'siem.event':

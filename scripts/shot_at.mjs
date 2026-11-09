@@ -25,12 +25,19 @@ try {
   await waitFor(() => ev('window.__netsecStore && window.__netsecProbe && window.__netsecScene && window.__netsecScene.meshes > 50'), 'the scene', 40000)
   await ev(`window.__netsecStore.setState({ autoLowered: true }); window.__netsecStore.getState().setSetting('quality', ${JSON.stringify(args.quality ?? 'high')})`)
   await ev(`(() => { const e = document.createElement('style'); e.textContent = '.viewport__bottom-banner{display:none !important}'; document.head.appendChild(e) })()`)
+  if (args.cli) {
+    // a terminal command whose packets are replayed (for example: --cli "PC-1|ping APP-SRV" --play 3000)
+    const [node, command] = args.cli.split('|')
+    await ev(`window.__netsecStore.getState().runCli(${JSON.stringify(node)}, ${JSON.stringify(command)}, true)`)
+    await sleep(Number(args.play ?? 3000))
+  }
+  if (args.preset) await ev(`window.__netsecStore.getState().requestPreset(${JSON.stringify(args.preset)})`)
   if (args.run) {
     await ev(`window.__netsecStore.getState().runScenario(${JSON.stringify(args.run)}, 'enforce')`)
     await sleep(Number(args.play ?? 12000))
   }
-  await ev(`window.__netsecProbe.lookAt(${x}, ${y}, ${z}, ${Number(args.distance ?? 14)})`)
-  await sleep(2500)
+  if (!args.preset) await ev(`window.__netsecProbe.lookAt(${x}, ${y}, ${z}, ${Number(args.distance ?? 14)})`)
+  await sleep(Number(args.settle ?? 2500))
   const { data } = await browser.send('Page.captureScreenshot', { format: 'png' })
   writeFileSync(out, Buffer.from(data, 'base64'))
   console.log('saved', out)

@@ -1,5 +1,6 @@
 import { DeviceNode } from './devices/DeviceNode.jsx'
 import { EffectsLayer } from './effects/EffectsLayer.jsx'
+import { MarkLayer } from './effects/MarkLayer.jsx'
 import { CampusWorld } from './campus/CampusWorld.jsx'
 import { BasePlates, RackFrames } from './environment/Environment.jsx'
 import { NODE_LAYOUT } from './layout.js'
@@ -24,6 +25,7 @@ export function NetworkWorld({ topology }) {
       <NetworkLinks topology={topology} />
       <PacketLayer topology={topology} />
       <EffectsLayer topology={topology} />
+      <MarkLayer topology={topology} />
     </group>
   )
 }

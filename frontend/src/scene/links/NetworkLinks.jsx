@@ -2,18 +2,19 @@ import { useFrame, useThree } from '@react-three/fiber'
 import { memo, useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 
-import { cableMaterials } from '../materials/materials.js'
 import { PALETTE } from '../palette.js'
 import { LINK_LAYOUT } from '../layout.js'
 import { isTopPick } from '../picking.js'
 import { useStore } from '../../state/store.js'
 import { buildCableGeometry } from './cableGeometry.js'
 import { buildCablePoints } from './cablePoints.js'
-import { linkSeverity } from './linkActivity.js'
+import { makeCableMaterial, UP_VIEW } from './cableShader.js'
+import { linkFlow, linkSeverity, MAX_PULSES } from './linkActivity.js'
 
-const RADIUS = { ethernet: 0.04, access: 0.04, trunk: 0.042, mgmt: 0.026, span: 0.034 }
-const TRUNK_LANE = 0.055
-/** Radius of the invisible tube that makes a cable easy to click (the visible cable is only 0.04 thick). */
+// Thick enough to read at the Overview zoom: about twice the first version. A trunk is two parallel tubes.
+const RADIUS = { ethernet: 0.08, access: 0.08, trunk: 0.075, mgmt: 0.05, span: 0.06 }
+const TRUNK_LANE = 0.1
+/** Radius of the invisible tube that makes a cable easy to click (the visible cable is 0.08 thick). */
 const PICK_RADIUS = 0.2
 const HALO_RADIUS = 0.1
 
@@ -77,7 +78,7 @@ const Cable = memo(function Cable({ link, nodesById }) {
         toneMapped: false,
       })
     } else {
-      material = cableMaterials[link.kind].clone()
+      material = makeCableMaterial(link.kind, tubes[0].length)
       base = { color: material.color.clone(), emissive: material.emissive.clone() }
     }
     if (DEBUG) {
@@ -103,12 +104,33 @@ const Cable = memo(function Cable({ link, nodesById }) {
   )
   useEffect(() => () => halo?.geometry.dispose(), [halo])
 
-  const look = useRef({ severity: 0 })
+  const look = useRef({ severity: 0, glow: 0, span: 0 })
   const flags = useRef({ selected, hovered })
   flags.current = { selected, hovered }
   useFrame((_, delta) => {
     const { base, material } = built
+    if (link.kind === 'span') {
+      // the mirrored-inspection cable: violet dashes, brighter while a SPAN copy is on it
+      const f = linkFlow.get(link.id)
+      const target = f && f.pulses.length > 0 ? 1 : f && f.glow > 0 ? 0.6 : 0
+      look.current.span += (target - look.current.span) * Math.min(1, delta * 10)
+      built.material.color.setRGB(1.8 + 1.4 * look.current.span, 1.5 + 1.0 * look.current.span, 2.0 + 1.6 * look.current.span)
+      return
+    }
     if (!base) return
+    const u = material.userData.cable
+    const flow = linkFlow.get(link.id)
+    const wantGlow = flow ? flow.glow : 0
+    look.current.glow += (wantGlow - look.current.glow) * Math.min(1, delta * 7)
+    u.uGlow.value = look.current.glow
+    if (flow && flow.glow > 0) u.uGlowColor.value.setRGB(flow.color[0], flow.color[1], flow.color[2])
+    for (let i = 0; i < MAX_PULSES; i++) {
+      const pulse = flow?.pulses[i]
+      if (pulse) {
+        u.uPulse.value[i].set(pulse.u, pulse.dir, 1)
+        u.uPulseCol.value[i].setRGB(pulse.color[0], pulse.color[1], pulse.color[2])
+      } else u.uPulse.value[i].z = 0
+    }
     const state = look.current
     const target = linkSeverity.get(link.id) ?? 0
     state.severity += (target - state.severity) * Math.min(1, delta * 8)
@@ -167,6 +189,11 @@ const Cable = memo(function Cable({ link, nodesById }) {
  * @param {{topology: {nodes: any[], links: any[]}}} props
  */
 export function NetworkLinks({ topology }) {
+  const camera = useThree((st) => st.camera)
+  // the cable ridge catches the light from above: its "up" in view space follows the camera
+  useFrame(() => {
+    UP_VIEW.value.set(0, 1, 0).transformDirection(camera.matrixWorldInverse)
+  })
   const showManagement = useStore((s) => s.settings.showManagementLinks)
   const nodesById = useMemo(() => new Map(topology.nodes.map((n) => [n.id, n])), [topology.nodes])
 

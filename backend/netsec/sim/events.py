@@ -249,6 +249,16 @@ class EdrStateEvent(_Event):
     reason: str
 
 
+class EdrSendBlockedEvent(_Event):
+    """An isolated endpoint tried to send and the EDR agent stopped it before any packet existed: nothing enters the network."""
+
+    type: Literal["edr.send_blocked"] = "edr.send_blocked"
+    node: str
+    flow: str
+    proto: str
+    dst: str
+
+
 class SiemEventRecord(_Event):
     """An event as the SIEM received it, from the component that really produced it. Simulated, never a real log."""
 
@@ -293,6 +303,7 @@ EVENT_MODELS: dict[str, type[_Event]] = {
         ZtDecisionEvent,
         EdrAlertEvent,
         EdrStateEvent,
+        EdrSendBlockedEvent,
         SiemEventRecord,
         RunEnd,
     )
@@ -319,6 +330,7 @@ AnyEvent = Union[
     ZtDecisionEvent,
     EdrAlertEvent,
     EdrStateEvent,
+    EdrSendBlockedEvent,
     SiemEventRecord,
     RunEnd,
 ]

@@ -235,4 +235,4 @@ def cli_exec(body: CliRequest, request: Request) -> dict[str, Any]:
                 "run_id": r.run_id, "scenario_id": r.scenario_id, "seed": r.seed, "ips_mode": r.ips_mode, "duration": r.duration,
                 "config_hash": r.config_hash, "trace_hash": r.trace_hash, "summary": r.stats.model_dump(), "events": r.events,
             }
-    return {"lines": result.lines, "ok": result.ok, "clear": result.clear, "decision": result.decision, "run": run}
+    return {"lines": result.lines, "ok": result.ok, "clear": result.clear, "decision": result.decision, "timeline": result.timeline, "run": run}

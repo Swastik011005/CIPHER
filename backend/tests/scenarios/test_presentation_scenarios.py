@@ -107,10 +107,13 @@ def test_p7_compromise_edr_detection_isolation_and_unaffected_peers(graph) -> No
     sensors = {e["sensor"] for e in events(r, "alert.raised")}
     assert sensors == {"IDS-1", "IPS-1"} and all(e["src"] == "10.0.10.12" for e in events(r, "alert.raised"))
     isolated_at = next(e["t"] for e in events(r, "edr.state") if e["state"] == "isolated")
-    # after isolation PC-2's own packets are dropped at its agent
+    # from the isolation on PC-2 sends nothing: no packet is created, so nothing is animated and nothing reaches a switch or a sensor
     created = {e["pid"]: e for e in events(r, "packet.created")}
-    late = [e for e in events(r, "packet.dropped") if e["reason"] == "edr_isolated" and created[e["pid"]]["src"] == "10.0.10.12" and e["t"] >= isolated_at]
-    assert late and all(e["node"] == "PC-2" for e in late)
+    assert not [e for e in created.values() if e["src"] == "10.0.10.12" and e["mirror_of"] is None and e["t"] >= isolated_at]
+    blocked_sends = events(r, "edr.send_blocked")
+    assert [(e["node"], e["flow"]) for e in blocked_sends] == [("PC-2", "P7-pc2-after")] and blocked_sends[0]["t"] >= isolated_at
+    # and no alert is raised after the isolation: every alert is about traffic that really crossed the network before it
+    assert all(e["t"] < isolated_at for e in events(r, "alert.raised"))
     # PC-1 is unaffected: its sessions (before and after) are delivered
     pc1 = {e["pid"] for e in created.values() if e["flow"].startswith("P7-pc1")}
     assert pc1 and not any(e["pid"] in pc1 for e in events(r, "packet.dropped"))
@@ -144,7 +147,9 @@ def test_p8_recovery_restores_permitted_connectivity(graph) -> None:
     delivered = {e["pid"] for e in events(r, "packet.delivered")}
     before = [p for p, e in created.items() if e["flow"] == "P8-pc2-isolated" and e["src"] == "10.0.10.12"]
     after = [p for p, e in created.items() if e["flow"] == "P8-pc2-restored" and e["src"] == "10.0.10.12"]
-    assert before and all(p in dropped for p in before)
+    assert not before  # while isolated PC-2 sends nothing: no packet exists
+    assert [(e["node"], e["flow"]) for e in events(r, "edr.send_blocked")] == [("PC-2", "P8-pc2-isolated")]
+    del dropped
     assert after and any(p in delivered for p in after)
     states = [(e["state"], e["cause"]) for e in events(r, "edr.state")]
     assert states == [("isolated", "scenario"), ("healthy", "operator")]
@@ -200,6 +205,7 @@ def test_an_endpoint_control_needs_a_scenario_that_uses_edr(graph) -> None:
 def test_a_committed_isolation_applies_to_the_next_run(graph) -> None:
     snap = SecuritySnapshot(isolated=("PC-1",))
     r = run_scenario(graph, load_scenario("P1"), security_state=snap)
-    assert any(e["reason"] == "edr_isolated" and e["node"] == "PC-1" for e in events(r, "packet.dropped"))
-    assert r.stats.delivered_clean == 0
+    assert not [e for e in events(r, "packet.created") if e["src"] == "10.0.10.11"]
+    assert [(e["node"], e["flow"]) for e in events(r, "edr.send_blocked")][:1] == [("PC-1", events(r, "edr.send_blocked")[0]["flow"])]
+    assert r.stats.delivered_clean == 0 and r.stats.data_packets == 0
     assert r.config_hash != run_scenario(graph, load_scenario("P1"), security_state=EMPTY_SNAPSHOT).config_hash

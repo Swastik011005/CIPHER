@@ -51,6 +51,9 @@ class CliResult:
     #: The simulated run behind a network command, so the 3D scene can replay it. None for local commands.
     run: Optional[RunResult] = None
     decision: dict[str, Any] = field(default_factory=dict)
+    #: When each printed line appears, in simulated seconds of the run (same length as ``lines``), so the terminal can print a line only
+    #: when the packet it reports has reached the source. None for local commands, whose lines all appear at once.
+    timeline: Optional[list[float]] = None
 
 
 class CliError(Exception):
@@ -124,6 +127,17 @@ def _evidence(events: list[dict], pid: int) -> Evidence:
     return ev
 
 
+def _end_time(events: list[dict], pid: int) -> float:
+    """When a packet's journey ended (delivered or dropped), in simulated seconds."""
+    return max((e["t"] for e in events if e.get("pid") == pid and e["type"] in ("packet.delivered", "packet.dropped")), default=0.0)
+
+
+def _timed(lines: list[str], run: Optional[RunResult], head: int = 2) -> list[float]:
+    """Default line times for a command with one outcome: the first lines at once, the rest when the run has ended."""
+    end = max((e["t"] for e in run.events if e["type"] in ("packet.delivered", "packet.dropped") and e.get("pid") is not None), default=0.0) if run else 0.0
+    return [0.0 if i < head else end for i in range(len(lines))]
+
+
 def _explain(engine: Engine, ev: Evidence, node_id: str) -> tuple[list[str], str]:
     """The reason lines and the enforcing device for a packet that did not arrive."""
     where = ev.dropped_at or "the network"
@@ -137,7 +151,9 @@ def _explain(engine: Engine, ev: Evidence, node_id: str) -> tuple[list[str], str
     if reason == "zt_deny" and ev.zt:
         return [f"Reason: Zero Trust denies it: {ev.zt['reason']}", f"Enforcing device: {where} (decision by {ev.zt['pdp']})."], where
     if reason == "edr_isolated":
-        return [f"Reason: {where} is isolated by EDR; its network traffic is blocked.", f"Enforcing device: the EDR agent on {where}."], where
+        if where == node_id or where in ("the network",):
+            return [f"Reason: {node_id} is isolated by EDR; its network traffic is blocked.", f"Enforcing device: the EDR agent on {node_id}."], where
+        return [f"Reason: the sending endpoint is isolated by EDR; a packet it sent just before the isolation was discarded at {where}.", f"Enforcing device: EDR containment (applied at {where})."], where
     if reason in ("ips_drop", "ips_reject", "blocked_source", "rate_limited"):
         rule = f" ({ev.ips['rule']})" if ev.ips else ""
         words = {
@@ -186,6 +202,8 @@ class EndpointCli:
             return CliResult([], clear=True)
         if name == "ipconfig":
             return self._ipconfig(node_id)
+        if name in ("ping", "tracert", "telnet", "curl") and node_id in self.snapshot.isolated:
+            return self._isolated(node_id, name, args)
         if name == "ping":
             self._arity(name, args, 1, "ping <IP>")
             return self._ping(node_id, args[0], text)
@@ -201,6 +219,22 @@ class EndpointCli:
             raise CliError("curl accepts a URL like http://10.0.30.10 or http://APP-SRV:8080 only.")
         port = _port(match.group(2)) if match.group(2) else 80
         return self._connect(node_id, match.group(1), port, text, kind="curl")
+
+    def _isolated(self, node_id: str, name: str, args: list[str]) -> CliResult:
+        """An isolated endpoint cannot send anything: the command fails at once, no packet exists and nothing is animated."""
+        target = args[0] if args else "the destination"
+        what = {"ping": f"Pinging {target}", "tracert": f"Tracing route to {target}", "telnet": f"Connecting to {target}", "curl": f"curl {target}"}[name]
+        lines = [
+            f"{what} (simulated):",
+            "",
+            "TRANSMIT FAILED: this endpoint is ISOLATED by EDR.",
+            f"Reason: {node_id} is isolated by EDR; its network traffic is blocked. No packet was sent.",
+            f"Enforcing device: the EDR agent on {node_id}.",
+            "A SOC operator can restore the endpoint (Security tab, Restore Endpoint).",
+        ]
+        if name == "ping":
+            lines += ["", "Packets: Sent = 0, Received = 0, Lost = 0 (nothing was sent)"]
+        return CliResult(lines, ok=False, decision={"delivered": False, "enforcing_device": node_id, "drop_reason": "edr_isolated", "isolated": True})
 
     @staticmethod
     def _arity(name: str, args: list[str], n: int, usage: str) -> None:
@@ -245,48 +279,58 @@ class EndpointCli:
         _, me = _iface(self.graph, node_id)
         if target_node == node_id:
             return CliResult([f"Pinging {ip} with 32 bytes of data (this endpoint):"] + [f"Reply from {ip}: bytes=32 time<1ms TTL=64"] * 4 + ["", "Packets: Sent = 4, Received = 4, Lost = 0 (0% loss)"])
-        flow = IcmpEchoSpec(type="icmp_echo", id="cli-ping", src=node_id, dst=target_node, start=0.0, count=4, interval=1.0, payload_bytes=32)
+        flow = IcmpEchoSpec(type="icmp_echo", id="cli-ping", src=node_id, dst=target_node, start=0.0, count=4, interval=1.0, payload_bytes=32, sequential=True, gap=0.6)
         run, engine = self._run(node_id, command, flow)
         ev = run.events
         created = {e["pid"]: e for e in ev if e["type"] == "packet.created" and e["mirror_of"] is None}
-        requests = [p for p, e in created.items() if e["src"] == me.ip and e["proto"] == "icmp"]
-        replies = {e["pid"]: e for e in ev if e["type"] == "packet.delivered" and created.get(e["pid"], {}).get("dst") == me.ip}
+        requests = {e["icmp"]["seq"]: p for p, e in created.items() if e["src"] == me.ip and e["proto"] == "icmp" and e["icmp"] and e["icmp"]["type"] == 8}
+        replies = {created[e["pid"]]["icmp"]["seq"]: e for e in ev if e["type"] == "packet.delivered" and e["pid"] in created
+                   and created[e["pid"]]["dst"] == me.ip and created[e["pid"]]["icmp"] and created[e["pid"]]["icmp"]["type"] == 0}
+        reply_pid = {e["icmp"]["seq"]: p for p, e in created.items() if e["dst"] == me.ip and e["proto"] == "icmp" and e["icmp"] and e["icmp"]["type"] == 0}
         ttl_of: dict[int, int] = {}
         for e in ev:
             if e["type"] == "packet.hop":
                 ttl_of[e["pid"]] = e["ttl"]
         lines = [f"Pinging {ip} with 32 bytes of data (simulated):", ""]
+        times = [0.0, 0.0]
         received = 0
         first_failure: Optional[Evidence] = None
-        for pid in requests:
-            reply = next((p for p in replies if created[p]["src"] == ip), None)
-            # pair the n-th request with the n-th reply by order
-            idx = requests.index(pid)
-            delivered = [p for p in sorted(replies) if created[p]["src"] == ip]
-            if idx < len(delivered):
-                p = delivered[idx]
+        last_t = 0.0
+        for seq in sorted(requests):
+            pid = requests[seq]
+            if seq in replies:
+                rp = replies[seq]
                 received += 1
-                hops = sum(1 for e in ev if e["type"] == "packet.hop" and e["pid"] in (pid, p))
+                hops = sum(1 for e in ev if e["type"] == "packet.hop" and e["pid"] in (pid, rp["pid"]))
                 ms = max(1, round(0.4 * hops))  # synthetic: 0.4 ms per link crossed, there and back
-                lines.append(f"Reply from {ip}: bytes=32 time={ms}ms TTL={ttl_of.get(p, 64)}")
+                lines.append(f"Reply from {ip}: bytes=32 time={ms}ms TTL={ttl_of.get(rp['pid'], 64)}")
+                times.append(rp["t"])
+                last_t = max(last_t, rp["t"])
+                continue
+            e = _evidence(ev, pid)
+            if e.dropped_at is None and seq in reply_pid:
+                e = _evidence(ev, reply_pid[seq])
+            first_failure = first_failure or e
+            if e.reason in ("fw_deny", "ips_drop", "ips_reject", "blocked_source", "rate_limited"):
+                lines.append("Request timed out.")
+            elif e.reason == "edr_isolated":
+                lines.append("PING: transmit failed. General failure.")
             else:
-                e = _evidence(ev, pid)
-                first_failure = first_failure or e
-                if e.reason in ("fw_deny", "ips_drop", "ips_reject", "blocked_source", "rate_limited"):
-                    lines.append("Request timed out.")
-                elif e.reason == "edr_isolated":
-                    lines.append("PING: transmit failed. General failure.")
-                else:
-                    lines.append("Destination host unreachable.")
-            del reply
-        lost = len(requests) - received
-        lines += ["", f"Packets: Sent = {len(requests)}, Received = {received}, Lost = {lost} ({round(100 * lost / max(1, len(requests)))}% loss)"]
+                lines.append("Destination host unreachable.")
+            t_end = max(_end_time(ev, pid), _end_time(ev, reply_pid[seq]) if seq in reply_pid else 0.0)
+            times.append(t_end)
+            last_t = max(last_t, t_end)
+        sent = len(requests)
+        lost = sent - received
+        lines += ["", f"Packets: Sent = {sent}, Received = {received}, Lost = {lost} ({round(100 * lost / max(1, sent))}% loss)"]
+        times += [last_t, last_t]
         decision: dict[str, Any] = {"delivered": received > 0}
         if first_failure is not None:
             reason_lines, device = _explain(engine, first_failure, node_id)
             lines += [""] + reason_lines
+            times += [last_t] * (len(reason_lines) + 1)
             decision.update(enforcing_device=device, drop_reason=first_failure.reason, rule_id=first_failure.rule_id)
-        return CliResult(lines, ok=received > 0, run=run, decision=decision)
+        return CliResult(lines, ok=received > 0, run=run, decision=decision, timeline=times)
 
     def _tracert(self, node_id: str, target: str, command: str) -> CliResult:
         ip, target_node = _resolve(self.graph, target)
@@ -327,7 +371,7 @@ class EndpointCli:
             reason_lines, device = _explain(engine, ev, node_id)
             lines += ["", "Trace stopped."] + reason_lines
             decision.update(enforcing_device=device, drop_reason=ev.reason, rule_id=ev.rule_id)
-        return CliResult(lines, ok=delivered, run=run, decision=decision)
+        return CliResult(lines, ok=delivered, run=run, decision=decision, timeline=_timed(lines, run))
 
     def _connect(self, node_id: str, target: str, port: int, command: str, kind: str) -> CliResult:
         ip, target_node = _resolve(self.graph, target)
@@ -352,13 +396,19 @@ class EndpointCli:
                 lines = [head, "", "HTTP/1.1 200 OK (simulated)", f"Server: {target_node}", f"Content-Length: {service.response_bytes}", "", f"<simulated page served by {target_node}; no real content>"]
             else:
                 lines = [head, "", f"Connected, but {target_node}:{port} is {service.name if service else 'a service'}, not a web server (simulated)."]
-            return CliResult(lines, run=run, decision=decision)
+            return CliResult(lines, run=run, decision=decision, timeline=_timed(lines, run))
         if refused:
             decision["drop_reason"] = "port_closed"
-            lines = [head, "", "Connection refused." if kind == "telnet" else f"curl: (7) Failed to connect to {ip} port {port}: Connection refused", "", f"Reason: {target_node} is reachable but nothing listens on tcp/{port}."]
-            return CliResult(lines, ok=False, run=run, decision=decision)
+            ips_reject = next((e for e in ev if e["type"] == "ips.action" and e.get("action") == "reject" and e.get("pid") == syn), None)
+            if ips_reject is not None:
+                decision.update(enforcing_device="IPS-1", drop_reason="ips_reject")
+                lines = [head, "", "Connection reset." if kind == "telnet" else f"curl: (56) Recv failure: Connection reset by peer", "", f"Reason: IPS-1 rejected the connection ({ips_reject['rule']}): it sent a reset on behalf of {target_node}.", "Enforcing device: IPS-1."]
+            else:
+                lines = [head, "", "Connection refused." if kind == "telnet" else f"curl: (7) Failed to connect to {ip} port {port}: Connection refused", "", f"Reason: {target_node} is reachable but nothing listens on tcp/{port}."]
+            return CliResult(lines, ok=False, run=run, decision=decision, timeline=_timed(lines, run))
         evidence = _evidence(ev, syn) if syn is not None else Evidence()
         reason_lines, device = _explain(engine, evidence, node_id)
         decision.update(enforcing_device=device, drop_reason=evidence.reason, rule_id=evidence.rule_id)
         timeout = "Connection timed out." if kind == "telnet" else f"curl: (28) Failed to connect to {ip} port {port}: Connection timed out"
-        return CliResult([head, "", timeout, ""] + reason_lines, ok=False, run=run, decision=decision)
+        all_lines = [head, "", timeout, ""] + reason_lines
+        return CliResult(all_lines, ok=False, run=run, decision=decision, timeline=_timed(all_lines, run))
