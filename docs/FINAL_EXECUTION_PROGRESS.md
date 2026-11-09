@@ -57,8 +57,8 @@ What existed (verified in the code, not assumed):
   pick box no longer hides EXT-USR.
 - Full verification on the final build (`python scripts/tasks.py verify`): 1176 backend tests, 12/12 scenario runs and 93/93 checks, 349 frontend
   tests, production build. Browser checks: interactions 70/70, demonstration 35/35.
-- Frame rate (`scripts/measure_matrix.mjs`, `docs/perf/final-matrix.json`; Intel UHD Graphics, 327-338 draw calls, 86-89k triangles):
-  High: idle overview 25.7 fps, staff close-up 31.4, scenario 7 (traffic, scan, EDR) 29.6, S4 flood peak 30.4.
+- Frame rate (`scripts/measure_matrix.mjs`, `docs/perf/final-matrix.json`; Intel UHD Graphics, 355-365 draw calls, 101-103k triangles):
+  High: idle overview 26.3 fps, staff close-up 33.0, scenario 7 (traffic, scan, EDR) 32.6, S4 flood peak 33.1.
   Low: 60 fps in all four cases. The High idle overview is below the 30 fps target on this integrated GPU; the app switches to Low
   automatically when the frame rate stays low, and tells the user. No console errors.
 
@@ -70,13 +70,13 @@ What existed (verified in the code, not assumed):
 - [x] Stage 4b read-only device CLI for R1-EDGE, CORE-SW1, FW1
 - [x] Stage 5 expanded campus (layout, roads, racks, decoration, larger devices)
 - [x] Stage 6 performance measured; High idle overview on an integrated GPU is 26 fps (below target), Low is 60 fps
-- [ ] Stage 7 UI polish (not done)
-- [x] Stage 8 verify, interaction (70/70), demonstration (35/35) and split-check (20/20 + 34/34); offline recovery not re-run
-- [x] Stage 9 technical report: docs/NETSEC_3D_FINAL_TECHNICAL_REPORT.md and .pdf (PDF layout not visually inspected)
+- [x] Stage 7 UI polish: quality notice moved out of the scene; live SOC screens; elevated signs; dark ground
+- [x] Stage 8 verify, interaction (70/70), demonstration (35/35) and split-check (20/20 + 34/34); offline recovery 8/8
+- [x] Stage 9 technical report: docs/NETSEC_3D_FINAL_TECHNICAL_REPORT.md and .pdf (PDF rendered to images and inspected: 7 pages, headings and tables intact)
 - [ ] Stage 10 final delivery
 
 ## Exact next action
-Optional: UI polish pass, offline recovery re-run, High-quality frame rate on integrated GPUs.
+Optional: High-quality frame rate on integrated GPUs (26 fps idle overview), denser interiors, larger SOC wall text.
 
 ## Exact commands to continue
 ```
