@@ -273,6 +273,8 @@ try {
     check('the cable panel names the right source and destination (device and interface) for every cable', endsOk === topology.links.length, `${endsOk}/${topology.links.length}`)
     const l7 = (samples.L07 ?? []).map(([x, y, z]) => [x, y, z])
     void l7
+    await nodeView('PC-1')
+    await sleep(500)
     await click(devicePoints['PC-1'].x, devicePoints['PC-1'].y)
     check('selecting a device clears the selected cable and is not stolen by a cable', (await st('selection.selectedId')) === 'PC-1' && (await st('cable.selectedId')) === null)
     await browser.send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Escape', windowsVirtualKeyCode: 27 })
@@ -289,7 +291,6 @@ try {
     // a running scenario, so packets keep moving behind the viewer
     await ev(`window.__netsecStore.getState().runScenario('S4', 'enforce')`)
     await sleep(3000)
-    const campusBefore = await cameraAt()
     const t0 = await st('playback.time')
     await ev('window.__netsecStore.getState().clearEverything()')
     await sleep(1500)
@@ -297,6 +298,7 @@ try {
 
     // entry points: double-click a device, the Inspect button, the I key
     const p = await pointFor('PC-1')
+    const campusBefore = await cameraAt() // the view the viewer is opened from
     await click(p.x, p.y, 2)
     await sleep(1500)
     check('double-clicking a device opens the viewer', (await st('inspectorId')) === 'PC-1' && (await ev('document.querySelectorAll("canvas").length')) === 2)
