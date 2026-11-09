@@ -51,15 +51,15 @@ What existed (verified in the code, not assumed):
 
 - Device CLI: read-only `show` commands for R1-EDGE, CORE-SW1 and FW1 (`backend/netsec/cli/device.py`, tests in `backend/tests/security/test_device_cli.py`).
 - Visual proportions: devices drawn 1.5x (`DEVICE_SCALE` in `scene/devices/specs.js`), taller pavilions, a reception pavilion, empty
-  car parks with marked bays (the parked cars were removed on request), an entrance arch and guard booth, glass-roofed walkways, networking
+  an entrance arch and guard booth, glass-roofed walkways, networking
   cabinets, server cabinets, a SOC monitoring wall and stations (`scene/campus/campusDecor.js`; decoration only: no node, link or cable).
   The overview camera frames the campus (`target [14,0,10]`, distance 160). The Internet cloud sits west of the two external hosts so its
   pick box no longer hides EXT-USR.
 - Full verification on the final build (`python scripts/tasks.py verify`): 1176 backend tests, 12/12 scenario runs and 93/93 checks, 349 frontend
   tests, production build. Browser checks: interactions 70/70, demonstration 35/35.
 - Frame rate (`scripts/measure_matrix.mjs`, `docs/perf/final-matrix.json`; Intel UHD Graphics, 276-287 draw calls, 76-78k triangles):
-  High: idle overview 27.3 fps, staff close-up 31.4, scenario 7 (traffic, scan, EDR) 33.3, S4 flood peak 34.7.
-  Low: 54.4, 54.9, 55.3 and 43.7 fps. The High idle overview is below the 30 fps target on this integrated GPU; the app switches to Low
+  High: idle overview 27.9 fps, staff close-up 33.2, scenario 7 (traffic, scan, EDR) 34.8, S4 flood peak 36.
+  Low: 60 fps in all four cases. The High idle overview is below the 30 fps target on this integrated GPU; the app switches to Low
   automatically when the frame rate stays low, and tells the user. No console errors.
 
 ## Checklist

@@ -1,5 +1,5 @@
 /**
- * Campus infrastructure that is only there to make the campus look inhabited: car parks (empty bays: the traffic in the scene is network traffic, not vehicles), an entrance gate and guard booth, covered
+ * Campus infrastructure that is only there to make the campus look inhabited: an entrance gate and guard booth, covered
  * walkways along the roads, networking cabinets, empty server cabinets in the data centre and a security monitoring wall and
  * stations in the operations centre. Pure data and rules, no three.js, so the placement is cheap to test.
  *
@@ -12,37 +12,6 @@ import { PLATFORM_TOP, allPlatforms, cableSegments, roadRects } from './campusLa
 
 const rect = ([x0, z0, x1, z1]) => ({ x0, z0, x1, z1 })
 const overlapsRect = (a, b, gap = 0) => a.x0 < b.x1 + gap && a.x1 > b.x0 - gap && a.z0 < b.z1 + gap && a.z1 > b.z0 - gap
-
-/** The car parks. `axis` is the direction the bays run along; two rows of bays face a central aisle (a single row for a narrow lot). */
-export const PARKING = Object.freeze([
-  { id: 'north-west', rect: rect([-32, -32, -12, -15]), axis: 'x', rows: 2, seed: 1 },
-  { id: 'east', rect: rect([56.2, 14, 62, 34]), axis: 'z', rows: 1, seed: 4 },
-])
-
-const BAY_WIDTH = 2.6
-const BAY_DEPTH = 5.2
-const AISLE_MARGIN = 0.5
-
-/**
- * Every parking bay of a lot, as {x, z, w, d, row, index}: `w` across the bay, `d` along it. Bays are laid out from the lot's corner.
- * @param {typeof PARKING[number]} lot
- */
-export function parkingBays(lot) {
-  const r = lot.rect
-  const bays = []
-  const alongX = lot.axis === 'x'
-  const length = alongX ? r.x1 - r.x0 : r.z1 - r.z0
-  const count = Math.floor((length - 2 * AISLE_MARGIN) / BAY_WIDTH)
-  for (let row = 0; row < lot.rows; row++) {
-    for (let i = 0; i < count; i++) {
-      const along = (alongX ? r.x0 : r.z0) + AISLE_MARGIN + BAY_WIDTH * (i + 0.5)
-      const fromEdge = AISLE_MARGIN + BAY_DEPTH / 2
-      const across = alongX ? (row === 0 ? r.z0 + fromEdge : r.z1 - fromEdge) : r.x0 + fromEdge
-      bays.push(alongX ? { x: along, z: across, w: BAY_WIDTH, d: BAY_DEPTH, row, index: i } : { x: across, z: along, w: BAY_WIDTH, d: BAY_DEPTH, row, index: i, rotated: true })
-    }
-  }
-  return bays
-}
 
 /** The campus entrance: a gate arch over the west end of the main avenue, with a barrier arm and a glass guard booth. */
 export const ENTRANCE = Object.freeze({
@@ -110,7 +79,6 @@ function distanceToSegment(p, a, b) {
 /** Every footprint decoration stands on, as {id, rect}, for the overlap checks. */
 export function decorFootprints() {
   const list = []
-  for (const p of PARKING) list.push({ id: `parking-${p.id}`, rect: p.rect })
   list.push({ id: 'booth', rect: ENTRANCE.booth })
   for (const [x, z, w, d] of CABINETS) list.push({ id: `cabinet-${x}-${z}`, rect: rect([x - w / 2, z - d / 2, x + w / 2, z + d / 2]) })
   return list

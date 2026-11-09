@@ -3,7 +3,8 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 
 import { BALUSTRADE, CAMPUS_ZONES, GATE_COURT, ISLAND, PLATFORM_TOP, PLINTH_TOP, SIGNS, campusGeometry, devicePads, roadRects, signSubtitle, zoneVolumes } from './campusLayout.js'
 import { campusMaterials } from './campusMaterials.js'
-import { CABINETS, ENTRANCE, PARKING, SERVER_CABINETS, SOC_STATIONS, SOC_WALL, WALKWAYS, WALKWAY_HEIGHT, parkingBays, walkwayPosts } from './campusDecor.js'
+import { buildArchitecture } from './campusBuildings.js'
+import { CABINETS, ENTRANCE, SERVER_CABINETS, SOC_STATIONS, SOC_WALL, WALKWAYS, WALKWAY_HEIGHT, walkwayPosts } from './campusDecor.js'
 
 /**
  * Turns the campus layout into three.js meshes, merged to one mesh per material: every platform top, every plinth, all the
@@ -131,6 +132,9 @@ export function buildCampus(topology) {
     }
   }
 
+  // the finish of the glass buildings (cyan rail lights, the administration canopy)
+  buildArchitecture(put, box, campus.structures)
+
   // the round core pavilion
   {
     const c = campus.core
@@ -159,17 +163,8 @@ export function buildCampus(topology) {
   // Grey roads between the zones: flat, on the ground, below the cables (one draw call).
   for (const r of roadRects()) put('gate', 'road', box(r.x1 - r.x0, 0.04, r.z1 - r.z0, (r.x0 + r.x1) / 2, 0.02, (r.z0 + r.z1) / 2))
 
-  // Campus infrastructure (decoration only): car parks, entrance, walkways, cabinets, server cabinets, monitoring wall and stations.
+  // Campus infrastructure (decoration only): entrance, walkways, cabinets, server cabinets, monitoring wall and stations.
   const T = PLATFORM_TOP
-  for (const lot of PARKING) {
-    const r = lot.rect
-    put('gate', 'asphalt', box(r.x1 - r.x0, 0.04, r.z1 - r.z0, (r.x0 + r.x1) / 2, 0.02, (r.z0 + r.z1) / 2))
-    for (const bay of parkingBays(lot)) {
-      const line = bay.rotated ? box(bay.d, 0.05, 0.12, bay.x, 0.045, bay.z - bay.w / 2) : box(0.12, 0.05, bay.d, bay.x - bay.w / 2, 0.045, bay.z)
-      put('gate', 'marking', line)
-      if (bay.index === Math.floor((lot.axis === 'x' ? r.x1 - r.x0 : r.z1 - r.z0 - 1) / bay.w) - 1) put('gate', 'marking', bay.rotated ? box(bay.d, 0.05, 0.12, bay.x, 0.045, bay.z + bay.w / 2) : box(0.12, 0.05, bay.d, bay.x + bay.w / 2, 0.045, bay.z))
-    }
-  }
   {
     const a = ENTRANCE.arch
     for (const z of [a.z0, a.z1]) put('gate', 'frame', box(0.4, a.height, 0.4, a.x, a.height / 2, z))
@@ -276,7 +271,7 @@ export function buildCampus(topology) {
     for (const g of geometries) g.dispose()
     const solid = kind === 'top' || kind === 'plinth'
     const order = kind === 'glass' ? 2 : kind === 'blob' ? 1 : 0
-    parts.push({ key: kind, geometry, material: campusMaterials[kind], cast: solid, receive: solid || kind === 'pad' || kind === 'road' || kind === 'asphalt', order })
+    parts.push({ key: kind, geometry, material: campusMaterials[kind], cast: solid, receive: solid || kind === 'pad' || kind === 'road', order })
   }
 
   return {

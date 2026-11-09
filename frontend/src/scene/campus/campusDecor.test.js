@@ -3,8 +3,10 @@ import { describe, expect, it } from 'vitest'
 import { NODE_LAYOUT, PLATES } from '../layout.js'
 import { loadBackendTopology } from '../testSupport.js'
 import {
-  CABINETS, ENTRANCE, PARKING, SERVER_CABINETS, SOC_STATIONS, SOC_WALL, WALKWAYS, decorFootprints, overlapsRect, parkingBays, roadRects, walkwayPosts,
+  CABINETS, ENTRANCE, SERVER_CABINETS, SOC_STATIONS, SOC_WALL, WALKWAYS, decorFootprints, overlapsRect, roadRects, walkwayPosts,
 } from './campusDecor.js'
+import * as decor from './campusDecor.js'
+import { ARCHITECTURE_FOOTPRINTS } from './campusBuildings.js'
 import { STRUCTURES, allPlatforms, cableSegments, deviceRect } from './campusLayout.js'
 
 const topology = loadBackendTopology()
@@ -33,7 +35,7 @@ function cableDistance(r) {
 }
 
 describe('campus decoration is visual only and stays out of the way', () => {
-  const footprints = decorFootprints()
+  const footprints = [...decorFootprints(), ...ARCHITECTURE_FOOTPRINTS]
   const platforms = allPlatforms()
 
   it('adds nothing to the logical network', () => {
@@ -70,12 +72,9 @@ describe('campus decoration is visual only and stays out of the way', () => {
     for (const w of WALKWAYS) expect(onPlate(w.rect, 0.1), w.id).toBe(true)
   })
 
-  it('lays out marked bays in every car park, inside its lot, with no vehicles drawn', () => {
-    for (const lot of PARKING) {
-      const bays = parkingBays(lot)
-      expect(bays.length).toBeGreaterThanOrEqual(6)
-      for (const b of bays) expect(b.x - b.w / 2 >= lot.rect.x0 - 0.01 || b.rotated, `${lot.id} bay`).toBe(true)
-    }
+  it('has no car park, no vehicle and no vegetation in the decoration data', () => {
+    const names = Object.keys(decor)
+    for (const n of names) expect(/park|car|tree|grass|bush|path/i.test(n), n).toBe(false)
   })
 
   it('puts the server cabinets, the monitoring wall and the stations inside their buildings, clear of devices and cables', () => {

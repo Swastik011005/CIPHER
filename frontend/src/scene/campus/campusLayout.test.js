@@ -72,8 +72,8 @@ describe('campus zones map to the existing devices', () => {
 })
 
 describe('structures: single level, devices inside, nothing hidden', () => {
-  it('are all single-level (3.0 high at most)', () => {
-    for (const s of STRUCTURES) expect(s.h).toBeLessThanOrEqual(STRUCTURE_HEIGHT)
+  it('are all single-storey (a roof at 6.5 high at most; the administration building is the tallest)', () => {
+    for (const s of STRUCTURES) expect(s.h).toBeLessThanOrEqual(6.5)
   })
 
   it('hold their devices inside the frame with 0.2 clearance and 0.5 headroom', () => {
