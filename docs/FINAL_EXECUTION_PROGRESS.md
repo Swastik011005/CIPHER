@@ -71,12 +71,12 @@ What existed (verified in the code, not assumed):
 - [x] Stage 5 expanded campus (layout, roads, racks, decoration, larger devices)
 - [x] Stage 6 performance measured; High idle overview on an integrated GPU is 27 fps (below target), Low is 44-55 fps
 - [ ] Stage 7 UI polish (not done)
-- [x] Stage 8 verify, interaction and demonstration checks (split-check and offline recovery: see the final summary)
-- [ ] Stage 9 technical report (Markdown + PDF): not written yet
+- [x] Stage 8 verify, interaction (70/70), demonstration (35/35) and split-check (20/20 + 34/34); offline recovery not re-run
+- [x] Stage 9 technical report: docs/NETSEC_3D_FINAL_TECHNICAL_REPORT.md and .pdf (PDF layout not visually inspected)
 - [ ] Stage 10 final delivery
 
 ## Exact next action
-Write `docs/NETSEC_3D_FINAL_TECHNICAL_REPORT.md` and its PDF. See `docs/FINAL_EXECUTION_RESUME_PROMPT.md`.
+Optional: UI polish pass, offline recovery re-run, High-quality frame rate on integrated GPUs.
 
 ## Exact commands to continue
 ```
