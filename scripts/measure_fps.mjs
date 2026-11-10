@@ -41,7 +41,7 @@ if (!exe) {
   process.exit(2)
 }
 
-const profile = mkdtempSync(join(tmpdir(), 'netsec-fps-'))
+const profile = mkdtempSync(join(tmpdir(), 'cipher-fps-'))
 const flags = [
   `--remote-debugging-port=${cfg.port}`,
   `--user-data-dir=${profile}`,

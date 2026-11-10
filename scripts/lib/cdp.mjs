@@ -32,7 +32,7 @@ export async function waitFor(fn, what, ms = 20000) {
 export async function openBrowser({ browser = 'chrome', width = 1920, height = 1080, port = 9555, extraFlags = [] } = {}) {
   const exe = findBrowser(browser)
   if (!exe) throw new Error(`no ${browser} installation found (set NETSEC_BROWSER_PATH to its executable)`)
-  const profile = mkdtempSync(join(tmpdir(), 'netsec-cdp-'))
+  const profile = mkdtempSync(join(tmpdir(), 'cipher-cdp-'))
   const child = spawn(
     exe,
     [

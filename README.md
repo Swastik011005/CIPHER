@@ -6,7 +6,7 @@ decision.
 
 > CIPHER is the project's official name (formerly NetSec 3D). Technical identifiers keep their original names so that nothing
 > breaks: the Python package `netsec`, the `NETSEC_*` environment variables,
-> the `window.__netsec*` debug handles and the repository folder.
+> the `window.__netsec*` debug handles and the repository folder. [docs/NAMING.md](docs/NAMING.md) lists them and says why.
 
 ![CIPHER 3D simulation: a port scan from PC-2 is blocked by IPS-1 in Enforce mode](docs/screenshots/cipher/cipher-overview.png)
 

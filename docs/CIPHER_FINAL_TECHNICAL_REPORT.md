@@ -1,7 +1,7 @@
 # CIPHER: Final Technical Report
 
 **Project:** Intelligent network security with IDS, IPS, Zero Trust, SIEM and EDR on a simulated smart campus, shown in 3D.
-**Branch:** `feature/campus-c1-design` (nothing pushed, nothing deployed).
+**Repository:** https://github.com/Swastik011005/CIPHER, branch `main`. Nothing is deployed.
 
 > **Read this first.** All traffic in this project is **synthetic and deterministic**. No real packet is sent, captured or blocked, the endpoint CLI is not a real shell, and every number below comes from the simulation engine or from the test runs listed in section 18. Status labels used throughout: **Implemented and tested**, **Implemented, partly tested**, **Not done / planned**.
 
@@ -55,7 +55,7 @@ ZT-POLICY-1 is asked once per flow by the policy enforcement point CORE-SW1, aft
 Status: **Implemented and tested.**
 
 ## 10. SIEM
-SIEM-1 receives events from the components that produced them (IDS, IPS, firewall, ACL, Zero Trust, EDR), groups related events into incidents (incident ids are scoped per run) and keeps an incident history. The front end shows a SIEM console on the Threats page and security events in the player.
+SIEM-1 receives events from the components that produced them (IDS, IPS, firewall, ACL, Zero Trust, EDR), groups related events into incidents (incident ids are scoped per run) and keeps an incident history. The front end shows a SIEM console on the Threats page and security events in the player. It forwards only what a component really produced: policy denials (FW1, CORE-SW1), alerts (IDS-1, IPS-1), IPS-1 actions and block-table additions, EDR alerts, state changes and stopped sends from an isolated endpoint, and Zero Trust denials or restrictions. The SIEM is part of the presentation scenarios P1 to P9 only; S1 to S7 do not send it events, and the console says so. The history holds the latest version of each run, so replaying a scenario or re-simulating it after a mid-run change replaces its events instead of adding them twice.
 Status: **Implemented and tested** (backend tests and browser demonstration check).
 
 ## 11. EDR with isolate and restore

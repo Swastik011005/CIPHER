@@ -238,7 +238,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--api-port", type=int, default=8300)
     parser.add_argument("--site-port", type=int, default=8301)
-    parser.add_argument("--out", default=str(Path(tempfile.gettempdir()) / "netsec-split-origin"), help="folder for screenshots and the temporary build")
+    parser.add_argument("--out", default=str(Path(tempfile.gettempdir()) / "cipher-split-origin"), help="folder for screenshots and the temporary build")
     parser.add_argument("--skip-rehearsal", action="store_true", help="skip the full 34-step rehearsal (the slowest part)")
     args = parser.parse_args()
 
